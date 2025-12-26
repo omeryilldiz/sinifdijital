@@ -1,0 +1,98 @@
+{% if leaderboard %}
+
+<!-- 🎯 FİLTRELEME BUTONLARI -->
+<div class="leaderboard-filters mb-4">
+    <!-- Kapsam Filtreleri -->
+    <div class="scope-filters mb-3">
+        <div class="btn-group w-100" role="group">
+            <button type="button" class="btn btn-outline-primary active" data-scope="general">
+                <i class="bi bi-globe me-1"></i>Genel
+            </button>
+            <button type="button" class="btn btn-outline-primary" data-scope="school">
+                <i class="bi bi-building me-1"></i>Okul
+            </button>
+            <button type="button" class="btn btn-outline-primary" data-scope="class">
+                <i class="bi bi-mortarboard me-1"></i>Sınıf
+            </button>
+        </div>
+    </div>
+    
+    <!-- Zaman Filtreleri -->
+    <div class="time-filters">
+        <div class="btn-group w-100" role="group">
+            <button type="button" class="btn btn-outline-secondary active" data-time="daily">
+                <i class="bi bi-calendar-day me-1"></i>Günlük
+            </button>
+            <button type="button" class="btn btn-outline-secondary" data-time="weekly">
+                <i class="bi bi-calendar-week me-1"></i>Haftalık
+            </button>
+            <button type="button" class="btn btn-outline-secondary" data-time="monthly">
+                <i class="bi bi-calendar-month me-1"></i>Aylık
+            </button>
+            <button type="button" class="btn btn-outline-secondary" data-time="alltime">
+                <i class="bi bi-infinity me-1"></i>Tüm Zamanlar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 🔄 LOADING GÖSTERGESİ -->
+<div class="loading-container d-none text-center py-4">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Yükleniyor...</span>
+    </div>
+    <p class="mt-2 text-muted">Sıralama verisi yükleniyor...</p>
+</div>
+
+<!-- 📊 İÇERİK ALANI (Tek Div) -->
+<div class="leaderboard-content">
+    
+    <!-- İlk yükleme: Günlük Genel -->
+    {% if leaderboard.daily and leaderboard.daily.general %}
+        {% set scope_data = leaderboard.daily.general %}
+        {% set period_title = 'Günlük Genel Sıralama' %}
+        {% set period_icon = 'calendar-day' %}
+        {% include 'leaderboard_table.html' %}
+    {% else %}
+        {% set period_title = 'Günlük Genel Sıralama' %}
+        {% set empty_message = 'Bu gün için genel sıralama verisi bulunamadı.' %}
+        {% include 'leaderboard_empty.html' %}
+    {% endif %}
+    
+</div>
+
+<!-- 🗂️ GİZLİ VERİ DEPOSU (JavaScript için) -->
+<script type="application/json" id="leaderboard-data">
+{
+    "daily": {
+        "general": {% if leaderboard.daily and leaderboard.daily.general %}{{ leaderboard.daily.general | tojson }}{% else %}null{% endif %},
+        "school": {% if leaderboard.daily and leaderboard.daily.school %}{{ leaderboard.daily.school | tojson }}{% else %}null{% endif %},
+        "class": {% if leaderboard.daily and leaderboard.daily.class %}{{ leaderboard.daily.class | tojson }}{% else %}null{% endif %}
+    },
+    "weekly": {
+        "general": {% if leaderboard.weekly and leaderboard.weekly.general %}{{ leaderboard.weekly.general | tojson }}{% else %}null{% endif %},
+        "school": {% if leaderboard.weekly and leaderboard.weekly.school %}{{ leaderboard.weekly.school | tojson }}{% else %}null{% endif %},
+        "class": {% if leaderboard.weekly and leaderboard.weekly.class %}{{ leaderboard.weekly.class | tojson }}{% else %}null{% endif %}
+    },
+    "monthly": {
+        "general": {% if leaderboard.monthly and leaderboard.monthly.general %}{{ leaderboard.monthly.general | tojson }}{% else %}null{% endif %},
+        "school": {% if leaderboard.monthly and leaderboard.monthly.school %}{{ leaderboard.monthly.school | tojson }}{% else %}null{% endif %},
+        "class": {% if leaderboard.monthly and leaderboard.monthly.class %}{{ leaderboard.monthly.class | tojson }}{% else %}null{% endif %}
+    },
+    "alltime": {
+        "general": {% if leaderboard.all_time and leaderboard.all_time.general %}{{ leaderboard.all_time.general | tojson }}{% else %}null{% endif %},
+        "school": {% if leaderboard.all_time and leaderboard.all_time.school %}{{ leaderboard.all_time.school | tojson }}{% else %}null{% endif %},
+        "class": {% if leaderboard.all_time and leaderboard.all_time.class %}{{ leaderboard.all_time.class | tojson }}{% else %}null{% endif %}
+    },
+    "student": {{ student_json | tojson }}
+}
+</script>
+
+{% else %}
+<!-- Hiç leaderboard verisi yoksa -->
+<div class="text-center py-5">
+    <i class="bi bi-list-ol display-4 text-muted"></i>
+    <h5 class="mt-3">Sıralama Verisi Bulunamadı</h5>
+    <p class="text-muted">Bu öğrenci için henüz sıralama verisi oluşturulmamış.</p>
+</div>
+{% endif %}

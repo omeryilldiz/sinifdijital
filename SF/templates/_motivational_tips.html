@@ -1,0 +1,36 @@
+<div class="card mb-4">
+    <div class="card-header bg-transparent border-0 pb-0">
+        <h5 class="card-title mb-0"><i class="bi bi-emoji-sunglasses me-2"></i> Motivasyon & Mini Başarılar</h5>
+    </div>
+    <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+                <i class="bi bi-trophy text-warning me-2"></i>
+                Toplam <b>{{ stats.achievement_summary.total_points }}</b> puan topladın!
+            </li>
+            <li class="list-group-item">
+                <i class="bi bi-bar-chart-line text-success me-2"></i>
+                Bu hafta <b>{{ stats.achievement_summary.weekly_increase }}</b> soru daha fazla çözdün!
+            </li>
+
+            <li class="list-group-item">
+                <i class="bi bi-patch-check text-info me-2"></i>
+                Genel başarı oranı: <b>{{ stats.achievement_summary.overall_success_rate }}%</b>
+            </li>
+            {% if stats.achievement_summary.new_badges %}
+            <li class="list-group-item">
+                <i class="bi bi-award text-warning me-2"></i>
+                Yeni rozetler: 
+                {% for badge in stats.achievement_summary.new_badges %}
+                    <span class="badge bg-success me-1">{{ badge }}</span>
+                {% endfor %}
+            </li>
+            {% endif %}
+        </ul>
+        <div class="mt-3">
+            <small class="text-muted">
+                Başarılarınla gurur duy! Her gün küçük adımlar büyük fark yaratır.
+            </small>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,24 @@
+{% extends "admin_layout.html" %}
+{% block content %}
+<div class="container py-4">
+    <h3>Mesaj Detayı</h3>
+    <hr>
+    <div>
+        <strong>Alıcı:</strong> {{ message.receiver.first_name }} {{ message.receiver.last_name }}<br>
+        <strong>Tarih:</strong> {{ message.sent_at.strftime('%d.%m.%Y %H:%M') }}<br>
+        <strong>Mesaj Türü:</strong> {{ message.message_type }}<br>
+        <strong>Gönderim Türü:</strong> {{ message.sent_via }}<br>
+        <strong>Durum:</strong>
+        {% if message.is_read %}
+            <span class="badge bg-success">Okundu</span>
+        {% else %}
+            <span class="badge bg-warning">Okunmadı</span>
+        {% endif %}
+        <hr>
+        <div class="border rounded p-3 bg-light">
+            {{ message.content|safe }}
+        </div>
+    </div>
+    <a href="{{ url_for('admin_messages') }}" class="btn btn-secondary mt-3">Geri Dön</a>
+</div>
+{% endblock %}

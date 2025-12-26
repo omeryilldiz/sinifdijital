@@ -1,0 +1,34 @@
+{% extends "admin_layout.html"%}
+
+
+{% block content %}
+
+{% for message in get_flashed_messages() %}
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+{% endfor %}
+
+<h1>Konu Güncelleme</h1>
+<form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+        {{ form.sinif.label }}
+        {% if form.sinif.errors %}
+        {{ form.sinif(class="form-control is-invalid") }} 
+            {% for error in form.sinif.errors %}
+                <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        {% elif form.sinif.data %}
+            {{ form.sinif(class="form-control is-valid") }}
+        {% else %}
+            {{ form.sinif(class="form-control") }}   
+        {% endif %}
+    </div>
+
+    {{ form.submit(class="btn btn-primary") }}
+    
+    <form method="POST" novalidate>
+
+{% endblock %}

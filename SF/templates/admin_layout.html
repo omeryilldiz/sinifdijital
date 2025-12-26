@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="tr">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/44.1.0/ckeditor5.css" />
+
+
+    {% if title %}
+    <title>{{ title }} - Sınıf Dijital</title>
+    {% else %}
+    <title>Sınıf Dijital</title>
+    {% endif %}
+</head>
+
+<body>
+
+    <div class="icerik col">
+        <div class="col-10 mx-auto mt-5">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+            {% for category, message in messages %}
+            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show"
+                role="alert">
+                <i
+                    class="bi bi-{{ 'exclamation-triangle' if category == 'danger' or category == 'error' else 'check-circle' if category == 'success' else 'info-circle' }} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+            {% endwith %}
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+    {% block styles %}{% endblock %}
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-auto sol fixed-top bg-dark d-flex flex-column">
+                {% if current_user.is_authenticated and current_user.role == 'admin' %}
+                <ul class="nav flex-column">
+                    <li class="nav-item text-warning fs-3 text-center mt-3">
+                        <i class="bi bi-mortarboard me-2"></i>
+                        Sınıf Dijital
+                    </li>
+                    <hr class="text-white">
+
+
+
+                    <!-- ✅ YENİ: Öğrenci Yönetimi Bölümü -->
+                    <li class="nav-item">
+                        <h6 class="text-white-50 px-3 mt-2 mb-1">
+                            <i class="bi bi-people me-2"></i>
+                            ÖĞRENCİ YÖNETİMİ
+                        </h6>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin_students') }}"
+                            class="nav-link fw-medium {{ 'active' if request.endpoint in ['admin_students', 'admin_student_detail', 'admin_student_edit'] }}">
+                            <i class="bi bi-list-ul me-2"></i>
+                            Öğrenci Listesi
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin_students') }}?status_filter=incomplete" class="nav-link fw-medium">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Profil Eksik Olanlar
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link fw-medium" onclick="exportAllStudents()">
+                            <i class="bi bi-download me-2"></i>
+                            Excel'e Aktar
+                        </a>
+                    </li>
+
+
+
+
+
+                    <hr class="text-white-50">
+
+                    <!-- Coğrafi Veri Yönetimi - ✅ Geçici olarak # yapıyoruz -->
+                    <li class="nav-item">
+                        <h6 class="text-white-50 px-3 mt-2 mb-1">
+                            <i class="bi bi-geo-alt me-2"></i>
+                            COĞRAFİ VERİLER
+                        </h6>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin_provinces') }}" class="nav-link fw-medium">
+                            <i class="bi bi-map me-2"></i>
+                            İl Yönetimi
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin_districts') }}" class="nav-link fw-medium">
+                            <i class="bi bi-building me-2"></i>
+                            İlçe Yönetimi
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('admin_schools') }}" class="nav-link fw-medium">
+                            <i class="bi bi-bank me-2"></i>
+                            Okul Yönetimi
+                        </a>
+                    </li>
+
+                    <hr class="text-white-50">
+
+                    <!-- İçerik Yönetimi -->
+                    <li class="nav-item">
+                        <h6 class="text-white-50 px-3 mt-2 mb-1">
+                            <i class="bi bi-book me-2"></i>
+                            İÇERİK YÖNETİMİ
+                        </h6>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('add_konu') }}"
+                            class="nav-link fw-medium {{ 'active' if request.endpoint == 'add_konu' }}">
+                            <i class="bi bi-plus-circle me-2"></i>
+                            Konu Girişi
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('add_soru')}}"
+                            class="nav-link fw-medium {{ 'active' if request.endpoint == 'add_soru' }}">
+                            <i class="bi bi-question-circle me-2"></i>
+                            Soru Ekleme
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('list_sorular') }}"
+                            class="nav-link fw-medium {{ 'active' if request.endpoint == 'list_sorular' }}">
+                            <i class="bi bi-list-check me-2"></i>
+                            Soru Listesi
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('add_ders_notu') }}"
+                            class="nav-link fw-medium {{ 'active' if request.endpoint == 'add_ders_notu' }}">
+                            <i class="bi bi-journal-plus me-2"></i>
+                            Ders Notları Ekleme
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('list_ders_notlari') }}"
+                            class="nav-link fw-medium {{ 'active' if request.endpoint == 'list_ders_notlari' }}">
+                            <i class="bi bi-journal-text me-2"></i>
+                            Ders Notları Listesi
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('video_ekle')}}"
+                            class="nav-link fw-medium {{ 'active' if request.endpoint == 'video_ekle' }}">
+                            <i class="bi bi-camera-video me-2"></i>
+                            Video Ekleme
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ url_for('list_videolar')}}"
+                            class="nav-link fw-medium {{ 'active' if request.endpoint == 'list_videolar' }}">
+                            <i class="bi bi-collection-play me-2"></i>
+                            Video Listesi
+                        </a>
+                    </li>
+
+
+                    <hr class="text-white-50">
+
+                    <!-- İçerik Yönetimi -->
+                    <li class="nav-item">
+                        <a href="{{ url_for('list_homepage_slides')}}"
+                            class="nav-link fw-medium {{ 'active' if request.endpoint == 'list_homepage_slides' }}">
+                            <i class="bi bi-collection-play me-2"></i>
+                            Home Page Yönetimi
+                        </a>
+                    </li>
+                </ul>
+                {% else %}
+                <ul class="nav flex-column">
+                    <li class="nav-item text-warning fs-3 text-center mt-3">
+                        <i class="bi bi-mortarboard me-2"></i>
+                        Sınıf Dijital
+                    </li>
+                    <hr class="text-white">
+                    <li class="nav-item text-warning fs-2 text-center mt-3">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Öncelikle Giriş Yapmalısınız!
+                    </li>
+                    <hr class="text-white">
+                </ul>
+                {% endif %}
+
+                <!-- Dropdown'u en alta almak için margin-top: auto -->
+                <div class="admin-dropdown-container mt-auto p-3">
+                    <div class="dropdown">
+                        <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle"
+                            id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center me-2"
+                                style="width: 32px; height: 32px;">
+                                <i class="bi bi-person-fill text-white"></i>
+                            </div>
+                            {% if current_user.is_authenticated and current_user.role == 'admin' %}
+                            <strong>{{ current_user.username }}</strong>
+                            {% else %}
+                            <strong>Giriş Yap</strong>
+                            {% endif %}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-dark text-small shadow" aria-labelledby="dropdownUser1">
+                            {% if current_user.is_authenticated and current_user.role == 'admin' %}
+                            <li><a class="dropdown-item" href="{{ url_for('admin_system_monitor') }}">
+                                    <i class="bi bi-gear me-2"></i>Sistem İzleme
+                                </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin_register') }}">
+                                    <i class="bi bi-person-plus me-2"></i>Admin Kayıt
+                                </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin_students') }}">
+                                    <i class="bi bi-people me-2"></i>Öğrenci Yönetimi
+                                </a></li>
+                            <li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin_settings') }}">
+                                    <i class="bi bi-gear me-2"></i>Mail & Google Ayarları
+                                </a></li>
+                            <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="{{ url_for('admin_logout' )}}">
+                                    <i class="bi bi-box-arrow-right me-2"></i>Çıkış Yap
+                                </a></li>
+
+                            {% else %}
+                            <li><a class="dropdown-item" href="{{ url_for('admin_login' )}}">
+                                    <i class="bi bi-box-arrow-in-right me-2"></i>Giriş Yap
+                                </a></li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"
+        integrity="sha384-I7E8VVD/ismYTF4hNIPjVp/Zjvgyol6VFvRkX/vR+Vc4jQkC+hVqc2pM8ODewa9r"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"
+        integrity="sha384-0pUGZvbkm6XF6gxjEnlmuGrJXVbNuzT9qBBavbLwCsOGabYfZo0T0to5eqruptLy"
+        crossorigin="anonymous"></script>
+
+    <!-- ✅ YENİ: Global Admin JavaScript -->
+    <script>
+        function exportAllStudents() {
+            // TODO: Tüm öğrencileri Excel'e aktarma işlemi
+            alert('Excel export özelliği yakında eklenecek!');
+        }
+
+        // Alert otomatik kapanma
+        setTimeout(function () {
+            document.querySelectorAll('.alert').forEach(function (alert) {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            });
+        }, 5000);
+    </script>
+
+    {% block scripts %}{% endblock %}
+</body>
+
+</html>

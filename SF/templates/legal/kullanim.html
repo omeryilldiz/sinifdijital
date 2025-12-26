@@ -1,0 +1,175 @@
+{% extends "layout.html" %}
+
+{% block title %}Kullanım Koşulları - Sınıf Dijital{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <article class="legal-document">
+                <header class="text-center mb-5">
+                    <h1 class="h3 fw-bold">KULLANIM KOŞULLARI</h1>
+                    <p class="text-muted">Son Güncellenme Tarihi: 04.12.2025</p>
+                </header>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">1. Giriş</h2>
+                    <p>Sınıf Dijital'e hoş geldiniz.</p>
+                    <p>Sınıf Dijital (www.sinifdijital.com), öğretmenlerin ve öğrencilerin derslerle ilgili konu içeriklerine, yaprak testlere, online sınavlara ulaşmasını sağlayan bir eğitim platformudur.</p>
+                    <p>Bu siteyi kullanarak işbu Kullanım Koşulları'nı, <a href="{{ url_for('gizlilik') }}">Gizlilik Politikası</a>'nı ve <a href="{{ url_for('kvkk') }}">KVKK Aydınlatma Metni</a>'ni kabul etmiş sayılırsınız.</p>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">2. Yaş Sınırı ve Ebeveyn Onayı</h2>
+                    <p>Sitemiz ortaokul ve lise öğrencilerine yönelik eğitim hizmetleri sunmaktadır.</p>
+                    <ul>
+                        <li>18 yaşından küçük kullanıcılar için üyelik, veli/vasi bilgisi dahilinde yapılmalıdır</li>
+                        <li>13 yaşından küçükler siteyi yalnızca veli/vasi gözetiminde kullanabilir</li>
+                        <li>18 yaşından küçükler veli/vasi onayı olmadan ödeme gerektiren işlem yapamaz</li>
+                    </ul>
+                    <p>Veli/vasiler, çocuklarının site kullanımından sorumludur.</p>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">3. Kullanıcı Taahhütleri</h2>
+                    <p>Kullanıcı, siteyi kullanırken:</p>
+                    <ul>
+                        <li>Yürürlükteki mevzuatı ihlal etmeyeceğini,</li>
+                        <li>İçerikleri izinsiz ticari amaçla kullanmayacağını,</li>
+                        <li>İçerikleri kaynak göstermeden başka yerlerde yayınlamayacağını,</li>
+                        <li>Site güvenliğini tehlikeye atacak girişimlerde bulunmayacağını,</li>
+                        <li>Virüs veya zararlı kod içeren dosya yüklemeyeceğini,</li>
+                        <li>Algoritmaları ve kodları deşifre etmeye çalışmayacağını</li>
+                    </ul>
+                    <p>kabul ve taahhüt eder.</p>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">4. Yasak İçerikler</h2>
+                    <p>Aşağıdaki içeriklerin yüklenmesi kesinlikle yasaktır:</p>
+                    <ul>
+                        <li>Devlet sırları veya devletin bekasına zarar verebilecek içerikler</li>
+                        <li>Ticari sır niteliğindeki bilgiler</li>
+                        <li>Kişilik haklarını zedeleyen içerikler</li>
+                        <li>Müstehcen veya cinsel içerikler</li>
+                        <li>Nefret, tehdit veya taciz içeren paylaşımlar</li>
+                        <li>Siyasi propaganda içerikleri</li>
+                        <li>Örgütlenme mesajı taşıyan içerikler</li>
+                    </ul>
+                    <p>Bu tür içeriklerden site sorumlu olmayıp, sorumluluk içeriği yükleyen kullanıcıya aittir.</p>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">5. Fikri Mülkiyet Hakları</h2>
+                    <p>Sitedeki tüm içerikler (metin, görsel, video, tasarım, yazılım vb.) 5846 Sayılı Fikir ve Sanat Eserleri Kanunu kapsamında korunmaktadır.</p>
+                    <p>İzinsiz kullanım halinde hukuki ve cezai sorumluluk doğar.</p>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">6. Telif Hakkı Bildirimi</h2>
+                    <p>Sitede yer alan bir içeriğin telif hakkı sahibi olduğunuzu düşünüyorsanız, aşağıdaki bilgilerle bize ulaşın:</p>
+                    <ul>
+                        <li>İhlal iddia edilen içeriğin URL'si</li>
+                        <li>Telif hakkı sahibinin iletişim bilgileri</li>
+                        <li>Hak sahipliğini kanıtlayan belgeler</li>
+                    </ul>
+                    <p>Bildirimler <strong>iletisim@sinifdijital.com</strong> adresine yapılabilir. Haklı talepler 72 saat içinde değerlendirilir.</p>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">7. Hesap Güvenliği</h2>
+                    <ul>
+                        <li>Şifrenizi gizli tutmak sizin sorumluluğunuzdadır</li>
+                        <li>Hesabınızı başkalarıyla paylaşmayın</li>
+                        <li>Yetkisiz kullanım şüphesinde bize bildirin</li>
+                        <li>Hesabınız üzerinden yapılan işlemlerden siz sorumlusunuz</li>
+                    </ul>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">8. Eğitim İçeriği Sorumluluğu</h2>
+                    <ul>
+                        <li>İçerikler genel eğitim amaçlıdır, MEB müfredatını destekleyici niteliktedir</li>
+                        <li>Resmi eğitim kurumlarının yerini almaz</li>
+                        <li>Sınav başarısı veya akademik sonuç garanti edilmez</li>
+                        <li>İçeriklerde hatalar bulunabilir, tespit edilenler düzeltilir</li>
+                    </ul>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">9. Ücretli Hizmetler</h2>
+                    <p><strong>Ödeme:</strong> Fiyatlar TL cinsindendir, KDV dahildir. Fiyatlar önceden haber vermeksizin değiştirilebilir.</p>
+                    <p><strong>İade:</strong> Dijital içerik hizmetlerinde, 6502 sayılı Kanun gereği içeriğe erişim sağlandıktan sonra cayma hakkı ortadan kalkar.</p>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">10. Hizmet Değişiklikleri</h2>
+                    <p>Site:</p>
+                    <ul>
+                        <li>Hizmetleri değiştirebilir, ücretli hale getirebilir veya kaldırabilir</li>
+                        <li>Gerektiğinde hizmetleri askıya alabilir</li>
+                        <li>Kullanıcıları engelleyebilir veya hesapları kapatabilir</li>
+                    </ul>
+                    <p>Sunulan hizmetler kazanılmış hak oluşturmaz.</p>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">11. Sorumluluk Sınırlaması</h2>
+                    <p>Site:</p>
+                    <ul>
+                        <li>Bilgilerin doğruluğu, güncelliği veya kesintisiz hizmet konusunda garanti vermez</li>
+                        <li>Kullanımdan doğan zararlardan sorumlu tutulamaz</li>
+                        <li>Hizmet kesintilerinden dolayı sorumluluk kabul etmez</li>
+                    </ul>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">12. Mücbir Sebepler</h2>
+                    <p>Doğal afetler, savaş, salgın, siber saldırılar, altyapı arızaları gibi mücbir sebep hallerinde site sorumlu tutulamaz.</p>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">13. Uyuşmazlık Çözümü</h2>
+                    <p>Bu koşullar Türkiye Cumhuriyeti kanunlarına tabidir.</p>
+                    <ul>
+                        <li>Tüketici uyuşmazlıklarında: Tüketici Hakem Heyetleri ve Tüketici Mahkemeleri</li>
+                        <li>Diğer uyuşmazlıklarda: İstanbul Mahkemeleri ve İcra Daireleri yetkilidir</li>
+                    </ul>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">14. Değişiklikler</h2>
+                    <p>Bu koşullar tek taraflı olarak değiştirilebilir. Değişiklikler sitede yayınlandığı tarihte yürürlüğe girer.</p>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">15. İletişim</h2>
+                    <ul>
+                        <li>E-posta: iletisim@sinifdijital.com</li>
+                        <li>Telefon: 0532 123 12 34</li>
+                        <li>Web: www.sinifdijital.com</li>
+                    </ul>
+                </section>
+
+                <footer class="border-top pt-4 mt-5">
+                    <p class="mb-1"><strong>Ömer Yıldız</strong></p>
+                    <p class="text-muted">www.sinifdijital.com</p>
+                </footer>
+            </article>
+        </div>
+    </div>
+</div>
+
+<style>
+.legal-document {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 1rem;
+    line-height: 1.8;
+    color: #333;
+}
+.legal-document h1 { font-size: 1.4rem; }
+.legal-document h2 { font-size: 1.1rem; margin-top: 1.5rem; }
+.legal-document ul { margin-bottom: 1rem; }
+.legal-document li { margin-bottom: 0.25rem; }
+</style>
+{% endblock %}

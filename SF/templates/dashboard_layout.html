@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }} - SF</title>
+    
+    <!-- Bootstrap ve diğer CSS'ler -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+
+<style>
+    /* CSS Değişkenleri Ekleme */
+:root {
+    --accent-color: #00A5AD;
+    --primary-color: #2563eb;
+    --primary-dark: #1d4ed8;
+    --secondary-color: #64748b;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --light-color: #f8fafc;
+    --dark-color: #1e293b;
+    --border-color: #e2e8f0;
+    --shadow: 0 1px 3px rgba(0,0,0,0.1);
+    --shadow-lg: 0 4px 12px rgba(37, 99, 235, 0.15);
+    --border-radius: 8px;
+    --transition: all 0.3s ease;
+    --sidebar-width: 250px;
+    --sidebar-width-mobile: 280px;
+    --navbar-height: 70px;
+}
+
+/* Ana Layout - Optimize Edilmiş */
+.sidebar {
+    height: 100vh;
+    position: fixed;
+    top: var(--navbar-height);
+    background-color: #ffffff;
+    overflow-y: auto;
+    z-index: 1000;
+}
+
+.left-sidebar {
+    left: 0;
+    width: var(--sidebar-width);
+    border-right: 1px solid var(--border-color);
+    padding: 20px;
+    transition: var(--transition);
+}
+
+.right-sidebar {
+    right: 0;
+    width: 280px;
+    border-left: 1px solid var(--border-color);
+    padding: 15px;
+}
+
+.main-content {
+    margin-left: var(--sidebar-width);
+    margin-right: 280px;
+    padding: calc(var(--navbar-height) + 20px) 15px 20px 15px;
+    background-color: var(--light-color);
+    min-height: 100vh;
+    transition: var(--transition);
+}
+
+/* Sol Alt Floating Menu - Optimize Edilmiş */
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+    z-index: 1050;
+    padding: 8px 0;
+    display: none;
+}
+
+.bottom-nav .nav-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px 4px;
+    color: var(--secondary-color);
+    text-decoration: none;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+    font-size: 12px;
+}
+
+.bottom-nav .nav-link:hover,
+.bottom-nav .nav-link.active {
+    color: var(--primary-color);
+    background-color: #f1f5f9;
+}
+
+/* Floating Action Button - Optimize Edilmiş */
+.fab-menu {
+    position: fixed;
+    bottom: 80px;
+    left: 20px;
+    z-index: 1060;
+    display: none;
+}
+
+.fab-btn {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    color: white;
+    border: none;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    transition: var(--transition);
+    cursor: pointer;
+}
+
+.fab-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+}
+
+/* Slide-in Sol Sidebar Mobilde - Optimize Edilmiş */
+.mobile-sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1055;
+    opacity: 0;
+    visibility: hidden;
+    transition: var(--transition);
+}
+
+.mobile-sidebar-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.mobile-left-sidebar {
+    position: fixed;
+    top: var(--navbar-height);
+    left: 0;
+    width: var(--sidebar-width-mobile);
+    height: calc(100vh - var(--navbar-height));
+    background: white;
+    z-index: 1056;
+    transform: translateX(-100%);
+    transition: var(--transition);
+    overflow-y: auto;
+    padding: 20px;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+}
+
+.mobile-left-sidebar.show {
+    transform: translateX(0);
+}
+
+/* Sol Sidebar Navigasyon - Optimize Edilmiş */
+.nav-link {
+    color: #475569;
+    padding: 12px 16px;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+    font-size: 14px;
+}
+
+.nav-link:hover {
+    color: var(--primary-color);
+    background-color: #f1f5f9;
+}
+
+.nav-link.active {
+    color: var(--primary-color);
+    background-color: #f1f5f9;
+    font-weight: 500;
+}
+
+/* Sidebar bölümleri */
+.sidebar-section {
+    padding: 15px 0;
+}
+
+.section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+}
+
+/* Öğrenci Profil Kartı - Optimize Edilmiş */
+.student-avatar {
+    width: 40px;
+    height: 40px;
+    background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.student-info h6 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--dark-color);
+    margin-bottom: 3px;
+}
+
+.student-info small {
+    font-size: 12px;
+    color: var(--secondary-color);
+    line-height: 1.3;
+    display: block;
+}
+
+/* İstatistik Öğeleri - Optimize Edilmiş */
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 3px 0;
+}
+
+.stat-content h3 {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--dark-color);
+    margin-bottom: 1px;
+}
+
+.stat-content small {
+    font-size: 11px;
+    color: var(--secondary-color);
+}
+
+/* Flash mesajlar için margin */
+.flash-messages {
+    margin-top: 80px;
+    position: relative;
+    z-index: 1001;
+}
+
+/* Responsive Tasarım - Optimize Edilmiş */
+@media (max-width: 1400px) {
+    .right-sidebar {
+        width: 260px;
+    }
+    .main-content {
+        margin-right: 260px;
+    }
+}
+
+@media (max-width: 1200px) {
+    .right-sidebar {
+        width: 240px;
+    }
+    .main-content {
+        margin-right: 240px;
+    }
+}
+
+@media (max-width: 992px) {
+    .right-sidebar {
+        display: none !important;
+    }
+    .main-content {
+        margin-right: 0 !important;
+    }
+}
+
+@media (max-width: 768px) {
+    .left-sidebar {
+        transform: translateX(-100%);
+    }
+    
+    .main-content {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding-bottom: 80px;
+    }
+    
+    .bottom-nav {
+        display: block;
+    }
+    
+    .fab-menu {
+        display: block;
+    }
+}
+
+/* Accessibility İyileştirmeleri */
+@media (prefers-reduced-motion: reduce) {
+    .sidebar,
+    .mobile-sidebar-overlay,
+    .mobile-left-sidebar,
+    .fab-btn,
+    .nav-link,
+    .bottom-nav .nav-link {
+        transition: none;
+    }
+    
+    .fab-btn:hover {
+        transform: none;
+    }
+}
+
+
+
+/* Print Styles */
+@media print {
+    .sidebar,
+    .mobile-sidebar-overlay,
+    .mobile-left-sidebar,
+    .bottom-nav,
+    .fab-menu {
+        display: none !important;
+    }
+    
+    .main-content {
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding-top: 0 !important;
+    }
+}
+</style>
+
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm fixed-top">
+        <div class="container-fluid">
+            <!-- Sınıf Dijital markasını layout.html ile tutarlı hale getir -->
+            <a class="navbar-brand fw-bold" href="{{ url_for('home') }}" style="font-family: Montserrat;">
+                <span style="color: var(--primary-color); font-weight: bold;">Sınıf</span>
+                <span style="color: var(--accent-color); font-weight: 600;">Dijital</span>
+            </a>
+            <!-- Başta bulunan iconu kaldırdık -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarRight" aria-controls="navbarRight" aria-expanded="false" aria-label="Menüyü Aç">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarRight">
+                <ul class="navbar-nav mb-2 mb-lg-0">
+                    
+                    <!-- Hamburger Menüde Görünecek Sağ Sidebar İçeriği -->
+                    <li class="nav-item d-lg-none">
+                        <hr class="dropdown-divider">
+                    </li>
+                    
+                    <!-- Öğrenci Bilgileri (Mobilde) -->
+                    <li class="nav-item d-lg-none">
+                        <div class="nav-link">
+                            <strong><i class="bi bi-person me-1"></i> Öğrenci Bilgileri</strong>
+                        </div>
+                    </li>
+                    <li class="nav-item d-lg-none">
+                        <div class="nav-link">
+                            <small>{{ kullanici_adi }}</small><br>
+                            <small class="text-muted">{{ current_user.get_class_display() }}</small>
+                        </div>
+                    </li>
+                    
+                    <!-- Profil Düzenle (Mobilde) -->
+                    <li class="nav-item d-lg-none">
+                        <a class="nav-link" href="{{ url_for('profile') }}">
+                            <i class="bi bi-pencil me-1"></i> Profili Düzenle
+                        </a>
+                    </li>
+                    
+                    <!-- Günlük Özet (Mobilde) -->
+                    <li class="nav-item d-lg-none">
+                        <div class="nav-link">
+                            <strong><i class="bi bi-calendar-check me-1"></i> Bugün</strong><br>
+                            <small>{{ genel_istatistikler.daily_solved }} Soru | {{ daily_points }} Puan</small>
+                        </div>
+                    </li>
+                    
+                    <!-- Çalışma Serisi (Mobilde) -->
+                    <li class="nav-item d-lg-none">
+                        <div class="nav-link">
+                            <strong><i class="bi bi-fire me-1 text-warning"></i> Seri</strong><br>
+                            <small>{{ genel_istatistikler.streak_days }} Gün Üst Üste</small>
+                        </div>
+                    </li>
+                    
+                    <!-- Puan Sıralaması (Mobilde) -->
+                    {% if leaderboard and leaderboard.user_info %}
+                    <li class="nav-item d-lg-none">
+                        <div class="nav-link">
+                            <strong><i class="bi bi-trophy me-1 text-warning"></i> Sıralama</strong><br>
+                            <small>{{ leaderboard.user_info.competition_group_name }}</small><br>
+                            <small class="text-muted">
+                              Sıran: #
+                              {% if leaderboard.weekly and leaderboard.weekly.general %}
+                                {{ leaderboard.weekly.general.my_rank }}
+                              {% else %}
+                                ?
+                              {% endif %}
+                              | {{ weekly_points }} puan
+                            </small>
+                        </div>
+                    </li>
+                    {% endif %}
+                    
+                    <li class="nav-item">
+                        <hr class="dropdown-divider">
+                    </li>
+                    
+                    <!-- Çıkış Yap -->
+                    <li class="nav-item">
+                        <a class="nav-link text-danger" href="{{ url_for('logout') }}">
+                            <i class="bi bi-box-arrow-right me-1"></i> Çıkış Yap
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Bootstrap Alert ile Flash Mesajlar -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flash-messages">
+                <div class="container">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                            <i class="bi bi-{{ 'exclamation-triangle' if category == 'danger' or category == 'error' else 'check-circle' if category == 'success' else 'info-circle' }} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Kapat"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Sol Sidebar - Desktop -->
+    <div class="sidebar left-sidebar d-none d-md-block">
+        <div class="d-flex flex-column">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'dashboard' }}" href="{{ url_for('dashboard') }}">
+                        <i class="bi bi-house-door me-2"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'istatistikler' }}" href="{{ url_for('istatistikler') }}">
+                        <i class="bi bi-graph-up me-2"></i> İstatistikler
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'guclendirme_merkezi' }}" href="{{ url_for('guclendirme_merkezi') }}">
+                        <i class="bi bi-lightning-charge me-2"></i> Güçlendirme Merkezi
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ 'active' if request.endpoint == 'ilerleme_patikasi' }}" href="{{ url_for('ilerleme_patikasi') }}">
+                        <i class="bi bi-map me-2"></i> İlerleme Patikası
+                    </a>   
+                </li>
+            </ul>
+        </div>
+    </div>
+
+
+
+
+
+    <!-- Ana İçerik -->
+    <div class="main-content">
+        {% block content %}{% endblock %}
+    </div>
+
+    <!-- Sağ Sidebar -->
+    <div class="sidebar right-sidebar d-none d-lg-block">
+        <!-- ✅ GÜNCELLENMİŞ: Öğrenci Bilgileri -->
+        <div class="sidebar-section">
+            <h6 class="section-title">Öğrenci Bilgileri</h6>
+            <div class="d-flex flex-column">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="student-avatar">
+                        {% if current_user.first_name and current_user.last_name %}
+                            {{ current_user.first_name[0] }}{{ current_user.last_name[0] }}
+                        {% else %}
+                            {{ current_user.username[0] }}
+                        {% endif %}
+                    </div>
+                    <div class="student-info ms-3">
+                        <h6 class="mb-1">{{ kullanici_adi }}</h6>
+                        <small class="d-block text-muted">
+                            {% if current_user.school %}
+                                {{ current_user.school.name }}
+                            {% else %}
+                                Okul belirtilmemiş
+                            {% endif %}
+                        </small>
+                        <!-- ✅ YENİ: Akıllı sınıf gösterimi -->
+                        <small class="d-block fw-medium text-primary">
+                            {{ current_user.get_class_display() }}
+                        </small>
+                    </div>
+                </div>
+                
+                <!-- ✅ YENİ: Yarışma Grubu Bilgisi -->
+
+                
+                <a href="{{ url_for('profile') }}" class="text-decoration-none text-muted mt-2">
+                    <div class="align-items-center">
+                        <small><i class="bi bi-pencil me-1"></i>Profili Düzenle</small>
+                    </div>
+                </a>
+            </div>
+        </div>
+        
+        <hr>
+        
+        <!-- Çalışma Serisi -->
+        <div class="sidebar-section">
+            <h6 class="section-title">Çalışma Serisi</h6>
+            <div class="stat-item">
+                <i class="bi bi-fire text-warning" style="font-size: 24px;"></i>
+                <div class="stat-content">
+                    <h3>{{ genel_istatistikler.streak_days }} Gün</h3>
+                    <small>Üst üste çalışma</small>
+                </div>
+            </div>
+        </div>
+        
+        <hr>
+        
+        <!-- Günlük Özet -->
+        <div class="sidebar-section">
+            <h6 class="section-title">Bugün</h6>
+            <div class="stat-item">
+                <i class="bi bi-check2-circle text-success" style="font-size: 24px;"></i>
+                <div class="stat-content">
+                    <h3>{{ genel_istatistikler.daily_solved }} Soru</h3>
+                    <small>Çözüldü</small>
+                </div>
+            </div>
+            
+            <div class="stat-item mt-3">
+                <i class="bi bi-star-fill text-warning" style="font-size: 24px;"></i>
+                <div class="stat-content">
+                    <h3>{{ daily_points }} Puan</h3>
+                    <small>Kazanıldı</small>
+                </div>
+            </div>
+        </div>
+
+        <hr>
+
+        <!-- ✅ GÜNCELLENMİŞ: Puan Leaderboard -->
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-header bg-transparent border-0 pb-2">
+                <h6 class="card-title mb-0">
+                    <i class="bi bi-trophy text-warning me-2"></i>
+                    Puan Sıralaması
+                </h6>
+            </div>
+            <div class="card-body pt-0">
+                <!-- ✅ YENİ: Sınıf Bilgisi ve Sıralama -->
+                {% if leaderboard and leaderboard.user_info %}
+                <div class="alert alert-info p-2 mb-3">
+                    <div class="text-center mb-2">
+                        <span class="badge bg-primary-subtle text-primary fs-6">
+                            {{ leaderboard.user_info.competition_group_name }}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between text-sm">
+                        <span class="fw-medium">Grup Sıran:</span>
+                        <span class="text-warning fw-bold">
+                            #{{ leaderboard.weekly.general.my_rank }}
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between text-sm mt-1">
+                        <span>Bu Hafta Puanın:</span>
+                        <span class="fw-medium">{{ weekly_points }} puan</span>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- ✅ GÜNCELLENMİŞ: Grup Top 5 -->
+                <div class="list-group list-group-flush">
+                    <div class="fw-medium text-muted mb-2" style="font-size: 0.875rem;">
+                        <i class="bi bi-people me-1"></i>
+                        {% if leaderboard and leaderboard.user_info %}
+                            {{ leaderboard.user_info.competition_group_name }} - Bu Hafta Top 5
+                        {% else %}
+                            Bu Hafta Top 5
+                        {% endif %}
+                    </div>
+                    {% if leaderboard and leaderboard.weekly and leaderboard.weekly.general and leaderboard.weekly.general.top_students %}
+                        {% for user in leaderboard.weekly.general.top_students %}
+                        <div class="list-group-item border-0 px-0 py-1">
+                            <div class="d-flex align-items-center">
+                                <span class="badge 
+                                    {% if loop.index == 1 %}bg-warning
+                                    {% elif loop.index == 2 %}bg-light text-dark
+                                    {% elif loop.index == 3 %}bg-secondary
+                                    {% else %}bg-light text-muted{% endif %} 
+                                    rounded-pill me-2" style="width: 20px; height: 20px; font-size: 0.7rem;">
+                                    {{ loop.index }}
+                                </span>
+                                <div class="flex-grow-1">
+                                    <div class="fw-medium" style="font-size: 0.875rem;">
+                                        {{ user.username[:12] }}{% if user.username|length > 12 %}...{% endif %}
+                                    </div>
+                                    <small class="text-primary">
+                                        <span class="badge bg-success-subtle text-success me-1">
+                                            {{ current_user.get_class_display() if user.class_no == current_user.class_no else user.class_no }}
+                                        </span>
+                                        {{ user.points }} puan
+                                    </small>
+                                </div>
+                                {% if user.id == current_user.id %}
+                                    <span class="badge bg-success-subtle text-success" style="font-size: 0.65rem;">Sen</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-2">
+                            <i class="bi bi-inbox text-muted"></i>
+                            <p class="text-muted mb-0" style="font-size: 0.875rem;">Grubundan henüz veri yok</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Detaylı İstatistikler Linki -->
+                <div class="mt-3">
+                    <a href="{{ url_for('istatistikler') }}" class="btn btn-outline-primary btn-sm w-100">
+                        <i class="bi bi-bar-chart me-1"></i>
+                        Detaylı Sıralama
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alt Mobil Navigasyon -->
+    <nav class="bottom-nav">
+        <div class="container-fluid">
+            <div class="row text-center">
+                <div class="col">
+                    <a href="{{ url_for('dashboard') }}" class="nav-link {{ 'active' if request.endpoint == 'dashboard' }}">
+                        <i class="bi bi-house-door"></i>
+                        <span>Ana Sayfa</span>
+                    </a>
+                </div>
+                <div class="col">
+                    <a href="{{ url_for('istatistikler') }}" class="nav-link {{ 'active' if request.endpoint == 'istatistikler' }}">
+                        <i class="bi bi-graph-up"></i>
+                        <span>İstatistik</span>
+                    </a>
+                </div>
+                <div class="col">
+                    <a href="{{ url_for('guclendirme_merkezi') }}" class="nav-link {{ 'active' if request.endpoint == 'guclendirme_merkezi' }}">
+                        <i class="bi bi-lightning-charge"></i>
+                        <span>Güçlendirme</span>
+                    </a>
+                </div>
+                <div class="col">
+                    <a href="{{ url_for('ilerleme_patikasi') }}" class="nav-link {{ 'active' if request.endpoint == 'ilerleme_patikasi' }}">
+                        <i class="bi bi-map"></i>
+                        <span>İlerleme Patikası</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

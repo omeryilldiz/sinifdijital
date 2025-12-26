@@ -1,0 +1,90 @@
+{% extends "admin_layout.html"%}
+
+
+{% block content %}
+
+<h2 class="my-2">{{ ders.sinif.sinif}} - {{ ders.ders_adi }} Dersine Ünite Ekleyiniz</h2>
+<hr>
+
+    <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.unite.label }}
+            {% if form.unite.errors %}
+            {{ form.unite(class="form-control is-invalid") }} 
+                {% for error in form.unite.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            {% elif form.unite.data %}
+                {{ form.unite(class="form-control is-valid") }}
+            {% else %}
+                {{ form.unite(class="form-control") }}   
+            {% endif %}
+        </div>
+        {{ form.submit(class="btn btn-primary w-100") }}  
+    </form>
+
+    
+
+    <table class="table table-striped table-hover table-bordered mt-5">
+        <thead class="table-dark">
+            <tr>
+                <th class="text-center">Ünite ID</th>
+                <th class="text-center">Bölüm/Sınıf</th>
+                <th class="text-center">Ünite Adı</th>
+                <th class="text-center">İşlemler</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for unite in uniteler %} 
+            <tr>
+                <td class="text-center">{{ unite.id }}</td>
+                <td class="text-center">{{ unite.ders.sinif.sinif }} - {{ unite.ders.ders_adi }}</td>
+                <td>{{ unite.unite }}</td>
+                <td class="text-center">
+                    <div class="btn-group">
+                    <a class="btn btn-secondary btn-sm" href="{{ url_for('edit_unite', id=id, sub_id=sub_id, unite_id=unite.id) }}">
+                        <i class="fas fa-edit"></i> Güncelle
+                    </a>
+                    <a class="btn btn-info btn-sm" href="{{ url_for('add_icerik', id=id, sub_id=sub_id, unite_id=unite.id) }}">
+                        <i class="fas fa-plus"></i> İçerik Ekle
+                    </a>
+                    <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{unite.id}}">
+                        <i class="fa fa-trash"></i>
+                        Sil 
+                    </button>
+                    </div>
+                </td>
+            </tr>
+    
+       
+            <!-- Her sınıf için ayrı modal -->
+            <div class="modal fade" 
+            id="deleteModal{{unite.id}}" 
+            tabindex="-1" 
+            aria-labelledby="deleteModalLabel{{unite.id}}">
+           <div class="modal-dialog">
+               <div class="modal-content">
+                   <div class="modal-header">
+                       <h5 class="modal-title">Sınıf Silme</h5>
+                       <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                   </div>
+                   <div class="modal-body">
+                       <p><span class="text-danger">{{unite.unite}}</span> sınıfını silmek istediğinize emin misiniz?</p>
+                   </div>
+                   <div class="modal-footer">
+                       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                       <form action="{{ url_for('delete_unite', id=id, sub_id=sub_id, unite_id=unite.id) }}" method="POST" style="display: inline;">
+                           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                           <button type="submit" class="btn btn-danger">Sil</button>
+                       </form>
+                   </div>
+               </div>
+           </div>
+       </div>
+            {% endfor %}
+        </tbody>
+    </table>
+
+{% endblock %}
+

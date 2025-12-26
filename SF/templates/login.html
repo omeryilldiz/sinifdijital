@@ -1,0 +1,278 @@
+{% extends "layout.html" %}
+
+{% block styles %}
+{{ super() }}
+<style>
+.welcome-section {
+    background: #00457C;
+    color: white;
+    border-radius: 12px;
+    padding: 30px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.login-form {
+    background: #FFFFFF;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.btn-login {
+    background: #00457C;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    color: #FFFFFF;
+}
+
+.btn-login:hover {
+    background: #00A5AD;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0, 69, 124, 0.4);
+}
+
+.feature-highlight {
+    background: #FFFFFF;
+    border: 1px solid #00457C;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.divider::before,
+.divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #00457C;
+}
+
+.divider span {
+    padding: 0 15px;
+    color: #00457C;
+    font-size: 0.9rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+
+    <div class="row justify-content-center">
+        <!-- Ana İçerik -->
+        <div class="col-lg-8">
+            <!-- Hoş Geldin Bölümü -->
+            <div class="welcome-section">
+                <h2 class="mb-3">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>
+                    Tekrar Hoş Geldin!
+                </h2>
+                <p class="mb-0 fs-5">
+                    Öğrenme yolculuğuna devam et, hedeflerine ulaş!
+                </p>
+            </div>
+
+            <!-- Giriş Formu -->
+            <div class="login-form">
+                <div class="text-center mb-4">
+                    <h3 class="mb-2">
+                        <i class="bi bi-shield-check me-2"></i>
+                        Hesabına Giriş Yap
+                    </h3>
+                    <p class="text-muted">Bilgilerini gir ve devam et</p>
+                </div>
+
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+
+                    <!-- E-posta -->
+                    <div class="form-group">
+                        {{ form.email.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-envelope"></i>
+                            </span>
+                            {% if form.email.errors %}
+                                {{ form.email(class="form-control is-invalid", autocomplete="email") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.email.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.email(class="form-control", autocomplete="email") }}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Şifre -->
+                    <div class="form-group">
+                        {{ form.password.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-lock"></i>
+                            </span>
+                            {% if form.password.errors %}
+                                {{ form.password(class="form-control is-invalid", autocomplete="current-password") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.password.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.password(class="form-control", autocomplete="current-password") }}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Beni Hatırla -->
+                    <div class="form-check mb-3">
+                        {{ form.remember_me(class="form-check-input") }}
+                        {{ form.remember_me.label(class="form-check-label") }}
+                    </div>
+
+                    <!-- Giriş Butonu -->
+                    <div class="d-grid mb-3">
+                        {{ form.submit(class="btn btn-login text-white btn-lg") }}
+                    </div>
+
+                    <!-- Şifremi Unuttum -->
+                    <div class="text-center mb-3">
+                        <a href="{{ url_for('reset_password_request') }}" class="text-decoration-none">
+                            <i class="bi bi-key me-1"></i>Şifremi Unuttum
+                        </a>
+                    </div>
+
+                    <!-- Ayırıcı -->
+                    <div class="divider">
+                        <span>veya</span>
+                    </div>
+
+                    <!-- Google ile Giriş -->
+                    <div class="mb-3">
+                        <a href="{{ url_for('google.login') }}" class="btn btn-outline-danger w-100">
+                            <i class="bi bi-google me-2"></i>Google ile Giriş Yap
+                        </a>
+                    </div>
+
+                    <!-- Kayıt Linki -->
+                    <div class="text-center">
+                        <p class="mb-0">
+                            Henüz hesabın yok mu?
+                            <a href="{{ url_for('register') }}" class="text-decoration-none fw-semibold">
+                                <i class="bi bi-person-plus me-1"></i>Kayıt Ol
+                            </a>
+                        </p>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Özellik Hatırlatma -->
+            <div class="feature-highlight">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <i class="bi bi-graph-up text-primary fs-3 mb-2"></i>
+                        <h6>İlerlemeni Takip Et</h6>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <i class="bi bi-trophy text-warning fs-3 mb-2"></i>
+                        <h6>Yarışmalarda Yer Al</h6>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <i class="bi bi-book text-success fs-3 mb-2"></i>
+                        <h6>Zengin İçerik</h6>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔍 Login page JavaScript yüklendi');
+    
+    // Extension hatalarını yakala ve engelle
+    window.addEventListener('error', function(e) {
+        if (e.message && e.message.includes('message channel closed')) {
+            console.log('🔍 Extension hatası yakalandı, görmezden geliniyor');
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    }, true);
+    
+    // Promise rejection hatalarını yakala
+    window.addEventListener('unhandledrejection', function(e) {
+        if (e.reason && e.reason.message && e.reason.message.includes('message channel closed')) {
+            console.log('🔍 Promise rejection hatası yakalandı, görmezden geliniyor');
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    const form = document.querySelector('form');
+    const submitBtn = document.querySelector('.btn-login');
+    
+    if (form) {
+        console.log('✅ Form bulundu');
+        
+        // Form submit event'i
+        form.addEventListener('submit', function(e) {
+            console.log('🔍 Form submit edildi');
+            
+            // Buton durumunu değiştir
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i>Giriş Yapılıyor...';
+                submitBtn.disabled = true;
+                
+                // 10 saniye sonra butonu eski haline getir (hata durumunda)
+                setTimeout(function() {
+                    if (submitBtn.disabled) {
+                        submitBtn.innerHTML = '<i class="bi bi-box-arrow-in-right me-2"></i>Giriş Yap';
+                        submitBtn.disabled = false;
+                    }
+                }, 10000);
+            }
+            
+            // Form'un normal şekilde submit olmasına izin ver
+            return true;
+        });
+    } else {
+        console.log('❌ Form bulunamadı');
+    }
+    
+    // Input focus efektleri
+    const inputs = document.querySelectorAll('.form-control');
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.parentElement.classList.add('shadow-sm');
+        });
+        
+        input.addEventListener('blur', function() {
+            this.parentElement.classList.remove('shadow-sm');
+        });
+    });
+    
+    console.log('✅ Login JavaScript hazır');
+});
+</script>
+{% endblock %}

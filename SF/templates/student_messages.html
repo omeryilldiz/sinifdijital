@@ -1,0 +1,86 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <h3><i class="bi bi-envelope me-2"></i>Tüm Mesajlarım</h3>
+    <hr>
+    {% if messages.items %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Gönderen</th>
+                    <th>Başlık</th>
+                    <th>Tür</th>
+                    <th>Durum</th>
+                    <th>Tarih</th>
+                    <th>İşlem</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for message in messages.items %}
+                <tr {% if not message.is_read %}class="table-warning"{% endif %}>
+                    <td>{{ message.sender.username }}</td>
+                    <td>
+                        <div class="text-truncate" style="max-width:180px;">
+                            {{ message.subject }}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-info">{{ message.message_type }}</span>
+                    </td>
+                    <td>
+                        {% if message.is_read %}
+                            <span class="badge bg-success">Okundu</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Okunmadı</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <small>{{ message.sent_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('student_message_detail', message_id=message.id) }}" class="btn btn-sm btn-outline-primary">
+                            <i class="bi bi-eye"></i> Görüntüle
+                        </a>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <!-- Sayfalama -->
+    <nav>
+        <ul class="pagination justify-content-center">
+            {% if messages.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('student_messages', page=messages.prev_num) }}">&laquo;</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+            {% endif %}
+            {% for page_num in messages.iter_pages(left_edge=2, right_edge=2, left_current=2, right_current=2) %}
+                {% if page_num %}
+                    {% if page_num == messages.page %}
+                        <li class="page-item active"><span class="page-link">{{ page_num }}</span></li>
+                    {% else %}
+                        <li class="page-item"><a class="page-link" href="{{ url_for('student_messages', page=page_num) }}">{{ page_num }}</a></li>
+                    {% endif %}
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">…</span></li>
+                {% endif %}
+            {% endfor %}
+            {% if messages.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('student_messages', page=messages.next_num) }}">&raquo;</a>
+                </li>
+            {% else %}
+                <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% else %}
+    <div class="alert alert-info mt-4">Hiç mesajınız yok.</div>
+    {% endif %}
+</div>
+{% endblock %}

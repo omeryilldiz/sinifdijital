@@ -1,0 +1,240 @@
+<div class="container py-4">
+    <h3 class="mb-4">Sıralama Tablosu</h3>
+    
+    <!-- Zaman Periyodu Sekmeleri -->
+    <ul class="nav nav-pills mb-3" id="period-tabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="daily-period-tab" data-bs-toggle="pill" data-bs-target="#daily-period" type="button" role="tab">Günlük</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="weekly-period-tab" data-bs-toggle="pill" data-bs-target="#weekly-period" type="button" role="tab">Haftalık</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="monthly-period-tab" data-bs-toggle="pill" data-bs-target="#monthly-period" type="button" role="tab">Aylık</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="alltime-period-tab" data-bs-toggle="pill" data-bs-target="#alltime-period" type="button" role="tab">Tüm Zamanlar</button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="period-tabs-content">
+        <!-- GÜNLÜK -->
+        <div class="tab-pane fade show active" id="daily-period" role="tabpanel">
+            <!-- Kapsam Sekmeleri -->
+            <ul class="nav nav-pills nav-sm mb-3" id="daily-scope-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="daily-general-tab" data-bs-toggle="pill" data-bs-target="#daily-general" type="button" role="tab">Genel</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="daily-province-tab" data-bs-toggle="pill" data-bs-target="#daily-province" type="button" role="tab">İl</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="daily-school-tab" data-bs-toggle="pill" data-bs-target="#daily-school" type="button" role="tab">Okul</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="daily-class-tab" data-bs-toggle="pill" data-bs-target="#daily-class" type="button" role="tab">Sınıf</button>
+                </li>
+            </ul>
+            
+            <div class="tab-content" id="daily-scope-content">
+                <!-- Günlük Genel -->
+                <div class="tab-pane fade show active" id="daily-general" role="tabpanel">
+                    {% set scope_data = leaderboard.daily.general if leaderboard and leaderboard.daily and leaderboard.daily.general else None %}
+                    {% set period_title = "Günlük Genel Sıralama" %}
+                    {% set period_icon = "calendar-day" %}
+                    {% include 'leaderboard_table.html' with context %}
+                </div>
+                
+                <!-- Günlük İl -->
+                <div class="tab-pane fade" id="daily-province" role="tabpanel">
+                    {% set scope_data = leaderboard.daily.province if leaderboard and leaderboard.daily and leaderboard.daily.province else None %}
+                    {% set period_title = "Günlük İl Sıralaması" %}
+                    {% set period_icon = "geo-alt" %}
+                    {% include 'leaderboard_table.html' with context %}
+                </div>
+                
+                <!-- Günlük Okul -->
+                <div class="tab-pane fade" id="daily-school" role="tabpanel">
+                    {% set scope_data = leaderboard.daily.school if leaderboard and leaderboard.daily and leaderboard.daily.school else None %}
+                    {% set period_title = "Günlük Okul Sıralaması" %}
+                    {% set period_icon = "building" %}
+                    {% include 'leaderboard_table.html' with context %}
+                </div>
+                
+                <!-- Günlük Sınıf -->
+                <div class="tab-pane fade" id="daily-class" role="tabpanel">
+                    {% set scope_data = leaderboard.daily.class if leaderboard and leaderboard.daily and leaderboard.daily.class else None %}
+                    {% set period_title = "Günlük Sınıf Sıralaması" %}
+                    {% set period_icon = "people" %}
+                    {% include 'leaderboard_table.html' with context %}
+                </div>
+            </div>
+        </div>
+
+        <!-- HAFTALIK -->
+        <div class="tab-pane fade" id="weekly-period" role="tabpanel">
+            <!-- Kapsam Sekmeleri -->
+            <ul class="nav nav-pills nav-sm mb-3" id="weekly-scope-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="weekly-general-tab" data-bs-toggle="pill" data-bs-target="#weekly-general" type="button" role="tab">Genel</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="weekly-province-tab" data-bs-toggle="pill" data-bs-target="#weekly-province" type="button" role="tab">İl</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="weekly-school-tab" data-bs-toggle="pill" data-bs-target="#weekly-school" type="button" role="tab">Okul</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="weekly-class-tab" data-bs-toggle="pill" data-bs-target="#weekly-class" type="button" role="tab">Sınıf</button>
+                </li>
+            </ul>
+            
+            <div class="tab-content" id="weekly-scope-content">
+                <!-- Haftalık Genel -->
+                <div class="tab-pane fade show active" id="weekly-general" role="tabpanel">
+                    {% set scope_data = leaderboard.weekly.general if leaderboard and leaderboard.weekly and leaderboard.weekly.general else None %}
+                    {% set period_title = "Haftalık Genel Sıralama" %}
+                    {% set period_icon = "calendar-week" %}
+                    {% include 'leaderboard_table.html' with context %}
+                </div>
+                
+                <!-- Haftalık İl -->
+                <div class="tab-pane fade" id="weekly-province" role="tabpanel">
+                    {% set scope_data = leaderboard.weekly.province if leaderboard and leaderboard.weekly and leaderboard.weekly.province else None %}
+                    {% set period_title = "Haftalık İl Sıralaması" %}
+                    {% set period_icon = "geo-alt" %}
+                    {% include 'leaderboard_table.html' with context %}
+                </div>
+                
+                <!-- Haftalık Okul -->
+                <div class="tab-pane fade" id="weekly-school" role="tabpanel">
+                    {% set scope_data = leaderboard.weekly.school if leaderboard and leaderboard.weekly and leaderboard.weekly.school else None %}
+                    {% set period_title = "Haftalık Okul Sıralaması" %}
+                    {% set period_icon = "building" %}
+                    {% include 'leaderboard_table.html' with context %}
+                </div>
+                
+                <!-- Haftalık Sınıf -->
+                <div class="tab-pane fade" id="weekly-class" role="tabpanel">
+                    {% set scope_data = leaderboard.weekly.class if leaderboard and leaderboard.weekly and leaderboard.weekly.class else None %}
+                    {% set period_title = "Haftalık Sınıf Sıralaması" %}
+                    {% set period_icon = "people" %}
+                    {% include 'leaderboard_table.html' with context %}
+                </div>
+            </div>
+        </div>
+
+        <!-- AYLIK -->
+        <div class="tab-pane fade" id="monthly-period" role="tabpanel">
+            <!-- Kapsam Sekmeleri -->
+            <ul class="nav nav-pills nav-sm mb-3" id="monthly-scope-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="monthly-general-tab" data-bs-toggle="pill" data-bs-target="#monthly-general" type="button" role="tab">Genel</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="monthly-province-tab" data-bs-toggle="pill" data-bs-target="#monthly-province" type="button" role="tab">İl</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="monthly-school-tab" data-bs-toggle="pill" data-bs-target="#monthly-school" type="button" role="tab">Okul</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="monthly-class-tab" data-bs-toggle="pill" data-bs-target="#monthly-class" type="button" role="tab">Sınıf</button>
+                </li>
+            </ul>
+            
+            <div class="tab-content" id="monthly-scope-content">
+                <!-- Aylık Genel -->
+                <div class="tab-pane fade show active" id="monthly-general" role="tabpanel">
+                    {% set scope_data = leaderboard.monthly.general if leaderboard and leaderboard.monthly and leaderboard.monthly.general else None %}
+                    {% set period_title = "Aylık Genel Sıralama" %}
+                    {% set period_icon = "calendar-month" %}
+                    {% include 'leaderboard_table.html' with context %}
+                </div>
+                
+                <!-- Aylık İl -->
+                <div class="tab-pane fade" id="monthly-province" role="tabpanel">
+                    {% set scope_data = leaderboard.monthly.province if leaderboard and leaderboard.monthly and leaderboard.monthly.province else None %}
+                    {% set period_title = "Aylık İl Sıralaması" %}
+                    {% set period_icon = "geo-alt" %}
+                    {% include 'leaderboard_table.html' with context %}
+                </div>
+                
+                <!-- Aylık Okul -->
+                <div class="tab-pane fade" id="monthly-school" role="tabpanel">
+                    {% set scope_data = leaderboard.monthly.school if leaderboard and leaderboard.monthly and leaderboard.monthly.school else None %}
+                    {% set period_title = "Aylık Okul Sıralaması" %}
+                    {% set period_icon = "building" %}
+                    {% include 'leaderboard_table.html' with context %}
+                </div>
+                
+                <!-- Aylık Sınıf -->
+                <div class="tab-pane fade" id="monthly-class" role="tabpanel">
+                    {% set scope_data = leaderboard.monthly.class if leaderboard and leaderboard.monthly and leaderboard.monthly.class else None %}
+                    {% set period_title = "Aylık Sınıf Sıralaması" %}
+                    {% set period_icon = "people" %}
+                    {% include 'leaderboard_table.html' with context %}
+                </div>
+            </div>
+        </div>
+
+        <!-- TÜM ZAMANLAR -->
+        <div class="tab-pane fade" id="alltime-period" role="tabpanel">
+            <!-- Kapsam Sekmeleri -->
+            <ul class="nav nav-pills nav-sm mb-3" id="alltime-scope-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="alltime-general-tab" data-bs-toggle="pill" data-bs-target="#alltime-general" type="button" role="tab">Genel</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="alltime-province-tab" data-bs-toggle="pill" data-bs-target="#alltime-province" type="button" role="tab">İl</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="alltime-school-tab" data-bs-toggle="pill" data-bs-target="#alltime-school" type="button" role="tab">Okul</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="alltime-class-tab" data-bs-toggle="pill" data-bs-target="#alltime-class" type="button" role="tab">Sınıf</button>
+                </li>
+            </ul>
+            
+            <div class="tab-content" id="alltime-scope-content">
+                <!-- Tüm Zamanlar Genel -->
+                <div class="tab-pane fade show active" id="alltime-general" role="tabpanel">
+                    {% set scope_data = leaderboard.all_time.general if leaderboard and leaderboard.all_time and leaderboard.all_time.general else None %}
+                    {% set period_title = "Tüm Zamanlar Genel Sıralama" %}
+                    {% set period_icon = "infinity" %}
+                    {% include 'leaderboard_table.html' with context %}
+                </div>
+                
+                <!-- Tüm Zamanlar İl -->
+                <div class="tab-pane fade" id="alltime-province" role="tabpanel">
+                    {% set scope_data = leaderboard.all_time.province if leaderboard and leaderboard.all_time and leaderboard.all_time.province else None %}
+                    {% set period_title = "Tüm Zamanlar İl Sıralaması" %}
+                    {% set period_icon = "geo-alt" %}
+                    {% include 'leaderboard_table.html' with context %}
+                </div>
+                
+                <!-- Tüm Zamanlar Okul -->
+                <div class="tab-pane fade" id="alltime-school" role="tabpanel">
+                    {% set scope_data = leaderboard.all_time.school if leaderboard and leaderboard.all_time and leaderboard.all_time.school else None %}
+                    {% set period_title = "Tüm Zamanlar Okul Sıralaması" %}
+                    {% set period_icon = "building" %}
+                    {% include 'leaderboard_table.html' with context %}
+                </div>
+                
+                <!-- Tüm Zamanlar Sınıf -->
+                <div class="tab-pane fade" id="alltime-class" role="tabpanel">
+                    {% set scope_data = leaderboard.all_time.class if leaderboard and leaderboard.all_time and leaderboard.all_time.class else None %}
+                    {% set period_title = "Tüm Zamanlar Sınıf Sıralaması" %}
+                    {% set period_icon = "people" %}
+                    {% include 'leaderboard_table.html' with context %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.nav-sm .nav-link {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+}
+</style>

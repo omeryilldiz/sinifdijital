@@ -1,0 +1,27 @@
+{% extends "admin_layout.html" %}
+{% block content %}
+<h3>Mail & Google Ayarları</h3>
+<hr>
+<form method="POST" class="row g-3">
+    {{ csrf_token() }}
+    <div class="col-md-6">
+        <label for="mail_sender" class="form-label">Mail Gönderici Adresi</label>
+        <input type="text" name="mail_sender" id="mail_sender" class="form-control" value="{{ mail_sender }}" required>
+    </div>
+    <div class="col-md-6">
+        <label for="mail_password" class="form-label">Mail Şifresi</label>
+        <input type="password" name="mail_password" id="mail_password" class="form-control" value="{{ mail_password }}" required>
+    </div>
+    <div class="col-md-6">
+        <label for="google_client_id" class="form-label">Google Client ID</label>
+        <input type="text" name="google_client_id" id="google_client_id" class="form-control" value="{{ google_client_id }}" required>
+    </div>
+    <div class="col-md-6">
+        <label for="google_client_secret" class="form-label">Google Client Secret</label>
+        <input type="text" name="google_client_secret" id="google_client_secret" class="form-control" value="{{ google_client_secret }}" required>
+    </div>
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">Kaydet</button>
+    </div>
+</form>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends "admin.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Slaytı Düzenle</h2>
+    <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.title.label(class="form-label") }}
+            {{ form.title(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.description.label(class="form-label") }}
+            {{ form.description(class="form-control", rows="3") }}
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Mevcut Görsel:</label><br>
+            {% if slide.image_path %}
+                <img src="{{ url_for('static', filename='homepage_slides/' ~ slide.image_path) }}" alt="Görsel" style="max-width: 120px; max-height: 90px;">
+            {% else %}
+                <span class="text-muted">Yok</span>
+            {% endif %}
+        </div>
+        <div class="mb-3">
+            {{ form.image.label(class="form-label") }}
+            {{ form.image(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.button_text.label(class="form-label") }}
+            {{ form.button_text(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.button_url.label(class="form-label") }}
+            {{ form.button_url(class="form-select") }}
+        </div>
+
+        <!-- Custom URL alanı - JavaScript ile göster/gizle -->
+        <div class="mb-3" id="custom_url_container" style="display: none;">
+            {{ form.custom_url.label(class="form-label") }}
+            {{ form.custom_url(class="form-control", placeholder="https://example.com") }}
+        </div>
+        <div class="mb-3" id="phone_number_container" style="display: none;">
+            {{ form.phone_number.label(class="form-label") }}
+            {{ form.phone_number(class="form-control", placeholder="05XX XXX XX XX") }}
+        </div>
+        <div class="mb-3">
+            {{ form.badge_text.label(class="form-label") }}
+            {{ form.badge_text(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.badge_color.label(class="form-label") }}
+            {{ form.badge_color(class="form-select") }}
+        </div>
+        <div class="mb-3">
+            {{ form.slide_type.label(class="form-label") }}
+            {{ form.slide_type(class="form-select") }}
+        </div>
+        <div class="mb-3">
+            {{ form.order.label(class="form-label") }}
+            {{ form.order(class="form-control") }}
+        </div>
+        <div class="form-check mb-3">
+            {{ form.is_active(class="form-check-input") }}
+            {{ form.is_active.label(class="form-check-label") }}
+        </div>
+        <button type="submit" class="btn btn-primary">Kaydet</button>
+        <a href="{{ url_for('list_homepage_slides') }}" class="btn btn-secondary">Geri Dön</a>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const buttonUrlSelect = document.getElementById('button_url');
+    const customUrlContainer = document.getElementById('custom_url_container');
+    const phoneNumberContainer = document.getElementById('phone_number_container');
+    
+    function toggleFields() {
+        customUrlContainer.style.display = buttonUrlSelect.value === 'custom' ? 'block' : 'none';
+        phoneNumberContainer.style.display = (buttonUrlSelect.value === 'tel' || buttonUrlSelect.value === 'whatsapp') ? 'block' : 'none';
+    }
+    
+    // Sayfa ilk yüklendiğinde kontrol et
+    toggleFields();
+    
+    // Select değiştiğinde kontrol et
+    buttonUrlSelect.addEventListener('change', toggleFields);
+});
+</script>
+{% endblock %}

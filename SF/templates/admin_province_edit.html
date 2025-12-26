@@ -1,0 +1,17 @@
+{% extends "admin_layout.html" %}
+{% block content %}
+<h3>İl Düzenle</h3>
+<hr>
+<form method="POST" class="mb-4">
+    <div class="mb-3">
+        <label class="form-label">İl Adı</label>
+        <input type="text" name="name" class="form-control" value="{{ province.name }}" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">İl Kodu</label>
+        <input type="text" name="code" class="form-control" value="{{ province.code }}" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Kaydet</button>
+    <a href="{{ url_for('admin_provinces') }}" class="btn btn-secondary">Geri Dön</a>
+</form>
+{% endblock %}

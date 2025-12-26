@@ -1,0 +1,65 @@
+{% extends "admin_layout.html"%}
+
+
+{% block content %}
+<h1>Admin Güncelle</h1>
+<form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="mb-3">
+        {{ form.username.label }}
+        {% if form.username.errors %}
+        {{ form.username(class="form-control is-invalid") }} 
+            {% for error in form.username.errors %}
+                <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        {% elif form.username.data %}
+            {{ form.username(class="form-control is-valid") }}
+        {% else %}
+            {{ form.username(class="form-control") }}   
+        {% endif %}
+    </div>
+    <div class="mb-3">
+        {{ form.email.label }}
+        {% if form.email.errors %}
+        {{ form.email(class="form-control is-invalid") }} 
+            {% for error in form.email.errors %}
+                <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        {% elif form.email.data %}
+            {{ form.email(class="form-control is-valid") }}
+        {% else %}
+            {{ form.email(class="form-control") }}   
+        {% endif %}
+    </div>
+    <div class="mb-3">
+        {{ form.password.label }}
+        {% if form.password.errors %}
+        {{ form.password(class="form-control is-invalid") }} 
+            {% for error in form.password.errors %}
+                <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        {% elif form.password.data %}
+            {{ form.password(class="form-control is-valid") }}
+        {% else %}
+            {{ form.password(class="form-control") }}   
+        {% endif %}
+    </div>
+    <div class="mb-3">
+        {{ form.confirm_password.label }}
+        {% if form.confirm_password.errors %}
+        {{ form.confirm_password(class="form-control is-invalid") }} 
+            {% for error in form.confirm_password.errors %}
+                <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        {% elif form.confirm_password.data %}
+            {{ form.confirm_password(class="form-control is-valid") }}
+        {% else %}
+            {{ form.confirm_password(class="form-control") }}   
+        {% endif %}
+    </div>
+
+    {{ form.submit(class="btn btn-primary") }}
+</form>
+
+{% endblock %}

@@ -1,0 +1,339 @@
+{% extends 'admin_layout.html' %}
+
+{% block styles %}
+<style>
+#imagePreview {
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+}
+
+#previewPlaceholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #6c757d;
+}
+
+#preview {
+    object-fit: contain;
+    max-width: 100%;
+    border-radius: 4px;
+}
+
+#videoPreview {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    height: 300px;
+    background-color: #f8f9fa;
+}
+
+#videoPreview video {
+    max-width: 100%;
+    max-height: 100%;
+    border-radius: 4px;
+}
+</style>
+{% endblock styles %}
+
+{% block content %}
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Soru Ekleme</h2>
+        <a href="{{ url_for('admin') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Geri Dön
+        </a>
+    </div>
+
+    <hr>
+    
+    <form method="POST" enctype="multipart/form-data" id="soruForm">
+        {{ form.hidden_tag() }}
+        
+        <div class="row g-3">
+            <!-- Select Fields -->
+            <div class="col-md-3 mb-3">
+                {{ form.sinif.label(class="form-label") }}
+                {{ form.sinif(class="form-select", id="sinifSelect") }}
+                {% if form.sinif.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.sinif.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                {{ form.ders.label(class="form-label") }}
+                {{ form.ders(class="form-select", id="dersSelect") }}
+                {% if form.ders.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.ders.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                {{ form.unite.label(class="form-label") }}
+                {{ form.unite(class="form-select", id="uniteSelect") }}
+                {% if form.unite.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.unite.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="col-md-3 mb-3">
+                {{ form.icerik.label(class="form-label") }}
+                {{ form.icerik(class="form-select", id="icerikSelect") }}
+                {% if form.icerik.errors %}
+                    <div class="invalid-feedback d-block">
+                        {% for error in form.icerik.errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    {{ form.soru.label(class="form-label") }}
+                    {{ form.soru(class="form-control", id="soruInput", accept="image/*") }}
+                    <div class="invalid-feedback">{{ form.soru.errors[0] if form.soru.errors }}</div>
+                </div>
+        
+                <div class="mb-4">
+                    <label class="form-label d-block">{{ form.cevap.label.text }}</label>
+                    <div class="btn-group w-100" role="group">
+                        {% for value, label in form.cevap.choices %}
+                            <input 
+                                type="radio" 
+                                class="btn-check" 
+                                name="{{ form.cevap.name }}" 
+                                id="cevap_{{ loop.index }}" 
+                                value="{{ value }}"
+                                autocomplete="off"
+                                {% if form.cevap.data == value %}checked{% endif %}
+                            >
+                            <label class="btn btn-outline-success" for="cevap_{{ loop.index }}">
+                                {{ label }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                    {% if form.cevap.errors %}
+                        <div class="invalid-feedback d-block">
+                            {{ form.cevap.errors[0] }}
+                        </div>
+                    {% endif %}
+                </div>
+                {{ form.submit(class="btn btn-primary w-100") }}
+            </div>
+            
+            <!-- Resim önizleme alanı -->
+            <div class="col-md-6">
+                <div id="imagePreview" class="text-center border rounded p-3">
+                    <img id="preview" src="#" alt="Önizleme" class="img-fluid" style="display: none; max-height: 300px;">
+                    <div id="previewPlaceholder" class="text-muted">
+                        <i class="fas fa-image fa-3x mb-2"></i>
+                        <p>Resim seçildiğinde önizleme burada görünecek</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mevcut form alanlarından sonra -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="mb-3">
+                    {{ form.video.label(class="form-label") }}
+                    {{ form.video(class="form-control", accept="video/mp4") }}
+                    <small class="text-muted">MP4 formatı desteklenir (max 20MB)</small>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="mb-3">
+                    {{ form.cozum_resim.label(class="form-label") }}
+                    {{ form.cozum_resim(class="form-control", accept="image/webp") }}
+                    <small class="text-muted">WebP formatı desteklenir (max 5MB)</small>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video önizleme alanı -->
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div id="videoPreview" class="text-center border rounded p-3">
+                    <video id="video" controls>
+                        <source src="#" id="videoSource" type="video/mp4">
+                        Tarayıcınız video etiketini desteklemiyor.
+                    </video>
+                    <div id="videoPlaceholder" class="text-muted">
+                        <i class="fas fa-video fa-3x mb-2"></i>
+                        <p>Video seçildiğinde önizleme burada görünecek</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const sinifSelect = document.getElementById('sinifSelect');
+        const dersSelect = document.getElementById('dersSelect');
+        const uniteSelect = document.getElementById('uniteSelect');
+        const icerikSelect = document.getElementById('icerikSelect');
+    
+        // Sınıf değiştiğinde
+        sinifSelect.addEventListener('change', async function() {
+            const sinifId = this.value;
+            console.log('Seçilen sınıf ID:', sinifId); // Debug için
+    
+            // Diğer selectleri sıfırla
+            dersSelect.innerHTML = '<option value="">Ders Seçiniz</option>';
+            uniteSelect.innerHTML = '<option value="">Ünite Seçiniz</option>';
+            icerikSelect.innerHTML = '<option value="">İçerik Seçiniz</option>';
+            
+            dersSelect.disabled = true;
+            uniteSelect.disabled = true;
+            icerikSelect.disabled = true;
+    
+            if (sinifId) {
+                try {
+                    const response = await fetch(`/get_dersler/${sinifId}`);
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    
+                    const dersler = await response.json();
+                    console.log('Gelen dersler:', dersler); // Debug için
+                    
+                    dersler.forEach(ders => {
+                        const option = document.createElement('option');
+                        option.value = ders.id;
+                        option.textContent = ders.ders_adi;
+                        dersSelect.appendChild(option);
+                    });
+                    dersSelect.disabled = false;
+                } catch (error) {
+                    console.error('Dersler yüklenirken hata:', error);
+                }
+            }
+        });
+    
+        // Ders değiştiğinde
+        dersSelect.addEventListener('change', async function() {
+            const dersId = this.value;
+            console.log('Seçilen ders ID:', dersId); // Debug için
+    
+            uniteSelect.innerHTML = '<option value="">Ünite Seçiniz</option>';
+            icerikSelect.innerHTML = '<option value="">İçerik Seçiniz</option>';
+            
+            uniteSelect.disabled = true;
+            icerikSelect.disabled = true;
+    
+            if (dersId) {
+                try {
+                    const response = await fetch(`/get_uniteler/${dersId}`);
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    
+                    const uniteler = await response.json();
+                    console.log('Gelen üniteler:', uniteler); // Debug için
+                    
+                    uniteler.forEach(unite => {
+                        const option = document.createElement('option');
+                        option.value = unite.id;
+                        option.textContent = unite.unite;
+                        uniteSelect.appendChild(option);
+                    });
+                    uniteSelect.disabled = false;
+                } catch (error) {
+                    console.error('Üniteler yüklenirken hata:', error);
+                }
+            }
+        });
+    
+        // Ünite değiştiğinde
+        uniteSelect.addEventListener('change', async function() {
+            const uniteId = this.value;
+            console.log('Seçilen ünite ID:', uniteId); // Debug için
+    
+            icerikSelect.innerHTML = '<option value="">İçerik Seçiniz</option>';
+            icerikSelect.disabled = true;
+    
+            if (uniteId) {
+                try {
+                    const response = await fetch(`/get_icerikler/${uniteId}`);
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    
+                    const icerikler = await response.json();
+                    console.log('Gelen içerikler:', icerikler); // Debug için
+                    
+                    icerikler.forEach(icerik => {
+                        const option = document.createElement('option');
+                        option.value = icerik.id;
+                        option.textContent = icerik.baslik;
+                        icerikSelect.appendChild(option);
+                    });
+                    icerikSelect.disabled = false;
+                } catch (error) {
+                    console.error('İçerikler yüklenirken hata:', error);
+                }
+            }
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Resim önizleme için
+        const soruInput = document.getElementById('soruInput');
+        const preview = document.getElementById('preview');
+        const previewPlaceholder = document.getElementById('previewPlaceholder');
+    
+        soruInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                    previewPlaceholder.style.display = 'none';
+                }
+                reader.readAsDataURL(file);
+            } else {
+                preview.style.display = 'none';
+                previewPlaceholder.style.display = 'block';
+            }
+        });
+
+        // Video önizleme için
+        const videoInput = document.getElementById('video');
+        const videoPreview = document.getElementById('videoPreview');
+        const videoSource = document.getElementById('videoSource');
+        const videoPlaceholder = document.getElementById('videoPlaceholder');
+    
+        videoInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                videoSource.src = url;
+                videoPreview.style.display = 'flex';
+                videoPlaceholder.style.display = 'none';
+            } else {
+                videoPreview.style.display = 'none';
+                videoPlaceholder.style.display = 'block';
+            }
+        });
+    });
+    </script>
+    {% endblock %}

@@ -1,0 +1,1369 @@
+{% from 'includes/ads_macros.html' import render_ad %}
+<!doctype html>
+<html lang="tr">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    
+    {# MathJax Yapılandırması #}
+    <script>
+    window.MathJax = {
+        tex: {
+            inlineMath: [['$', '$'], ['\\(', '\\)']],
+            displayMath: [['$$', '$$'], ['\\[', '\\]']],
+            packages: {'[+]': ['ams', 'mathtools']},
+            processEscapes: true,
+            processEnvironments: true
+        },
+        loader: {
+            load: ['[tex]/ams', '[tex]/mathtools']
+        },
+        options: {
+            skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+        }
+    };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    
+    <title>{% if title %}{{ title }} - {% endif %}Sınıf Dijital</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    
+    {% block styles %}
+    <style>
+        :root {
+            --navbar-main-h: 60px;
+            --sinifbar-h: 50px;
+            --top-offset: calc(var(--navbar-main-h) + var(--sinifbar-h));
+            --sidebar-w: 250px;
+            --primary-color: #00457C;
+            --accent-color: #00A5AD;
+            --bg-color: #FFFFFF;
+        }
+
+        .navbar-main {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: var(--navbar-main-h);
+            background: var(--bg-color) !important;
+            z-index: 1050;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, .1);
+        }
+
+        .navbar-main .navbar-brand {
+            color: var(--primary-color) !important;
+        }
+
+        .navbar-main .navbar-nav .nav-link {
+            color: var(--primary-color) !important;
+        }
+
+        .navbar-main .navbar-nav .nav-link:hover {
+            color: var(--accent-color) !important;
+        }
+
+        .sinif-bar {
+            position: fixed;
+            top: var(--navbar-main-h);
+            left: 0;
+            right: 0;
+            height: var(--sinifbar-h);
+            background: var(--primary-color);
+            z-index: 1040;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, .08);
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            user-select: none;
+        }
+
+        .sinif-bar-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .sinif-ok {
+            flex: 0 0 40px;
+            height: 100%;
+            border: 0;
+            background: var(--primary-color);
+            color: var(--bg-color);
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: color .2s, background .2s;
+            padding: 0;
+        }
+
+        .sinif-ok:hover:not(:disabled) {
+            background: var(--accent-color);
+            color: var(--bg-color);
+        }
+
+        .sinif-ok:disabled {
+            opacity: .35;
+            cursor: default;
+        }
+
+        .sinif-scroll {
+            flex: 0 0 auto;
+            height: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+            display: flex;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            -webkit-overflow-scrolling: touch;
+            position: relative;
+            max-width: calc(100% - 80px);
+        }
+
+        .sinif-scroll.overflow {
+            flex: 1 1 auto;
+            max-width: none;
+        }
+
+        .sinif-scroll::-webkit-scrollbar {
+            display: none;
+        }
+
+        .sinif-liste {
+            display: flex;
+            align-items: center;
+            gap: .3rem;
+            padding: 0;
+            margin: 0;
+            list-style: none;
+            height: 100%;
+            white-space: nowrap;
+        }
+
+        .sinif-link {
+            position: relative;
+            display: flex;
+            align-items: center;
+            height: 100%;
+            padding: 0 .9rem;
+            text-decoration: none;
+            color: var(--bg-color);
+            font-weight: 500;
+            transition: color .2s, background .2s;
+            border-radius: 4px;
+        }
+
+        .sinif-link:hover {
+            background: var(--accent-color);
+            color: var(--bg-color);
+        }
+
+        .sinif-link.aktif {
+            color: var(--bg-color);
+            font-weight: 600;
+            background: var(--accent-color);
+        }
+
+        .sinif-link.aktif::after {
+            content: none;
+        }
+
+        .fade-left,
+        .fade-right {
+            pointer-events: none;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 28px;
+            z-index: 2;
+            display: none;
+        }
+
+        .fade-left {
+            left: 40px;
+            background: linear-gradient(to right, var(--primary-color) 0%, rgba(0, 69, 124, 0) 85%);
+        }
+
+        .fade-right {
+            right: 40px;
+            background: linear-gradient(to left, var(--primary-color) 0%, rgba(0, 69, 124, 0) 85%);
+        }
+
+        .fade-left.show,
+        .fade-right.show {
+            display: block;
+        }
+
+        @media(max-width:768px) {
+            .sinif-ok {
+                flex: 0 0 36px;
+                font-size: 1.1rem;
+            }
+
+            .sinif-scroll {
+                max-width: calc(100% - 72px);
+            }
+
+            .fade-left {
+                left: 36px;
+            }
+
+            .fade-right {
+                right: 36px;
+            }
+
+            .sinif-link {
+                padding: 0 .7rem;
+                font-size: .85rem;
+            }
+        }
+
+        .sidebar-fixed {
+            position: fixed;
+            top: var(--top-offset);
+            left: 0;
+            width: var(--sidebar-w);
+            height: calc(100vh - var(--top-offset));
+            background: var(--bg-color);
+            border-right: 1px solid var(--primary-color);
+            overflow-y: auto;
+            padding: 6px 6px 30px;
+            z-index: 1030;
+        }
+
+        .content-main {
+            margin-top: 110px;
+            overflow-y: auto;
+        }
+
+        .content-main>*:first-child {
+            margin-top: 0;
+        }
+
+        @media(min-width:992px) {
+            .content-main-with-sidebar {
+                margin-left: var(--sidebar-w);
+            }
+        }
+
+        @media(max-width:992px) {
+            .sidebar-fixed {
+                transform: translateX(-100%);
+                transition: transform .3s cubic-bezier(.4, 0, .2, 1);
+                box-shadow: 2px 0 10px rgba(0, 0, 0, .1);
+                z-index: 1035;
+            }
+
+            .sidebar-fixed.show {
+                transform: translateX(0);
+            }
+
+            .content-main {
+                margin-left: 0;
+            }
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid var(--primary-color);
+        }
+
+        .user-avatar-placeholder {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+            color: var(--bg-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: .9rem;
+            border: 2px solid var(--primary-color);
+        }
+
+        .navbar-nav .nav-link:hover {
+            color: var(--accent-color) !important;
+        }
+
+        .notification-bell {
+            position: relative;
+            transition: transform .2s ease;
+        }
+
+        .notification-bell:hover {
+            transform: scale(1.1);
+        }
+
+        .notification-bell .badge {
+            animation: pulse 2s infinite;
+        }
+
+        .nav-link {
+            font-weight: 500;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes bellShake {
+            0%,
+            100% {
+                transform: rotate(0deg);
+            }
+
+            25% {
+                transform: rotate(-10deg);
+            }
+
+            75% {
+                transform: rotate(10deg);
+            }
+        }
+
+        .dropdown-menu {
+            z-index: 1060 !important;
+        }
+
+        .notification-dropdown time.notification-time {
+            font-size: .65rem;
+            line-height: 1.1;
+            opacity: .8;
+        }
+
+        @media (max-width:768px) {
+            .navbar-nav .nav-link {
+                padding: .5rem .75rem;
+                font-size: .9rem;
+            }
+
+            .user-avatar,
+            .user-avatar-placeholder {
+                width: 28px;
+                height: 28px;
+                font-size: .8rem;
+            }
+
+            .notification-bell .badge {
+                font-size: .7rem;
+                padding: .25em .5em;
+            }
+
+            .dropdown-menu {
+                min-width: 200px;
+            }
+        }
+
+        /* ========== HEADER/FOOTER REKLAM ALANLARI (GÜÇLENDİRİLMİŞ) ========== */
+.header-ad-wrapper,
+.footer-ad-wrapper {
+    width: 100%;
+    display: flex !important;
+    justify-content: center !important;
+    padding: 15px 0;
+    background: #f8f9fa;
+    overflow: hidden;
+}
+
+.header-ad-container,
+.footer-ad-container {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    overflow: hidden !important;
+    margin: 0 auto;
+}
+
+/* Masaüstü: 728x90 Leaderboard */
+@media (min-width: 768px) {
+    .header-ad-container,
+    .footer-ad-container {
+        width: 728px !important;
+        min-width: 728px !important;
+        max-width: 728px !important;
+        height: 90px !important;
+        min-height: 90px !important;
+        max-height: 90px !important;
+    }
+    
+    .header-ad-container .ad-container,
+    .footer-ad-container .ad-container,
+    .header-ad-container .adsbygoogle,
+    .footer-ad-container .adsbygoogle {
+        width: 728px !important;
+        min-width: 728px !important;
+        max-width: 728px !important;
+        height: 90px !important;
+        min-height: 90px !important;
+        max-height: 90px !important;
+    }
+}
+
+/* Tablet/Mobil: 320x100 */
+@media (max-width: 767.98px) {
+    .header-ad-container,
+    .footer-ad-container {
+        width: 320px !important;
+        min-width: 320px !important;
+        max-width: 320px !important;
+        height: 100px !important;
+        min-height: 100px !important;
+        max-height: 100px !important;
+    }
+    
+    .header-ad-container .ad-container,
+    .footer-ad-container .ad-container,
+    .header-ad-container .adsbygoogle,
+    .footer-ad-container .adsbygoogle {
+        width: 320px !important;
+        min-width: 320px !important;
+        max-width: 320px !important;
+        height: 100px !important;
+        min-height: 100px !important;
+        max-height: 100px !important;
+    }
+}
+
+/* Çok dar ekranlar: 300x50 */
+@media (max-width: 350px) {
+    .header-ad-container,
+    .footer-ad-container {
+        width: 300px !important;
+        min-width: 300px !important;
+        max-width: 300px !important;
+        height: 50px !important;
+        min-height: 50px !important;
+        max-height: 50px !important;
+    }
+    
+    .header-ad-container .ad-container,
+    .footer-ad-container .ad-container,
+    .header-ad-container .adsbygoogle,
+    .footer-ad-container .adsbygoogle {
+        width: 300px !important;
+        min-width: 300px !important;
+        max-width: 300px !important;
+        height: 50px !important;
+        min-height: 50px !important;
+        max-height: 50px !important;
+    }
+}
+    </style>
+    {% endblock styles %}
+</head>
+
+<body>
+    <!-- ÜST NAVBAR -->
+    <nav class="navbar navbar-expand navbar-main">
+        <div class="container-fluid">
+            {% if request.endpoint and 'icerik' in request.endpoint %}
+            <button class="btn btn-outline-secondary d-lg-none me-2" type="button" id="sidebarToggle" aria-label="Menü">
+                <i class="bi bi-list"></i>
+            </button>
+            {% endif %}
+            <a class="navbar-brand fw-bold" href="{{ url_for('home') }}" style="font-family: Montserrat;">
+                <span style="color: var(--primary-color); font-weight: bold;">Sınıf</span>
+                <span style="color: var(--accent-color); font-weight: 600;">Dijital</span>
+            </a>
+            <div class="collapse navbar-collapse">
+                <ul class="navbar-nav me-auto d-none d-md-flex">
+                    <li class="nav-item"><a class="nav-link" href="#">Hakkımızda</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Nasıl Çalışır?</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">İletişim</a></li>
+                </ul>
+                <ul class="navbar-nav align-items-center ms-auto">
+                    {% if current_user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown"
+                            role="button" data-bs-toggle="dropdown">
+                            {% if current_user.avatar %}
+                            <img src="{{ url_for('static', filename='avatars/' + current_user.avatar) }}"
+                                class="user-avatar me-2" alt="Avatar">
+                            {% else %}
+                            <div class="user-avatar-placeholder me-2">{{ current_user.username[0].upper() }}</div>
+                            {% endif %}
+                            <span class="d-none d-sm-inline">{{ current_user.first_name }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow">
+                            <li><a class="dropdown-item" href="{{ url_for('dashboard') }}"><i
+                                        class="bi bi-speedometer2 me-2"></i>Dashboard</a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('profile') }}"><i
+                                        class="bi bi-person-gear me-2"></i>Profil Ayarları</a></li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li>
+                                <form method="POST" action="{{ url_for('logout') }}" style="display:inline;">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                                    <button type="submit"
+                                        class="dropdown-item border-0 bg-transparent w-100 text-start">
+                                        <i class="bi bi-box-arrow-right me-2"></i>Çıkış
+                                    </button>
+                                </form>
+                            </li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('login') }}">Giriş</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('register') }}">Kayıt Ol</a></li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- SINIF BAR -->
+    <nav class="sinif-bar" aria-label="Sınıf navigasyonu">
+        <div class="sinif-bar-container">
+            <button type="button" id="sinif-ok-sol" class="sinif-ok" aria-label="Sola kaydır" disabled>‹</button>
+            <div class="sinif-scroll" id="sinif-scroll-alani">
+                <ul class="sinif-liste" id="sinif-liste">
+                    {% for sinif in siniflar %}
+                    <li class="sinif-oge"></li>
+                        <a href="{{ url_for('sinif', slug=sinif.slug) }}"
+                            class="sinif-link{% if sinif.id == active_sinif %} aktif{% endif %}" {% if
+                            sinif.id==active_sinif %}aria-current="page" {% endif %}>
+                            {{ sinif.sinif }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            <button type="button" id="sinif-ok-sag" class="sinif-ok" aria-label="Sağa kaydır">›</button>
+            <div class="fade-left" id="fadeLeft"></div>
+            <div class="fade-right" id="fadeRight"></div>
+        </div>
+    </nav>
+
+    {% if request.endpoint and 'icerik' in request.endpoint %}
+    <div class="sidebar-fixed">
+        {% include 'partials/sidebar.html' %}
+    </div>
+    {% endif %}
+
+    <div class="content-main{% if request.endpoint and 'icerik' in request.endpoint %} content-main-with-sidebar{% endif %}">
+        
+        <!-- HEADER REKLAM ALANI -->
+        {% if request.endpoint and request.endpoint in ['icerik', 'soru_coz', 'dashboard', 'sinif', 'ders'] %}
+        <div class="header-ad-wrapper">
+            <div class="header-ad-container">
+                {{ render_ad('4783550243', 'Header Reklamı', 'horizontal', 'display:block;', 'false') }}
+            </div>
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="position-fixed start-50 translate-middle-x"
+        style="top:6rem;z-index:1060;min-width:320px;max-width:90vw;">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category=='error' else category }} alert-dismissible fade show shadow-lg text-center mb-3"
+            role="alert" style="font-size:1.05rem;">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="mobile-overlay" id="mobileOverlay"></div>
+
+    {% block scripts %}
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.querySelector('.sidebar-fixed');
+            const overlay = document.getElementById('mobileOverlay');
+            const sidebarToggle = document.getElementById('sidebarToggle');
+
+            function openSidebar() {
+                if (!sidebar || !overlay) return;
+                sidebar.classList.add('show');
+                overlay.classList.add('show');
+                document.body.style.overflow = 'hidden';
+                if (sidebarToggle) sidebarToggle.innerHTML = '<i class="bi bi-list"></i>';
+            }
+
+            function closeSidebar() {
+                if (!sidebar || !overlay) return;
+                sidebar.classList.remove('show');
+                overlay.classList.remove('show');
+                document.body.style.overflow = '';
+                if (sidebarToggle) sidebarToggle.innerHTML = '<i class="bi bi-x"></i>';
+            }
+
+            function toggleSidebar() {
+                if (!sidebar) return;
+                sidebar.classList.contains('show') ? closeSidebar() : openSidebar();
+            }
+
+            if (sidebarToggle) {
+                sidebarToggle.addEventListener('click', e => {
+                    e.stopPropagation();
+                    toggleSidebar();
+                });
+            }
+
+            if (overlay) {
+                overlay.addEventListener('click', closeSidebar);
+            }
+
+            document.addEventListener('keydown', e => {
+                if (e.key === 'Escape' && sidebar && sidebar.classList.contains('show')) closeSidebar();
+            });
+
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 992) closeSidebar();
+            });
+
+            document.addEventListener('click', e => {
+                if (window.innerWidth <= 992 &&
+                    sidebar && sidebar.classList.contains('show') &&
+                    !sidebar.contains(e.target) &&
+                    e.target !== sidebarToggle &&
+                    !(sidebarToggle && sidebarToggle.contains(e.target))) {
+                    closeSidebar();
+                }
+            });
+
+            const area = document.getElementById('sinif-scroll-alani');
+            const btnL = document.getElementById('sinif-ok-sol');
+            const btnR = document.getElementById('sinif-ok-sag');
+            const fadeL = document.getElementById('fadeLeft');
+            const fadeR = document.getElementById('fadeRight');
+            const active = area ? area.querySelector('.sinif-link.aktif') : null;
+            const STEP = 180;
+
+            function applyOverflowClass() {
+                if (!area) return;
+                const should = area.scrollWidth > area.clientWidth + 2;
+                if (should) area.classList.add('overflow');
+                else area.classList.remove('overflow');
+            }
+
+            function update() {
+                if (!area) return;
+                applyOverflowClass();
+                const max = area.scrollWidth - area.clientWidth;
+                const x = area.scrollLeft;
+                const has = max > 0;
+                if (btnL) btnL.disabled = !has || x <= 0;
+                if (btnR) btnR.disabled = !has || x >= max - 1;
+
+                if (fadeL && fadeR) {
+                    if (has) {
+                        if (x > 5) fadeL.classList.add('show');
+                        else fadeL.classList.remove('show');
+                        if (x < max - 5) fadeR.classList.add('show');
+                        else fadeR.classList.remove('show');
+                    } else {
+                        fadeL.classList.remove('show');
+                        fadeR.classList.remove('show');
+                    }
+                }
+            }
+
+            if (btnL) btnL.addEventListener('click', () => area && area.scrollBy({ left: -STEP, behavior: 'smooth' }));
+            if (btnR) btnR.addEventListener('click', () => area && area.scrollBy({ left: STEP, behavior: 'smooth' }));
+
+            if (area) {
+                let sx = 0,
+                    sc = 0,
+                    drag = false;
+                area.addEventListener('touchstart', e => {
+                    if (e.touches.length !== 1) return;
+                    drag = true;
+                    sx = e.touches[0].clientX;
+                    sc = area.scrollLeft;
+                }, { passive: true });
+
+                area.addEventListener('touchmove', e => {
+                    if (!drag) return;
+                    const dx = e.touches[0].clientX - sx;
+                    area.scrollLeft = sc - dx;
+                    update();
+                }, { passive: true });
+
+                area.addEventListener('touchend', () => drag = false);
+                area.addEventListener('scroll', update);
+                window.addEventListener('resize', () => requestAnimationFrame(update));
+
+                if (active) {
+                    active.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'auto' });
+                }
+
+                if (document.fonts && document.fonts.ready) {
+                    document.fonts.ready.then(() => update());
+                }
+
+                update();
+            }
+        });
+    </script>
+    {% endblock %}
+
+    <!-- FOOTER REKLAM ALANI -->
+    {% if request.endpoint and request.endpoint in ['icerik', 'soru_coz', 'dashboard', 'sinif', 'ders'] %}
+    <div class="footer-ad-wrapper">
+        <div class="footer-ad-container">
+            {{ render_ad('8389405726', 'Footer Reklamı', 'horizontal', 'display:block;', 'false') }}
+        </div>
+    </div>
+    {% endif %}
+
+    {% include 'partials/footer.html' %}
+
+    <!-- ========== GELİŞMİŞ COOKIE CONSENT SİSTEMİ ========== -->
+    
+    <!-- Ana Cookie Banner -->
+    <div id="cookie-banner" class="cookie-banner" style="display: none;">
+        <div class="cookie-content">
+            <div class="cookie-text">
+                <h5><i class="bi bi-shield-check me-2"></i>Çerez Politikası</h5>
+                <p>
+                    Sitemizde deneyiminizi iyileştirmek için çerezler kullanıyoruz. 
+                    <strong>Zorunlu çerezler</strong> sitenin çalışması için gereklidir ve kapatılamaz.
+                    Diğer çerezleri tercihlerinize göre yönetebilirsiniz.
+                    <a href="/gizlilik-politikasi" target="_blank">Gizlilik Politikası</a>
+                </p>
+            </div>
+            <div class="cookie-actions">
+                <button id="cookie-accept-all" class="btn btn-success btn-sm">
+                    <i class="bi bi-check-all me-1"></i>Tümünü Kabul Et
+                </button>
+                <button id="cookie-reject-optional" class="btn btn-outline-light btn-sm">
+                    Sadece Zorunlu
+                </button>
+                <button id="cookie-settings-btn" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-gear me-1"></i>Ayarlar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cookie Ayarları Modal -->
+    <div id="cookie-settings-modal" class="cookie-modal" style="display: none;">
+        <div class="cookie-modal-content">
+            <div class="cookie-modal-header">
+                <h5><i class="bi bi-sliders me-2"></i>Çerez Tercihleri</h5>
+                <button id="cookie-modal-close" class="btn-close btn-close-white"></button>
+            </div>
+            <div class="cookie-modal-body">
+                <!-- Zorunlu Çerezler -->
+                <div class="cookie-category">
+                    <div class="cookie-category-header">
+                        <div class="cookie-category-info">
+                            <span class="cookie-category-title">
+                                <i class="bi bi-lock-fill text-success me-2"></i>Zorunlu Çerezler
+                            </span>
+                            <span class="badge bg-success ms-2">Her Zaman Aktif</span>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" checked disabled>
+                        </div>
+                    </div>
+                    <p class="cookie-category-desc">
+                        Bu çerezler sitenin temel işlevleri için gereklidir. Oturum yönetimi, 
+                        güvenlik (CSRF koruması) ve temel site fonksiyonları için kullanılır. 
+                        Bu çerezler olmadan site düzgün çalışamaz.
+                    </p>
+                    <details class="cookie-details">
+                        <summary>Kullanılan çerezler</summary>
+                        <ul>
+                            <li><strong>session</strong> - Oturum yönetimi (Süre: Oturum)</li>
+                            <li><strong>csrf_token</strong> - Güvenlik koruması (Süre: Oturum)</li>
+                            <li><strong>remember_token</strong> - Beni hatırla (Süre: 30 gün)</li>
+                        </ul>
+                    </details>
+                </div>
+
+                <!-- İşlevsel Çerezler -->
+                <div class="cookie-category">
+                    <div class="cookie-category-header">
+                        <div class="cookie-category-info">
+                            <span class="cookie-category-title">
+                                <i class="bi bi-toggles text-info me-2"></i>İşlevsel Çerezler
+                            </span>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="cookie-functional" checked>
+                        </div>
+                    </div>
+                    <p class="cookie-category-desc">
+                        Tercihlerinizi hatırlamamıza yardımcı olur. Tema seçimi, dil tercihi 
+                        ve kişiselleştirilmiş ayarlarınızı saklar.
+                    </p>
+                    <details class="cookie-details">
+                        <summary>Kullanılan çerezler</summary>
+                        <ul>
+                            <li><strong>theme</strong> - Tema tercihi (Süre: 1 yıl)</li>
+                            <li><strong>sidebar_state</strong> - Menü durumu (Süre: 30 gün)</li>
+                        </ul>
+                    </details>
+                </div>
+
+                <!-- Analitik Çerezler -->
+                <div class="cookie-category">
+                    <div class="cookie-category-header">
+                        <div class="cookie-category-info">
+                            <span class="cookie-category-title">
+                                <i class="bi bi-graph-up text-warning me-2"></i>Analitik Çerezler
+                            </span>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="cookie-analytics">
+                        </div>
+                    </div>
+                    <p class="cookie-category-desc">
+                        Ziyaretçi istatistiklerini toplamamıza yardımcı olur. Hangi sayfaların 
+                        popüler olduğunu ve siteyi nasıl kullandığınızı anlamamızı sağlar.
+                    </p>
+                    <details class="cookie-details">
+                        <summary>Kullanılan çerezler</summary>
+                        <ul>
+                            <li><strong>_ga</strong> - Google Analytics (Süre: 2 yıl)</li>
+                            <li><strong>_gid</strong> - Google Analytics (Süre: 24 saat)</li>
+                        </ul>
+                    </details>
+                </div>
+
+                <!-- Reklam Çerezleri -->
+                <div class="cookie-category">
+                    <div class="cookie-category-header">
+                        <div class="cookie-category-info">
+                            <span class="cookie-category-title">
+                                <i class="bi bi-megaphone text-danger me-2"></i>Reklam Çerezleri
+                            </span>
+                        </div>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="cookie-advertising">
+                        </div>
+                    </div>
+                    <p class="cookie-category-desc">
+                        İlgi alanlarınıza göre kişiselleştirilmiş reklamlar göstermemizi sağlar. 
+                        Bu çerezleri kapatırsanız yine reklam görürsünüz, ancak kişiselleştirilmemiş olur.
+                    </p>
+                    <details class="cookie-details">
+                        <summary>Kullanılan çerezler</summary>
+                        <ul>
+                            <li><strong>__gads</strong> - Google AdSense (Süre: 13 ay)</li>
+                            <li><strong>__gpi</strong> - Google Ads (Süre: 13 ay)</li>
+                            <li><strong>IDE</strong> - DoubleClick (Süre: 13 ay)</li>
+                        </ul>
+                    </details>
+                </div>
+            </div>
+            <div class="cookie-modal-footer">
+                <button id="cookie-save-settings" class="btn btn-primary">
+                    <i class="bi bi-check-lg me-1"></i>Tercihlerimi Kaydet
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <style>
+    /* ========== COOKIE BANNER STİLLERİ ========== */
+    .cookie-banner {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        color: #fff;
+        padding: 20px;
+        z-index: 10000;
+        box-shadow: 0 -4px 20px rgba(0,0,0,0.3);
+    }
+
+    .cookie-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 20px;
+    }
+
+    .cookie-text {
+        flex: 1;
+        min-width: 300px;
+    }
+
+    .cookie-text h5 {
+        margin-bottom: 8px;
+        font-size: 1.1rem;
+    }
+
+    .cookie-text p {
+        margin: 0;
+        font-size: 0.9rem;
+        opacity: 0.9;
+        line-height: 1.5;
+    }
+
+    .cookie-text a {
+        color: #00A5AD;
+    }
+
+    .cookie-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    /* ========== COOKIE MODAL STİLLERİ ========== */
+    .cookie-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.7);
+        z-index: 10001;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+    }
+
+    .cookie-modal-content {
+        background: #1a1a2e;
+        color: #fff;
+        border-radius: 12px;
+        max-width: 600px;
+        width: 100%;
+        max-height: 80vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .cookie-modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 15px 20px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .cookie-modal-header h5 {
+        margin: 0;
+    }
+
+    .cookie-modal-body {
+        padding: 20px;
+        overflow-y: auto;
+        flex: 1;
+    }
+
+    .cookie-category {
+        background: rgba(255,255,255,0.05);
+        border-radius: 8px;
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+
+    .cookie-category:last-child {
+        margin-bottom: 0;
+    }
+
+    .cookie-category-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+
+    .cookie-category-title {
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .cookie-category-desc {
+        font-size: 0.85rem;
+        opacity: 0.8;
+        margin-bottom: 10px;
+        line-height: 1.5;
+    }
+
+    .cookie-details {
+        font-size: 0.8rem;
+        opacity: 0.7;
+    }
+
+    .cookie-details summary {
+        cursor: pointer;
+        color: #00A5AD;
+    }
+
+    .cookie-details ul {
+        margin: 10px 0 0 0;
+        padding-left: 20px;
+    }
+
+    .cookie-details li {
+        margin-bottom: 5px;
+    }
+
+    .cookie-modal-footer {
+        padding: 15px 20px;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        text-align: right;
+    }
+
+    /* Form Switch Özelleştirme */
+    .cookie-category .form-check-input {
+        width: 3em;
+        height: 1.5em;
+    }
+
+    .cookie-category .form-check-input:checked {
+        background-color: #00A5AD;
+        border-color: #00A5AD;
+    }
+
+    /* ========== COOKIE YÖNETİM BUTONU ========== */
+    .cookie-manage-btn {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #00457C 0%, #00A5AD 100%);
+        color: #fff;
+        border: none;
+        font-size: 1.3rem;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        z-index: 9998;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .cookie-manage-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    }
+
+    /* ========== MOBİL UYUM ========== */
+    @media (max-width: 768px) {
+        .cookie-content {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .cookie-actions {
+            justify-content: center;
+            width: 100%;
+        }
+
+        .cookie-modal-content {
+            max-height: 90vh;
+        }
+
+        .cookie-category-header {
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .cookie-manage-btn {
+            bottom: 15px;
+            left: 15px;
+            width: 45px;
+            height: 45px;
+            font-size: 1.1rem;
+        }
+    }
+    </style>
+
+    <script>
+    // ========== GELİŞMİŞ COOKIE YÖNETİM SİSTEMİ ==========
+    (function() {
+        'use strict';
+
+        // Varsayılan tercihler
+        const DEFAULT_CONSENT = {
+            necessary: true,
+            functional: false,
+            analytics: false,
+            advertising: false,
+            timestamp: null,
+            version: '1.0'
+        };
+
+        // DOM Elementleri
+        let elements = {};
+
+        // Tercihleri localStorage'dan al
+        function getConsent() {
+            try {
+                const stored = localStorage.getItem('cookieConsent');
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    if (typeof parsed === 'string' || !parsed.version) {
+                        return null;
+                    }
+                    return parsed;
+                }
+            } catch (e) {
+                console.log('[Cookie] Parse error:', e);
+            }
+            return null;
+        }
+
+        // Tercihleri kaydet
+        function saveConsent(consent) {
+            consent.timestamp = new Date().toISOString();
+            consent.version = '1.0';
+            localStorage.setItem('cookieConsent', JSON.stringify(consent));
+            console.log('[Cookie] Tercihler kaydedildi:', consent);
+        }
+
+        // Google Ads Yükle
+        function loadGoogleAds(personalized) {
+            if (document.getElementById('adsense-script')) return;
+
+            if (!personalized) {
+                (adsbygoogle = window.adsbygoogle || []).requestNonPersonalizedAds = 1;
+            }
+
+            var script = document.createElement('script');
+            script.src = "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7728832097527782";
+            script.async = true;
+            script.crossOrigin = "anonymous";
+            script.id = 'adsense-script';
+            script.onload = function() {
+                console.log('[Ads] AdSense yüklendi, personalized:', personalized);
+                initializeAllAds();
+            };
+            document.head.appendChild(script);
+        }
+
+        // Tüm reklamları başlat
+        function initializeAllAds() {
+            setTimeout(function() {
+                if (typeof adsbygoogle === 'undefined') return;
+                
+                var ads = document.querySelectorAll('.adsbygoogle');
+                ads.forEach(function(ad) {
+                    if (!ad.getAttribute('data-adsbygoogle-status')) {
+                        try {
+                            (adsbygoogle = window.adsbygoogle || []).push({});
+                        } catch (e) {
+                            console.log('[Ads] Push error:', e);
+                        }
+                    }
+                });
+            }, 100);
+        }
+
+        // Google Analytics Yükle
+        function loadGoogleAnalytics() {
+            if (document.getElementById('ga-script')) return;
+            console.log('[Analytics] Google Analytics yüklenir...');
+        }
+
+        // Tercihlere göre servisleri yükle
+        function applyConsent(consent) {
+            console.log('[Cookie] Tercihler uygulanıyor:', consent);
+
+            if (consent.advertising) {
+                loadGoogleAds(true);
+            } else {
+                loadGoogleAds(false);
+            }
+
+            if (consent.analytics) {
+                loadGoogleAnalytics();
+            }
+        }
+
+        // Banner'ı göster
+        function showBanner() {
+            if (elements.banner) {
+                elements.banner.style.display = 'block';
+            }
+        }
+
+        // Banner'ı gizle
+        function hideBanner() {
+            if (elements.banner) {
+                elements.banner.style.display = 'none';
+            }
+        }
+
+        // Modal'ı göster
+        function showModal() {
+            if (elements.modal) {
+                elements.modal.style.display = 'flex';
+                const consent = getConsent() || DEFAULT_CONSENT;
+                if (elements.functionalCheckbox) elements.functionalCheckbox.checked = consent.functional;
+                if (elements.analyticsCheckbox) elements.analyticsCheckbox.checked = consent.analytics;
+                if (elements.advertisingCheckbox) elements.advertisingCheckbox.checked = consent.advertising;
+            }
+        }
+
+        // Modal'ı gizle
+        function hideModal() {
+            if (elements.modal) {
+                elements.modal.style.display = 'none';
+            }
+        }
+
+        // Tümünü kabul et
+        function acceptAll() {
+            const consent = {
+                necessary: true,
+                functional: true,
+                analytics: true,
+                advertising: true
+            };
+            saveConsent(consent);
+            hideBanner();
+            hideModal();
+            applyConsent(consent);
+        }
+
+        // Sadece zorunlu
+        function acceptNecessaryOnly() {
+            const consent = {
+                necessary: true,
+                functional: false,
+                analytics: false,
+                advertising: false
+            };
+            saveConsent(consent);
+            hideBanner();
+            hideModal();
+            applyConsent(consent);
+        }
+
+        // Özel tercihleri kaydet
+        function saveCustomSettings() {
+            const consent = {
+                necessary: true,
+                functional: elements.functionalCheckbox ? elements.functionalCheckbox.checked : false,
+                analytics: elements.analyticsCheckbox ? elements.analyticsCheckbox.checked : false,
+                advertising: elements.advertisingCheckbox ? elements.advertisingCheckbox.checked : false
+            };
+            saveConsent(consent);
+            hideBanner();
+            hideModal();
+            applyConsent(consent);
+        }
+
+        // Başlatma fonksiyonu
+        function init() {
+            // DOM elementlerini bul
+            elements = {
+                banner: document.getElementById('cookie-banner'),
+                modal: document.getElementById('cookie-settings-modal'),
+                acceptAllBtn: document.getElementById('cookie-accept-all'),
+                rejectOptionalBtn: document.getElementById('cookie-reject-optional'),
+                settingsBtn: document.getElementById('cookie-settings-btn'),
+                modalCloseBtn: document.getElementById('cookie-modal-close'),
+                saveSettingsBtn: document.getElementById('cookie-save-settings'),
+                functionalCheckbox: document.getElementById('cookie-functional'),
+                analyticsCheckbox: document.getElementById('cookie-analytics'),
+                advertisingCheckbox: document.getElementById('cookie-advertising')
+            };
+
+            // Event listener'ları bağla
+            if (elements.acceptAllBtn) {
+                elements.acceptAllBtn.addEventListener('click', acceptAll);
+            }
+            if (elements.rejectOptionalBtn) {
+                elements.rejectOptionalBtn.addEventListener('click', acceptNecessaryOnly);
+            }
+            if (elements.settingsBtn) {
+                elements.settingsBtn.addEventListener('click', function() {
+                    hideBanner();
+                    showModal();
+                });
+            }
+            if (elements.modalCloseBtn) {
+                elements.modalCloseBtn.addEventListener('click', function() {
+                    hideModal();
+                    if (!getConsent()) {
+                        showBanner();
+                    }
+                });
+            }
+            if (elements.saveSettingsBtn) {
+                elements.saveSettingsBtn.addEventListener('click', saveCustomSettings);
+            }
+
+            // Modal dışına tıklayınca kapat
+            if (elements.modal) {
+                elements.modal.addEventListener('click', function(e) {
+                    if (e.target === elements.modal) {
+                        hideModal();
+                        if (!getConsent()) {
+                            showBanner();
+                        }
+                    }
+                });
+            }
+
+            // Mevcut tercihleri kontrol et
+            const consent = getConsent();
+            
+            if (consent) {
+                applyConsent(consent);
+            } else {
+                showBanner();
+            }
+
+            console.log('[Cookie] Sistem başlatıldı');
+        }
+
+        // Global erişim için (footer linki için gerekli)
+        window.initializeAllAds = initializeAllAds;
+        window.CookieConsent = {
+            show: showModal,
+            getConsent: getConsent
+        };
+
+        // DOM hazır olduğunda başlat
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    })();
+    </script>
+</body>
+</html>

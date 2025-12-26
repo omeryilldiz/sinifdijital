@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Sidebar Test</title>
+<style>
+body{font-family:Arial;padding:20px;background:#f5f5f5}
+.block{background:#fff;margin-bottom:18px;padding:14px 18px;border-radius:8px;border:1px solid #e1e1e1}
+.unite-baslik{margin:0 0 6px;font-size:14px;color:#444}
+.content-list{list-style:none;margin:0;padding:0}
+.content-list li{margin:0 0 6px}
+.icerik-link{display:block;padding:10px 12px;background:#f8f9fa;border-radius:6px;
+border-right:4px solid #d0d0d0;text-decoration:none;color:#222;font-size:13px}
+.icerik-link.read{border-right-color:#28a745;background:#f8fff9}
+.icerik-link:hover{background:#eceff1}
+.meta{font-size:11px;color:#666;margin-top:4px}
+.tag{display:inline-block;background:#eef;padding:2px 6px;border-radius:4px;font-size:10px;margin-right:4px}
+</style>
+</head>
+<body>
+<h2>Tüm Ünite ve İçerikler</h2>
+<p>Toplam blok: {{ uniteler|length }}</p>
+
+{% if uniteler %}
+  {% for blok in uniteler %}
+    <div class="block">
+      <div class="unite-baslik">
+        <span class="tag">{{ blok.ders }}</span>
+        <strong>{{ blok.unite }}</strong> (Ünite ID: {{ blok.unite_id }})
+        - İçerik: {{ blok.icerikler|length }}
+      </div>
+      <ul class="content-list">
+        {% for icerik in blok.icerikler %}
+          <li>
+            <a href="#" class="icerik-link{% if icerik.okundu %} read{% endif %}">
+              {{ icerik.baslik }}
+              <div class="meta">
+                ID: {{ icerik.id }} | Durum: {{ 'Okundu' if icerik.okundu else 'Okunmadı' }}
+              </div>
+            </a>
+          </li>
+        {% endfor %}
+        {% if not blok.icerikler %}
+          <li><em>Bu ünitede içerik yok.</em></li>
+        {% endif %}
+      </ul>
+    </div>
+  {% endfor %}
+{% else %}
+  <div style="color:#b00;font-weight:600">Hiç ünite / içerik verisi bulunamadı.</div>
+{% endif %}
+</body>
+</html>

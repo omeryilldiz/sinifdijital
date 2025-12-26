@@ -1,0 +1,280 @@
+{% extends "admin_layout.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Başlık ve İstatistikler -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h3><i class="bi bi-envelope me-2"></i>Mesaj Yönetimi</h3>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="{{ url_for('admin_send_bulk_message') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-1"></i>Yeni Mesaj Gönder
+            </a>
+        </div>
+    </div>
+
+    <!-- İstatistik Kartları (Okunmamış ve Okuma Oranı kaldırıldı) -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Toplam Mesaj</h6>
+                            <h4>{{ stats.total }}</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-envelope fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Bugün Gönderilen</h6>
+                            <h4>{{ stats.today }}</h4>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-calendar-check fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Okunmamış ve Okuma Oranı kartları buradan kaldırıldı -->
+    </div>
+
+    <!-- Filtreler -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Arama</label>
+                    <input type="text" class="form-control" name="search" value="{{ search }}"
+                        placeholder="Mesaj içeriği veya alıcı adı...">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Mesaj Türü</label>
+                    <select class="form-select" name="message_type">
+                        <option value="">Tümü</option>
+                        <option value="info" {{ 'selected' if message_type=='info' }}>📝 Bilgilendirme</option>
+                        <option value="warning" {{ 'selected' if message_type=='warning' }}>⚠️ Uyarı</option>
+                        <option value="success" {{ 'selected' if message_type=='success' }}>🎉 Tebrik</option>
+                        <option value="urgent" {{ 'selected' if message_type=='urgent' }}>🚨 Acil</option>
+                        <option value="reminder" {{ 'selected' if message_type=='reminder' }}>🔔 Hatırlatma</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Gönderim Türü</label>
+                    <select class="form-select" name="sent_via">
+                        <option value="">Tümü</option>
+                        <option value="individual" {{ 'selected' if sent_via=='individual' }}>Bireysel</option>
+                        <option value="bulk" {{ 'selected' if sent_via=='bulk' }}>Toplu</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Tarih</label>
+                    <select class="form-select" name="date_filter">
+                        <option value="">Tümü</option>
+                        <option value="today" {{ 'selected' if date_filter=='today' }}>Bugün</option>
+                        <option value="week" {{ 'selected' if date_filter=='week' }}>Son 7 Gün</option>
+                        <option value="month" {{ 'selected' if date_filter=='month' }}>Son 30 Gün</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="bi bi-search me-1"></i>Filtrele
+                    </button>
+                    <a href="{{ url_for('admin_messages') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-clockwise me-1"></i>Temizle
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Mesaj Listesi -->
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Mesajlar ({{ messages.total }})</h5>
+            <button type="button" class="btn btn-danger btn-sm" onclick="deleteSelected()">
+                <i class="bi bi-trash me-1"></i>Seçilenleri Sil
+            </button>
+        </div>
+
+        <!-- Çoklu silme için sadece checkboxları kapsayan form -->
+        <form id="bulkForm" method="POST" action="{{ url_for('admin_messages_bulk_delete') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="card-body p-0">
+                {% if messages.items %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0 align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:32px;"><input type="checkbox" id="selectAll"></th>
+                                <th>Alıcı</th>
+                                <th>Mesaj Türü</th>
+                                <th>Gönderim</th>
+                                <th>Durum</th>
+                                <th>Tarih</th>
+                                <th>İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for message in messages.items %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox" name="message_ids" value="{{ message.id }}">
+                                </td>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center text-white me-2">
+                                            {{ message.receiver.first_name[0] if message.receiver.first_name else message.receiver.username[0] }}
+                                        </div>
+                                        <div>
+                                            <div class="fw-medium">{{ message.receiver.first_name }} {{ message.receiver.last_name }}</div>
+                                            <small class="text-muted">{{ message.receiver.username }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if message.message_type == 'info' %}
+                                        <span class="badge bg-primary">📝 Bilgi</span>
+                                    {% elif message.message_type == 'warning' %}
+                                        <span class="badge bg-warning">⚠️ Uyarı</span>
+                                    {% elif message.message_type == 'success' %}
+                                        <span class="badge bg-success">🎉 Tebrik</span>
+                                    {% elif message.message_type == 'urgent' %}
+                                        <span class="badge bg-danger">🚨 Acil</span>
+                                    {% elif message.message_type == 'reminder' %}
+                                        <span class="badge bg-info">🔔 Hatırlatma</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if message.sent_via == 'bulk' %}
+                                        <span class="badge bg-info">Toplu</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Bireysel</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if message.is_read %}
+                                        <span class="badge bg-success">Okundu</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Okunmadı</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small>{{ message.sent_at.strftime('%d.%m.%Y %H:%M') }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('admin_message_detail', message_id=message.id) }}" class="btn btn-outline-primary" title="Görüntüle">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('admin_message_edit', message_id=message.id) }}" class="btn btn-outline-warning" title="Düzenle">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <!-- Tekil silme için form bulkForm'un dışında ve gizli -->
+                                        <button type="button" class="btn btn-outline-danger" title="Sil"
+                                            onclick="deleteSingle('{{ message.id }}')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="bi bi-envelope-x fs-1 text-muted"></i>
+                    <p class="text-muted mt-2">Henüz mesaj bulunmuyor.</p>
+                    <a href="{{ url_for('admin_send_bulk_message') }}" class="btn btn-primary">
+                        <i class="bi bi-plus-circle me-1"></i>İlk Mesajı Gönder
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </form>
+
+        <!-- Her mesaj için tekil silme formu (gizli) -->
+        {% for message in messages.items %}
+        <form id="deleteForm-{{ message.id }}" method="POST" action="{{ url_for('admin_message_delete', message_id=message.id) }}" style="display:none;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        </form>
+        {% endfor %}
+
+        <!-- Pagination -->
+        {% if messages.pages > 1 %}
+        <div class="card-footer">
+            <nav aria-label="Sayfa navigasyonu">
+                <ul class="pagination justify-content-center mb-0">
+                    {% for page_num in messages.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != messages.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('admin_messages', page=page_num, search=search, message_type=message_type, sent_via=sent_via, date_filter=date_filter) }}">{{ page_num }}</a>
+                                </li>
+                            {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+    // Tümünü seç/seçme
+    const selectAll = document.getElementById('selectAll');
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            const checkboxes = document.querySelectorAll('input[name="message_ids"]');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+        });
+    }
+
+    // Çoklu silme
+    function deleteSelected() {
+        const selected = document.querySelectorAll('input[name="message_ids"]:checked');
+        if (selected.length === 0) {
+            alert('Lütfen silinecek mesajları seçin.');
+            return false;
+        }
+        if (confirm(`${selected.length} mesajı silmek istediğinizden emin misiniz?`)) {
+            document.getElementById('bulkForm').submit();
+        }
+    }
+
+    // Tekil silme
+    function deleteSingle(id) {
+        if (confirm('Bu mesajı silmek istediğinizden emin misiniz?')) {
+            document.getElementById('deleteForm-' + id).submit();
+        }
+    }
+</script>
+
+<style>
+    .avatar-sm {
+        width: 32px;
+        height: 32px;
+        font-size: 12px;
+    }
+</style>
+{% endblock %}

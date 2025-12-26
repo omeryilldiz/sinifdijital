@@ -1,0 +1,82 @@
+{% extends "admin_layout.html"%}
+
+
+{% block content %}
+
+<div class="container">
+    <h1>Sınıf Ekle</h1>
+    
+    <form method="POST">
+        {{ form.hidden_tag() }}
+        
+        <div class="mb-3">
+            {{ form.sinif.label(class="form-label")}}
+            {{ form.sinif(class="form-control") }}
+
+        </div>
+
+        {{ form.submit(class="btn btn-primary w-100") }}   
+    </form>
+
+    <table class="table table-striped table-hover table-bordered mt-5">
+        <thead class="table-dark">
+            <tr> 
+                <th class="text-center">ID</th>
+                <th class="text-center">Sınıf Adı</th>
+                <th class="text-center">İşlemler</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sinif in siniflar %} 
+            <tr> 
+                <td class="text-center">{{sinif.id}}</td>
+                <td>{{sinif.sinif}}</td>
+                <td class="text-center">
+                    <div class="btn-group">
+                        <a class="btn btn-secondary btn-sm" href="{{ url_for('update_konu', id=sinif.id) }}">
+                            <i class="fas fa-edit"></i> Güncelle
+                        </a>
+                        <a class="btn btn-info btn-sm" href="{{ url_for('add_ders', id=sinif.id) }}">
+                            <i class="fas fa-plus"></i> Ders Ekle
+                        </a>
+                        <button type="button" 
+                                class="btn btn-danger btn-sm" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#deleteModal{{sinif.id}}">
+                            <i class="fas fa-trash"></i> Sil
+                        </button>
+                    </div>
+                </td>
+            </tr>
+
+            <!-- Her sınıf için ayrı modal -->
+            <div class="modal fade" 
+                 id="deleteModal{{sinif.id}}" 
+                 tabindex="-1" 
+                 aria-labelledby="deleteModalLabel{{sinif.id}}">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Sınıf Silme</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p>{{sinif.sinif}} sınıfını silmek istediğinize emin misiniz?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                            <form action="{{ url_for('delete_konu', id=sinif.id) }}" method="POST" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-danger">Sil</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
+

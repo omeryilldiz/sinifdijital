@@ -1,0 +1,638 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Sayfa Başlığı -->
+    <div class="page-header">
+        <h3>
+            <i class="bi bi-file-earmark-text"></i>
+            {{ ders.ders_adi }} - Ders Notları
+        </h3>
+    </div>
+
+    <!-- Filtre Formu -->
+    <div class="filter-form">
+        <form method="GET" 
+              class="row g-2 align-items-end" 
+              id="filter-form"
+              novalidate>
+              
+            <div class="col-md-5">
+                <label for="unite" class="form-label">
+                    <i class="bi bi-folder me-1"></i>Ünite Seçin
+                </label>
+                <select class="form-select" 
+                        id="unite" 
+                        name="unite_id"
+                        aria-describedby="unite-help">
+                    <option value="">Tüm Üniteler</option>
+                    {% for unite in uniteler %}
+                    <option value="{{ unite.id }}" {% if unite_id == unite.id %}selected{% endif %}>
+                        {{ unite.unite }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <div id="unite-help" class="form-text">
+                    Filtrelemek için ünite seçin
+                </div>
+            </div>
+            
+            <div class="col-md-5">
+                <label for="icerik" class="form-label">
+                    <i class="bi bi-file-text me-1"></i>İçerik Seçin
+                </label>
+                <select class="form-select" 
+                        id="icerik" 
+                        name="icerik_id" 
+                        {% if not unite_id %}disabled{% endif %}
+                        aria-describedby="icerik-help">
+                    <option value="">Tüm İçerikler</option>
+                    {% for icerik in icerikler %}
+                    <option value="{{ icerik.id }}" {% if icerik_id == icerik.id %}selected{% endif %}>
+                        {{ icerik.baslik }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <div id="icerik-help" class="form-text">
+                    Önce ünite seçin
+                </div>
+            </div>
+            
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" 
+                        class="btn btn-primary w-100" 
+                        id="filter-btn">
+                    <i class="bi bi-funnel me-1"></i>Filtrele
+                </button>
+                <a href="{{ url_for('ders_notu_filtre', sinif_slug=sinif.slug, ders_slug=ders.slug) }}" 
+                   class="btn btn-secondary w-100">
+                    <i class="bi bi-x-circle me-1"></i>Temizle
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Ders Notları - Bootstrap Card ile Sade -->
+    <div id="ders-notlari-container" class="mt-4">
+        {% if ders_notlari %}
+        <div class="row g-4">
+            {% for ders_notu in ders_notlari %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title mb-3">
+                            {{ ders_notu.baslik }}
+                        </h5>
+                        <div class="mb-2">
+                            <div class="text-muted small mb-1">
+                                <strong>Ünite:</strong> {{ ders_notu.unite.unite }}
+                            </div>
+                            <div class="text-muted small">
+                                <strong>İçerik:</strong> {{ ders_notu.icerik.baslik }}
+                            </div>
+                        </div>
+                        <a href="{{ url_for('static', filename='pdf_uploads/' + ders_notu.dosya_adi) }}" 
+                           target="_blank" 
+                           class="btn btn-primary mt-auto"
+                           aria-label="{{ ders_notu.baslik }} PDF dosyasını görüntüle">
+                            <i class="bi bi-file-pdf me-2"></i>
+                            PDF'i Görüntüle
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state-card">
+            <div class="card shadow">
+                <div class="card-body text-center py-5">
+                    <div class="empty-icon mb-4">
+                        <i class="bi bi-file-earmark-x text-muted fs-1"></i>
+                    </div>
+                    <h5 class="text-muted mb-3">Ders Notu Bulunamadı</h5>
+                    <p class="text-muted mb-4">
+                        Bu kriterlere uygun ders notu bulunamadı. Farklı filtreleme seçeneklerini deneyebilirsiniz.
+                    </p>
+                    <a href="{{ url_for('ders_notu_filtre', sinif_slug=sinif.slug, ders_slug=ders.slug) }}" 
+                       class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-clockwise me-2"></i>
+                        Tümünü Göster
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+(function() {
+    'use strict';
+    
+    // DOM elements
+    const uniteSelect = document.getElementById('unite');
+    const icerikSelect = document.getElementById('icerik');
+    const filterBtn = document.getElementById('filter-btn');
+    const form = document.getElementById('filter-form');
+    const container = document.getElementById('ders-notlari-container');
+    
+    // State management
+    let isLoading = false;
+    let currentTimeout = null;
+    
+    // Utility functions
+    function setLoading(loading) {
+        isLoading = loading;
+        filterBtn.classList.toggle('loading', loading);
+        filterBtn.disabled = loading;
+        
+        if (loading) {
+            filterBtn.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i>Filtreleniyor...';
+        } else {
+            filterBtn.innerHTML = '<i class="bi bi-funnel me-1"></i>Filtrele';
+        }
+    }
+    
+    function showError(message) {
+        // Remove existing alerts
+        const existingAlerts = container.querySelectorAll('.alert-danger');
+        existingAlerts.forEach(alert => alert.remove());
+        
+        const alert = document.createElement('div');
+        alert.className = 'alert alert-danger mt-3';
+        alert.innerHTML = `<i class="bi bi-exclamation-triangle me-2"></i>${message}`;
+        
+        container.insertBefore(alert, container.firstChild);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (alert.parentNode) {
+                alert.remove();
+            }
+        }, 5000);
+    }
+    
+    // AJAX function with error handling
+    function loadIcerikler(uniteId) {
+        if (isLoading) return;
+        
+        // Clear previous timeout
+        if (currentTimeout) {
+            clearTimeout(currentTimeout);
+        }
+        
+        // Debounce AJAX calls
+        currentTimeout = setTimeout(() => {
+            fetch(`/get_icerikler/${uniteId}`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Sunucu hatası: ' + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                let html = '<option value="">Tüm İçerikler</option>';
+                
+                if (Array.isArray(data) && data.length > 0) {
+                    data.forEach(function(icerik) {
+                        html += `<option value="${icerik.id}">${icerik.baslik}</option>`;
+                    });
+                } else {
+                    html = '<option value="">İçerik bulunamadı</option>';
+                }
+                
+                icerikSelect.innerHTML = html;
+                icerikSelect.disabled = false;
+            })
+            .catch(error => {
+                console.error('İçerik yükleme hatası:', error);
+                icerikSelect.innerHTML = '<option value="">Hata oluştu</option>';
+                icerikSelect.disabled = true;
+                showError('İçerikler yüklenirken bir hata oluştu. Lütfen sayfayı yenileyin.');
+            });
+        }, 300); // 300ms debounce
+    }
+    
+    // Event listeners
+    uniteSelect.addEventListener('change', function() {
+        const uniteId = this.value;
+        
+        if (uniteId) {
+            loadIcerikler(uniteId);
+        } else {
+            icerikSelect.innerHTML = '<option value="">Tüm İçerikler</option>';
+            icerikSelect.disabled = true;
+        }
+    });
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        if (isLoading) {
+            e.preventDefault();
+            return false;
+        }
+        
+        setLoading(true);
+        return true;
+    });
+    
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && (e.target === uniteSelect || e.target === icerikSelect)) {
+            e.preventDefault();
+            filterBtn.click();
+        }
+    });
+    
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('📚 Ders notu filtre sayfası hazır');
+        
+        // Pre-select if values exist
+        if (uniteSelect.value) {
+            loadIcerikler(uniteSelect.value);
+        }
+    });
+    
+    // Error handling
+    window.addEventListener('error', function(e) {
+        console.error('JavaScript hatası:', e.message);
+        setLoading(false);
+    });
+    
+    window.addEventListener('unhandledrejection', function(e) {
+        console.error('Promise hatası:', e.reason);
+        setLoading(false);
+    });
+})();
+</script>
+{% endblock %}
+
+<style>
+/* Ana sayfa için özel CSS */
+:root {
+    --primary-color: #007bff;
+    --success-color: #28a745;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --border-radius: 8px;
+    --shadow: 0 2px 10px rgba(0,0,0,0.1);
+    --shadow-hover: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+body {
+    background-color: #f8f9fa;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Page Header */
+.page-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding: 20px;
+    background: linear-gradient(135deg, var(--primary-color) 0%, #0056b3 100%);
+    color: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+}
+
+.page-header h3 {
+    font-weight: 700;
+    margin: 0;
+    font-size: 2rem;
+}
+
+.page-header i {
+    color: rgba(255,255,255,0.8);
+    margin-right: 10px;
+}
+
+/* Filter Form */
+.filter-form {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 25px;
+    box-shadow: var(--shadow);
+    margin-bottom: 30px;
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 8px;
+}
+
+.form-select {
+    border: 2px solid #e9ecef;
+    border-radius: var(--border-radius);
+    padding: 12px 16px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background-color: white;
+}
+
+.form-select:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    outline: none;
+}
+
+.form-select:disabled {
+    background-color: #e9ecef;
+    color: #6c757d;
+    cursor: not-allowed;
+}
+
+/* Button Styling */
+.btn {
+    border-radius: 25px;
+    padding: 12px 24px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color) 0%, #0056b3 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.4);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(108, 117, 125, 0.3);
+}
+
+.btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+}
+
+.btn-outline-primary {
+    background: transparent;
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color);
+}
+
+.btn-outline-primary:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-2px);
+}
+
+
+.info-item {
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+}
+
+.info-item i {
+    font-size: 1rem;
+    min-width: 20px;
+}
+
+.info-item strong {
+    margin-right: 8px;
+    color: #495057;
+}
+
+.card-actions {
+    margin-top: auto;
+    padding-top: 20px;
+}
+
+.card-actions .btn {
+    margin: 0;
+}
+
+/* Empty State */
+.empty-state-card {
+    margin-top: 20px;
+}
+
+.empty-state-card .card {
+    border-radius: var(--border-radius);
+    border: none;
+    box-shadow: var(--shadow);
+}
+
+.empty-state-card .card-body {
+    padding: 40px 30px;
+}
+
+.empty-icon {
+    opacity: 0.5;
+}
+
+/* Loading States */
+.loading {
+    opacity: 0.7;
+    pointer-events: none;
+    position: relative;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #ffffff;
+    border-top: 2px solid transparent;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Alert Styling */
+.alert {
+    border-radius: var(--border-radius);
+    border: none;
+    padding: 15px 20px;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    color: #721c24;
+    border-left: 4px solid var(--danger-color);
+}
+
+.alert-danger i {
+    color: var(--danger-color);
+    margin-right: 8px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        padding: 0 15px;
+    }
+    
+    .page-header {
+        margin-bottom: 30px;
+        padding: 15px;
+    }
+    
+    .page-header h3 {
+        font-size: 1.5rem;
+    }
+    
+    .filter-form {
+        padding: 20px;
+    }
+    
+    .row.g-2 {
+        --bs-gutter-x: 0.5rem;
+        --bs-gutter-y: 1rem;
+    }
+    
+    .col-md-5 {
+        flex: 0 0 100%;
+        max-width: 100%;
+        margin-bottom: 15px;
+    }
+    
+    .col-md-2 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+    
+    .d-flex.gap-2 {
+        flex-direction: column;
+        gap: 10px !important;
+    }
+    
+    .btn {
+        width: 100% !important;
+        margin: 0;
+    }
+    
+    .ders-notu-card {
+        margin-bottom: 20px;
+    }
+    
+    .ders-notu-card .card-body {
+        padding: 20px;
+    }
+}
+
+@media (max-width: 576px) {
+    .form-select {
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+    
+    .ders-notu-card .card-body {
+        padding: 15px;
+    }
+    
+    .card-title {
+        font-size: 1rem;
+    }
+    
+    .info-item {
+        font-size: 0.85rem;
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .ders-notu-card,
+    .btn,
+    .form-select {
+        transition: none;
+    }
+    
+    .ders-notu-card:hover {
+        transform: none;
+    }
+    
+    .btn:hover {
+        transform: none;
+    }
+}
+
+.form-select:focus,
+.btn:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    body {
+        background-color: #212529;
+        color: #ffffff;
+    }
+    
+    .filter-form,
+    .ders-notu-card {
+        background: #343a40;
+        color: #ffffff;
+    }
+    
+    .form-select {
+        background-color: #495057;
+        border-color: #6c757d;
+        color: #ffffff;
+    }
+    
+    .form-select option {
+        background-color: #495057;
+        color: #ffffff;
+    }
+    
+    .card-title {
+        color: #ffffff;
+    }
+    
+    .info-item strong {
+        color: #adb5bd;
+    }
+    
+    .card-header-section {
+        border-bottom-color: #495057;
+    }
+}
+
+/* Print styles */
+@media print {
+    .filter-form,
+    .btn {
+        display: none;
+    }
+    
+    .ders-notu-card {
+        box-shadow: none;
+        border: 1px solid #ddd;
+        break-inside: avoid;
+    }
+}
+</style>

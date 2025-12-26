@@ -1,0 +1,91 @@
+{% extends "admin_layout.html" %}
+{% block content %}
+<h3>Okul Yönetimi</h3>
+<hr>
+<form method="GET" class="row g-3 mb-3">
+    <div class="col-md-3">
+        <select name="province_id" class="form-select" onchange="this.form.submit()">
+            <option value="">Tüm İller</option>
+            {% for province in provinces %}
+                <option value="{{ province.id }}" {% if province_id and province.id == province_id %}selected{% endif %}>{{ province.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select name="district_id" class="form-select" onchange="this.form.submit()">
+            <option value="">Tüm İlçeler</option>
+            {% for district in districts %}
+                <option value="{{ district.id }}" {% if district_id and district.id == district_id %}selected{% endif %}>{{ district.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select name="school_type_id" class="form-select" onchange="this.form.submit()">
+            <option value="">Tüm Okul Türleri</option>
+            {% for st in school_types %}
+                <option value="{{ st.id }}" {% if school_type_id and st.id == school_type_id %}selected{% endif %}>{{ st.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+</form>
+<form method="POST" class="row g-3 mb-4">
+    <div class="col-md-4">
+        <input type="text" name="name" class="form-control" placeholder="Okul Adı" required>
+    </div>
+    <div class="col-md-3">
+        <select name="district_id" class="form-select" required>
+            <option value="">İlçe Seçiniz</option>
+            {% for district in districts %}
+                <option value="{{ district.id }}" {% if district_id and district.id == district_id %}selected{% endif %}>{{ district.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select name="school_type_id" class="form-select" required>
+            <option value="">Okul Türü Seçiniz</option>
+            {% for st in school_types %}
+                <option value="{{ st.id }}">{{ st.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-success">Ekle</button>
+    </div>
+</form>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>Okul Adı</th>
+            <th>İlçe</th>
+            <th>İl</th>
+            <th>Okul Türü</th>
+            <th>İşlem</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% if schools %}
+            {% for school in schools %}
+            <tr>
+                <td>{{ school.id }}</td>
+                <td>{{ school.name }}</td>
+                <td>{{ school.district.name }}</td>
+                <td>{{ school.district.province.name }}</td>
+                <td>{{ school.school_type.name }}</td>
+                <td>
+                    <a href="{{ url_for('admin_school_edit', school_id=school.id) }}" class="btn btn-sm btn-warning">Düzenle</a>
+                    <form method="POST" action="{{ url_for('admin_school_delete', school_id=school.id) }}" style="display:inline;" onsubmit="return confirm('Silmek istediğinize emin misiniz?');">
+                        <button type="submit" class="btn btn-sm btn-danger">Sil</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        {% else %}
+            <tr>
+                <td colspan="6" class="text-center text-muted">Lütfen il veya ilçe seçiniz.</td>
+            </tr>
+        {% endif %}
+    </tbody>
+</table>
+{% endblock %}
+

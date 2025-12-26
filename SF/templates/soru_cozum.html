@@ -1,0 +1,1095 @@
+{% extends "layout.html" %}
+{% block content %}
+{{ super() }}
+<style>
+    /* Mevcut stiller aynı... */
+    .option-btn {
+        min-width: 60px;
+        height: 60px;
+        margin: 5px;
+        border: 2px solid #dee2e6;
+        border-radius: 50%;
+        background: white;
+        transition: all 0.2s;
+        font-size: 1.2rem;
+        font-weight: bold;
+    }
+
+    .option-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+
+    .option-btn.selected {
+        background: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+    }
+
+    .question-container {
+        display: none;
+    }
+
+    .question-container.active {
+        display: block;
+    }
+
+    .timer {
+        font-size: 1.25rem;
+        font-weight: bold;
+        color: #6c757d;
+    }
+
+    .question-counter {
+        font-size: 1.1rem;
+        color: #495057;
+    }
+
+    .quiz-progress {
+        height: 10px;
+        border-radius: 5px;
+    }
+
+    .question-navigation {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    .question-image-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 50vh;
+        overflow-y: auto;
+        margin-bottom: 1rem;
+    }
+    
+    .question-image-container img {
+        max-height: 100%;
+        object-fit: contain;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    
+    @media (max-width: 768px) {
+        .question-image-container {
+            height: 60vh;
+        }
+    }
+
+    /* ✅ YENİLENMİŞ: Çizim araçları stilleri */
+    .drawing-fab {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: 60px;
+        height: 60px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        font-size: 1.5rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        z-index: 9998;
+        box-shadow: 0 4px 15px rgba(0, 123, 255, 0.3);
+    }
+
+    .drawing-fab:hover {
+        background: #0056b3;
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(0, 123, 255, 0.5);
+    }
+
+    .drawing-fab.active {
+        background: #28a745;
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3); }
+        50% { box-shadow: 0 4px 25px rgba(40, 167, 69, 0.6); }
+        100% { box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3); }
+    }
+
+    /* ✅ YENİLENMİŞ: Canvas overlay - Filtre yok */
+    .drawing-section {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 9999;
+        transition: all 0.3s ease;
+        background: transparent; /* ✅ Filtre kaldırıldı */
+    }
+
+    #drawingCanvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        background: transparent;
+    }
+
+    #drawingCanvas.active {
+        pointer-events: auto;
+        cursor: crosshair;
+    }
+
+    #drawingCanvas.active.draw-mode {
+        cursor: crosshair;
+    }
+    
+    #drawingCanvas.active.erase-mode {
+        cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="rgba(255,0,0,0.3)" stroke="red" stroke-width="2"/></svg>') 10 10, auto;
+    }
+
+    /* ✅ YENİLENMİŞ: Araç çubuğu - Sağ alt köşe */
+    .drawing-tools {
+        position: fixed;
+        bottom: 100px;
+        right: 20px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 25px rgba(0,0,0,0.15);
+        padding: 20px;
+        z-index: 10000;
+        width: 250px;
+        max-height: 70vh;
+        overflow-y: auto;
+        transform: translateY(20px);
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+    }
+
+    .drawing-tools.show {
+        transform: translateY(0);
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* ✅ YENİ: Çizim durumu göstergesi - Üst orta */
+    .drawing-status {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10001;
+        transition: all 0.3s ease;
+        opacity: 0;
+        visibility: hidden;
+    }
+
+    .drawing-status.show {
+        opacity: 1;
+        visibility: visible;
+    }
+    
+    /* ✅ Hızlı renk butonları */
+    .color-quick-btn {
+        width: 30px;
+        height: 30px;
+        border: 2px solid #dee2e6;
+        border-radius: 50%;
+        cursor: pointer;
+        transition: all 0.2s;
+        margin: 2px;
+    }
+    
+    .color-quick-btn:hover,
+    .color-quick-btn.active {
+        border-color: #007bff;
+        transform: scale(1.2);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    
+    /* ✅ Responsive düzenleme */
+    @media (max-width: 768px) {
+        .drawing-fab {
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            font-size: 1.2rem;
+        }
+
+        .drawing-tools {
+            width: 90%; /* Daha küçük genişlik */
+            max-width: 300px; /* Maksimum genişlik limiti */
+            right: 5%; /* Ortala */
+            bottom: 80px;
+            padding: 12px; /* Daha az padding */
+            max-height: 40vh; /* Yüksekliği sınırla */
+            border-radius: 12px;
+        }
+        
+        .drawing-tools .mb-3:nth-child(3), /* Renk paleti */
+        .drawing-tools .mb-3:nth-child(4)  /* Kalınlık slider */
+        {
+            display: none !important;
+        }
+        
+        /* Kalan bölümleri yan yana diz */
+        .drawing-tools .tools-content {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .drawing-tools .tools-content > div {
+            flex: 1;
+        }
+        
+        /* Butonları küçült */
+        .btn-group .btn-sm {
+            padding: 4px 6px;
+            font-size: 0.8rem;
+        }
+        
+        /* Başlık ve kapat butonunu küçült */
+        .tools-header span {
+            font-size: 0.9rem;
+        }
+        
+        .tools-header button {
+            padding: 2px 6px;
+        }
+        
+        /* Kısayol bilgisini gizle */
+        .drawing-tools .text-center {
+            display: none !important;
+        }
+    }
+
+    /* ✅ Mobil optimizasyonları */
+    @media (max-width: 768px) {
+        /* Timer ve soru numarasını küçült */
+        .timer {
+            font-size: 1rem !important; /* Daha küçük */
+            padding: 4px 8px;
+        }
+        
+        .question-counter {
+            font-size: 0.9rem !important; /* Daha küçük */
+        }
+        
+        /* Kart başlıklarını sıkıştır */
+        .card-body {
+            padding: 1rem !important; /* Daha az padding */
+        }
+        
+        /* Şıkları yan yana tut - alt satıra kaymasın */
+        .options .d-flex {
+            flex-wrap: nowrap !important; /* Sarma kaldırıldı */
+            justify-content: center !important;
+            gap: 4px !important; /* Daha az boşluk */
+            overflow-x: auto; /* Yatay kaydırma varsa */
+            padding: 0 8px;
+        }
+        
+        /* Şık butonlarını küçült */
+        .option-btn {
+            min-width: 45px !important; /* Daha küçük */
+            height: 45px !important; /* Daha küçük */
+            margin: 2px !important; /* Daha az margin */
+            font-size: 1.1rem !important; /* Daha küçük yazı */
+            padding: 8px !important; /* Daha az padding */
+        }
+        
+        /* Soru resmi container'ını küçült */
+        .question-image-container {
+            height: 50vh !important; /* Daha küçük */
+            margin-bottom: 0.5rem !important;
+        }
+        
+        /* Navigasyon butonlarını küçült */
+        .question-navigation .btn {
+            padding: 6px 12px !important;
+            font-size: 0.9rem !important;
+        }
+        
+        /* İlerleme çubuğunu küçült */
+        .progress {
+            height: 8px !important;
+        }
+        
+        /* Başlıkları küçült */
+        .card-title {
+            font-size: 1.1rem !important;
+        }
+        
+        /* Referans kodu daha küçük */
+        [id^="refCode-"] {
+            font-size: 0.7rem !important;
+            padding: 1px 4px !important;
+            right: 5px !important;
+            bottom: 5px !important;
+        }
+    }
+</style>
+
+<div class="container py-4">
+    <div id="quiz-container">
+        <!-- Quiz Başlık ve İlerleme -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div class="w-100">
+                        <div class="progress mb-2" style="height: 10px;">
+                            <div class="progress-bar bg-primary" 
+                                 role="progressbar" 
+                                 id="quizProgress"
+                                 style="width: 0%;" 
+                                 aria-valuenow="0" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                            </div>
+                        </div>
+                        <div class="question-counter text-muted">
+                            Soru <span id="currentQuestionNumber">1</span>/<span id="totalQuestions">{{ sorular|length }}</span>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <div id="timer" class="timer">00:00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Soru Formu -->
+        <form id="quizForm" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            
+            {% for soru in sorular %}
+            <div class="question-container{% if loop.first %} active{% endif %}" id="question{{ loop.index }}">
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <!-- Soru Resmi -->
+                        {% if soru.soru_resim %}
+                        <div class="question-image-container position-relative">
+                            <img src="{{ url_for('static', filename='soru_uploads/' + soru.soru_resim) }}" 
+                                 class="img-fluid rounded" 
+                                 alt="Soru {{ loop.index }}">
+                            <!-- Referans kodu sağ alt köşe - KOPYALANABİLİR -->
+                            <span id="refCode-{{ loop.index }}" 
+                                  style="
+                                      position: absolute;
+                                      right: 10px;
+                                      bottom: 10px;
+                                      font-size: 0.85rem;
+                                      color: #888;
+                                      background: rgba(255,255,255,0.7);
+                                      padding: 2px 8px;
+                                      border-radius: 8px;
+                                      pointer-events: auto;
+                                      cursor: pointer;
+                                      transition: all 0.2s;
+                                  "
+                                  title="Tıklayarak kopyala">
+                                Ref: {{ soru.reference_code }}
+                            </span>
+                        </div>
+                        {% endif %}
+
+                        <!-- Şıklar -->
+                        <div class="options text-center">
+                            <div class="d-flex justify-content-center flex-wrap gap-2">
+                                {% set soru_no = loop.index %}
+                                {% for option in secenekler %}
+                                    <button type="button" 
+                                            class="option-btn" 
+                                            data-question="{{ soru_no }}" 
+                                            data-answer="{{ option }}" 
+                                            onclick="selectAnswer(this)">
+                                        {{ option }}
+                                    </button>
+                                {% endfor %}
+                                <input type="hidden" name="cevaplar[{{ soru_no }}]" id="answer{{ soru_no }}" value="">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <!-- Navigasyon Butonları -->
+            <div class="d-flex justify-content-between align-items-center question-navigation">
+                <button type="button" class="btn btn-primary" onclick="showPreviousQuestion()" id="prevButton" disabled>
+                    <i class="bi bi-arrow-left"></i> Önceki
+                </button>
+                
+                <div class="text-center">
+                    <small class="text-muted">Cevap vermeden sonraki soruya geçebilirsiniz</small>
+                </div>
+                
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary" onclick="showNextQuestion()" id="nextButton">
+                        Sonraki <i class="bi bi-arrow-right"></i>
+                    </button>
+                    <button type="submit" class="btn btn-success d-none" id="submitButton">
+                        Testi Bitir <i class="bi bi-check-lg"></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+    
+    <!-- ✅ YENİ: Yuvarlak Çizim Butonu (FAB) - Bootstrap Icons -->
+    <button id="drawingToolsToggle" class="drawing-fab" title="Çizim Araçları">
+        <i class="bi bi-pencil-fill"></i>
+    </button>
+
+    <!-- ✅ YENİLENMİŞ: Çizim Araçları Overlay -->
+    <div id="drawing-section" class="drawing-section d-none">
+        <canvas id="drawingCanvas"></canvas>
+        
+        <!-- Çizim durumu göstergesi -->
+        <div class="drawing-status" id="drawingStatus">
+            <span class="badge bg-primary">Çizim Modu: Kapalı</span>
+        </div>
+        
+        <!-- ✅ YENİLENMİŞ: Sağ alt araç çubuğu - Bootstrap Icons -->
+        <div class="drawing-tools" id="drawingTools">
+            <div class="tools-header d-flex justify-content-between align-items-center mb-3">
+                <span class="fw-bold text-primary">
+                    <i class="bi bi-palette-fill"></i> Çizim Araçları
+                </span>
+                <button class="btn btn-sm btn-outline-secondary" id="closeDrawing" title="Kapat">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            
+            <div class="tools-content">
+                <!-- Çizim Modları -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">Mod</label>
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="drawingMode" id="drawMode" checked>
+                        <label class="btn btn-outline-primary btn-sm" for="drawMode">
+                            <i class="bi bi-pencil"></i> Çiz
+                        </label>
+                        
+                        <input type="radio" class="btn-check" name="drawingMode" id="eraseMode">
+                        <label class="btn btn-outline-danger btn-sm" for="eraseMode">
+                            <i class="bi bi-eraser"></i> Sil
+                        </label>
+                    </div>
+                </div>
+                
+                <!-- Hızlı İşlemler -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">İşlemler</label>
+                    <div class="btn-group w-100" role="group">
+                        <button type="button" class="btn btn-outline-info btn-sm" id="undoCanvas" title="Geri Al">
+                            <i class="bi bi-arrow-counterclockwise"></i> Geri Al
+                        </button>
+                        <button type="button" class="btn btn-outline-warning btn-sm" id="clearCanvas" title="Temizle">
+                            <i class="bi bi-trash"></i> Temizle
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Renk Paleti -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold"></label>
+                    <div class="d-flex justify-content-center flex-wrap mb-2" style="gap: 4px;">
+                        <button type="button" class="color-quick-btn active" data-color="#000000" style="background: #000000;" title="Siyah"></button>
+                        <button type="button" class="color-quick-btn" data-color="#dc3545" style="background: #dc3545;" title="Kırmızı"></button>
+                        <button type="button" class="color-quick-btn" data-color="#28a745" style="background: #28a745;" title="Yeşil"></button>
+                        <button type="button" class="color-quick-btn" data-color="#007bff" style="background: #007bff;" title="Mavi"></button>
+
+                    </div>
+                    <input type="color" id="colorPicker" value="#000000" class="form-control form-control-sm">
+                </div>
+                
+                <!-- Fırça Kalınlığı -->
+                <div class="mb-3">
+                    <label class="form-label small fw-bold">
+                        Kalınlık: <span id="brushSizeDisplay">3</span>px
+                    </label>
+                    <input type="range" id="brushSize" min="1" max="6" value="3" class="form-range mb-2">
+                    <div class="btn-group w-100" role="group">
+                        <button type="button" class="btn btn-outline-secondary btn-sm quick-size" data-size="2">İnce</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm quick-size active" data-size="3">Normal</button>
+                        <button type="button" class="btn btn-outline-secondary btn-sm quick-size" data-size="6">Kalın</button>
+                    </div>
+                </div>
+                
+                <!-- Kısayollar -->
+                <div class="text-center">
+                    <small class="text-muted">
+                        <i class="bi bi-keyboard"></i> <strong>Kısayollar:</strong><br>
+                        <code>D</code>: Çizim | <code>E</code>: Silgi<br>
+                        <code>ESC</code>: Kapat | <code>Ctrl+Z</code>: Geri Al
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Global değişkenler
+    let currentQuestion = 1;
+    const totalQuestions = parseInt("{{ sorular|length }}");
+    let startTime = new Date();
+    let timer;
+    let totalSeconds = 0;
+
+    // Başlangıç değişkenleri - mevcut olanlar kalacak
+    let questionStartTime = new Date();
+    let questionTimes = {};
+    let questionVisitCount = {};
+
+    // Yeni: Periyodik süre kaydetme işlevi
+    function startPeriodicSaving() {
+        // Head içine meta etiketini kontrol et, yoksa ekle
+        if (!document.querySelector('meta[name="csrf-token"]')) {
+            const metaTag = document.createElement('meta');
+            metaTag.name = "csrf-token";
+            metaTag.content = document.querySelector('input[name="csrf_token"]').value;
+            document.head.appendChild(metaTag);
+        }
+        
+        // 60 saniyede bir süreleri sunucuya gönder
+        setInterval(() => {
+            // Son soruyu da güncelle
+            const currentTimeSpent = Math.floor((new Date() - questionStartTime) / 1000);
+            const updatedTimes = {...questionTimes};
+            updatedTimes[currentQuestion] = (updatedTimes[currentQuestion] || 0) + currentTimeSpent;
+            
+            // Güncelleme zamanını sıfırla
+            questionStartTime = new Date();
+            
+            // Verileri sunucuya gönder
+            fetch('/test_summary', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    total_time: totalSeconds,
+                    question_times: updatedTimes,
+                    visit_counts: questionVisitCount,
+                    current_question: currentQuestion,
+                    total_questions: totalQuestions
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('✅ Soru süreleri kaydedildi:', data);
+            })
+            .catch(error => {
+                console.error('❌ Soru süresi kaydetme hatası:', error);
+            });
+        }, 60000); // 60 saniye
+    }
+
+    // Sayfa kapatılma işleyicisini ekle
+    window.addEventListener('beforeunload', function() {
+        // Son sorunun süresini güncelle
+        const finalTimeSpent = Math.floor((new Date() - questionStartTime) / 1000);
+        questionTimes[currentQuestion] = (questionTimes[currentQuestion] || 0) + finalTimeSpent;
+        
+        // SendBeacon API ile veriyi gönder (sayfa kapatılırken bile çalışır)
+        navigator.sendBeacon('/test_summary', JSON.stringify({
+            total_time: totalSeconds,
+            question_times: questionTimes,
+            visit_counts: questionVisitCount,
+            current_question: currentQuestion,
+            total_questions: totalQuestions,
+            csrf_token: document.querySelector('meta[name="csrf-token"]').content
+        }));
+    });
+
+    function updateTimer() {
+        const now = new Date();
+        const diff = Math.floor((now - startTime) / 1000);
+        totalSeconds = diff;
+
+        const minutes = Math.floor(diff / 60);
+        const seconds = diff % 60;
+
+        document.getElementById("timer").textContent = 
+            `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    }
+
+    function selectAnswer(button) {
+        const questionId = button.dataset.question;
+        const answer = button.dataset.answer;
+        const answerInput = document.getElementById(`answer${questionId}`);
+        
+        // Önceki seçimi kaldır
+        document.querySelectorAll(`.option-btn[data-question="${questionId}"]`)
+            .forEach(btn => btn.classList.remove('selected'));
+        
+        // Yeni seçimi işaretle
+        button.classList.add('selected');
+        answerInput.value = answer;
+        
+        console.log(`Soru ${questionId}: ${answer} seçildi`);
+    }
+
+    // ✅ YENİLENMİŞ: Soru geçişlerinde süre kaydetme
+    function showQuestion(questionNumber) {
+        // Önceki sorunun süresini kaydet
+        if (currentQuestion > 0) {
+            const timeSpent = Math.floor((new Date() - questionStartTime) / 1000);
+            questionTimes[currentQuestion] = (questionTimes[currentQuestion] || 0) + timeSpent;
+            questionVisitCount[currentQuestion] = (questionVisitCount[currentQuestion] || 0) + 1;
+            
+            console.log(`Soru ${currentQuestion}: ${timeSpent}s eklendi, toplam: ${questionTimes[currentQuestion]}s`);
+        }
+
+        // Tüm soruları gizle
+        document.querySelectorAll(".question-container").forEach((q) => {
+            q.classList.remove("active");
+        });
+        
+        // İlerleme çubuğunu güncelle
+        const progress = ((questionNumber) / totalQuestions) * 100;
+        document.getElementById('quizProgress').style.width = `${progress}%`;
+        
+        // İstenen soruyu göster
+        const questionElement = document.getElementById(`question${questionNumber}`);
+        if (questionElement) {
+            questionElement.classList.add("active");
+        }
+        
+        // Soru sayısını güncelle
+        document.getElementById("currentQuestionNumber").textContent = questionNumber;
+        
+        // Navigasyon butonlarını güncelle
+        document.getElementById("prevButton").disabled = questionNumber === 1;
+        document.getElementById("nextButton").classList.toggle("d-none", questionNumber === totalQuestions);
+        document.getElementById("submitButton").classList.toggle("d-none", questionNumber !== totalQuestions);
+
+        // ✅ YENİ: Yeni sorunun başlangıç zamanını ayarla
+        currentQuestion = questionNumber;
+        questionStartTime = new Date();
+        
+        // İlk defa görüntülenen soru için başlangıç değeri
+        if (!questionTimes[currentQuestion]) {
+            questionTimes[currentQuestion] = 0;
+            questionVisitCount[currentQuestion] = 0;
+        }
+    }
+
+    function showPreviousQuestion() {
+        if (currentQuestion > 1) {
+            showQuestion(currentQuestion - 1);
+        }
+    }
+
+    function showNextQuestion() {
+        if (currentQuestion < totalQuestions) {
+            showQuestion(currentQuestion + 1);
+        }
+    }
+
+    // ✅ YENİLENMİŞ: Çizim araçları - Bootstrap Icons ile
+    const drawingTools = {
+        canvas: null,
+        ctx: null,
+        isDrawing: false,
+        isDrawingMode: false,
+        isEraser: false,
+        brushSize: 3,
+        brushColor: '#000000',
+        undoStack: [],
+
+        init() {
+            this.canvas = document.getElementById('drawingCanvas');
+            this.ctx = this.canvas.getContext('2d');
+            this.addEventListeners();
+            this.resizeCanvas();
+            this.saveState();
+        },
+
+        saveState() {
+            this.undoStack.push(this.canvas.toDataURL());
+            if (this.undoStack.length > 10) {
+                this.undoStack.shift();
+            }
+        },
+
+        undo() {
+            if (this.undoStack.length > 1) {
+                this.undoStack.pop();
+                const previousState = this.undoStack[this.undoStack.length - 1];
+                const img = new Image();
+                img.onload = () => {
+                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                    this.ctx.drawImage(img, 0, 0);
+                };
+                img.src = previousState;
+            }
+        },
+
+        clearCanvas() {
+            if (confirm('Tüm çizimleri temizlemek istediğinizden emin misiniz?')) {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.saveState();
+            }
+        },
+
+        // ✅ YENİLENMİŞ: Toggle fonksiyonu
+        toggleToolsVisibility() {
+            const section = document.getElementById('drawing-section');
+            const toolsPanel = document.getElementById('drawingTools');
+            const statusPanel = document.getElementById('drawingStatus');
+            const fabBtn = document.getElementById('drawingToolsToggle');
+            
+            const isHidden = section.classList.contains('d-none');
+            
+            if (isHidden) {
+                // Aç
+                section.classList.remove('d-none');
+                setTimeout(() => {
+                    toolsPanel.classList.add('show');
+                    statusPanel.classList.add('show');
+                }, 50);
+                fabBtn.classList.add('active');
+                
+                if (!this.isDrawingMode) {
+                    this.toggleDrawing();
+                }
+            } else {
+                // Kapat
+                toolsPanel.classList.remove('show');
+                statusPanel.classList.remove('show');
+                setTimeout(() => {
+                    section.classList.add('d-none');
+                }, 300);
+                fabBtn.classList.remove('active');
+                
+                if (this.isDrawingMode) {
+                    this.toggleDrawing();
+                }
+            }
+        },
+
+        // ✅ YENİLENMİŞ: Status güncellemesi - Bootstrap Icons
+        updateStatus() {
+            const statusElement = document.getElementById('drawingStatus');
+            if (statusElement) {
+                const mode = this.isDrawingMode ? (this.isEraser ? 'Silgi' : 'Çizim') : 'Hazır';
+                const colorClass = this.isDrawingMode ? (this.isEraser ? 'bg-danger' : 'bg-success') : 'bg-info';
+                const iconClass = this.isEraser ? 'bi-eraser' : 'bi-pencil-fill';
+                statusElement.innerHTML = `<span class="badge ${colorClass}">
+                    <i class="bi ${iconClass}"></i> 
+                    ${mode}
+                </span>`;
+            }
+        },
+
+        startDrawing(e) {
+            if (!this.isDrawingMode) return;
+            this.isDrawing = true;
+            this.ctx.beginPath();
+            this.ctx.moveTo(e.clientX, e.clientY);
+        },
+
+        draw(e) {
+            if (!this.isDrawing || !this.isDrawingMode) return;
+            
+            this.ctx.lineWidth = this.brushSize;
+            this.ctx.lineCap = 'round';
+            this.ctx.lineJoin = 'round';
+            
+            if (this.isEraser) {
+                this.ctx.globalCompositeOperation = 'destination-out';
+            } else {
+                this.ctx.globalCompositeOperation = 'source-over';
+                this.ctx.strokeStyle = this.brushColor;
+            }
+            
+            this.ctx.lineTo(e.clientX, e.clientY);
+            this.ctx.stroke();
+            this.ctx.beginPath();
+            this.ctx.moveTo(e.clientX, e.clientY);
+        },
+
+        stopDrawing() {
+            if (this.isDrawing) {
+                this.isDrawing = false;
+                this.ctx.beginPath();
+                this.saveState();
+            }
+        },
+
+        toggleDrawing() {
+            this.isDrawingMode = !this.isDrawingMode;
+            this.canvas.classList.toggle('active', this.isDrawingMode);
+            this.canvas.classList.toggle('draw-mode', this.isDrawingMode && !this.isEraser);
+            this.canvas.classList.toggle('erase-mode', this.isDrawingMode && this.isEraser);
+            this.updateStatus();
+        },
+
+        setEraseMode(isEraser) {
+            this.isEraser = isEraser;
+            this.canvas.classList.toggle('draw-mode', this.isDrawingMode && !this.isEraser);
+            this.canvas.classList.toggle('erase-mode', this.isDrawingMode && this.isEraser);
+            this.updateStatus();
+        },
+
+        addEventListeners() {
+            // Canvas olayları
+            this.canvas.addEventListener('mousedown', (e) => this.startDrawing(e));
+            this.canvas.addEventListener('mousemove', (e) => this.draw(e));
+            this.canvas.addEventListener('mouseup', () => this.stopDrawing());
+            this.canvas.addEventListener('mouseout', () => this.stopDrawing());
+
+            // Touch events (mobil)
+            this.canvas.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                const rect = this.canvas.getBoundingClientRect();
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent('mousedown', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                this.canvas.dispatchEvent(mouseEvent);
+            });
+
+            this.canvas.addEventListener('touchmove', (e) => {
+                e.preventDefault();
+                const rect = this.canvas.getBoundingClientRect();
+                const touch = e.touches[0];
+                const mouseEvent = new MouseEvent('mousemove', {
+                    clientX: touch.clientX,
+                    clientY: touch.clientY
+                });
+                this.canvas.dispatchEvent(mouseEvent);
+            });
+
+            this.canvas.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                const mouseEvent = new MouseEvent('mouseup', {});
+                this.canvas.dispatchEvent(mouseEvent);
+            });
+
+            // Araç butonları
+            document.getElementById('drawingToolsToggle').addEventListener('click', () => this.toggleToolsVisibility());
+            document.getElementById('closeDrawing').addEventListener('click', () => this.toggleToolsVisibility());
+            document.getElementById('clearCanvas').addEventListener('click', () => this.clearCanvas());
+            document.getElementById('undoCanvas').addEventListener('click', () => this.undo());
+
+            // Çizim modu radio butonları
+            document.getElementById('drawMode').addEventListener('change', () => this.setEraseMode(false));
+            document.getElementById('eraseMode').addEventListener('change', () => this.setEraseMode(true));
+
+            // Renk ve araçlar
+            document.getElementById('colorPicker').addEventListener('input', (e) => this.updateColor(e.target.value));
+            document.getElementById('brushSize').addEventListener('input', (e) => this.updateBrushSize(e.target.value));
+
+            // Hızlı renk butonları
+            document.querySelectorAll('.color-quick-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const color = e.target.dataset.color;
+                    this.updateColor(color);
+                    document.getElementById('colorPicker').value = color;
+                    
+                    document.querySelectorAll('.color-quick-btn').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                });
+            });
+
+            // Hızlı kalınlık butonları
+            document.querySelectorAll('.quick-size').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const size = e.target.dataset.size;
+                    this.updateBrushSize(size);
+                    document.getElementById('brushSize').value = size;
+                    
+                    document.querySelectorAll('.quick-size').forEach(b => b.classList.remove('active'));
+                    e.target.classList.add('active');
+                });
+            });
+
+            // Klavye kısayolları
+            document.addEventListener('keydown', (e) => {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+                
+                if (e.ctrlKey && e.key === 'z') {
+                    e.preventDefault();
+                    this.undo();
+                    return;
+                }
+                
+                switch(e.key.toLowerCase()) {
+                    case 'd':
+                        if (document.getElementById('drawing-section').classList.contains('d-none')) {
+                            this.toggleToolsVisibility();
+                        }
+                        if (!this.isDrawingMode) this.toggleDrawing();
+                        document.getElementById('drawMode').checked = true;
+                        this.setEraseMode(false);
+                        break;
+                    case 'e':
+                        if (this.isDrawingMode) {
+                            document.getElementById('eraseMode').checked = true;
+                            this.setEraseMode(true);
+                        }
+                        break;
+                    case 'escape':
+                        if (!document.getElementById('drawing-section').classList.contains('d-none')) {
+                            this.toggleToolsVisibility();
+                        }
+                        break;
+                }
+            });
+        },
+
+        updateColor(color) {
+            this.brushColor = color;
+        },
+
+        updateBrushSize(size) {
+            this.brushSize = parseInt(size, 10);
+            document.getElementById('brushSizeDisplay').textContent = size;
+        },
+
+        resizeCanvas() {
+            this.canvas.width = window.innerWidth;
+            this.canvas.height = window.innerHeight;
+        }
+    };
+
+    // Sayfa yüklendiğinde
+    document.addEventListener("DOMContentLoaded", function() {
+        showQuestion(1);
+        startTime = new Date();
+        questionStartTime = new Date();
+        timer = setInterval(updateTimer, 1000);
+        drawingTools.init();
+
+        // Yeni: Periyodik kaydetmeyi başlat
+        startPeriodicSaving();
+
+        window.addEventListener('resize', () => drawingTools.resizeCanvas());
+    });
+
+    // ✅ YENİLENMİŞ: Form gönderimi - soru bazlı süreler
+    document.getElementById("quizForm").onsubmit = function(e) {
+        if (drawingTools.isDrawingMode) {
+            e.preventDefault();
+            alert("Çizim modu açıkken testi bitiremezsiniz. Lütfen çizim modunu kapatın.");
+            return false;
+        }
+
+        // Son sorunun süresini de kaydet
+        const finalTimeSpent = Math.floor((new Date() - questionStartTime) / 1000);
+        questionTimes[currentQuestion] = (questionTimes[currentQuestion] || 0) + finalTimeSpent;
+        
+        clearInterval(timer);
+        
+        // ✅ Toplam süreyi hidden input olarak ekle
+        const totalTimeInput = document.createElement('input');
+        totalTimeInput.type = 'hidden';
+        totalTimeInput.name = 'harcanan_sure';
+        totalTimeInput.value = totalSeconds;
+        this.appendChild(totalTimeInput);
+        
+        // ✅ YENİ: Her soru için ayrı süreleri gönder
+        Object.keys(questionTimes).forEach(questionNum => {
+            const timeInput = document.createElement('input');
+            timeInput.type = 'hidden';
+            timeInput.name = `soru_sureleri[${questionNum}]`;
+            timeInput.value = questionTimes[questionNum] || 0;
+            this.appendChild(timeInput);
+        });
+        
+        // ✅ YENİ: Soru ziyaret sayılarını gönder
+        Object.keys(questionVisitCount).forEach(questionNum => {
+            const visitInput = document.createElement('input');
+            visitInput.type = 'hidden';
+            visitInput.name = `soru_ziyaretleri[${questionNum}]`;
+            visitInput.value = questionVisitCount[questionNum] || 0;
+            this.appendChild(visitInput);
+        });
+        
+        document.querySelectorAll('input[name^="cevaplar["]').forEach(input => {
+            console.log(`${input.name}: "${input.value}"`);
+            if (!input.value) input.value = 'bos';
+        });
+        
+        console.log('Soru süreleri:', questionTimes);
+        console.log('Form gönderiliyor...');
+        return true;
+    };
+    
+    // Referans kodu kopyalama işlevi
+    document.addEventListener('DOMContentLoaded', function() {
+        // Tüm referans kodu span'larını seç
+        document.querySelectorAll('[id^="refCode-"]').forEach(span => {
+            span.addEventListener('click', async function() {
+                const code = this.textContent.replace('Ref: ', '').trim();
+                
+                try {
+                    // Modern kopyalama API'si
+                    await navigator.clipboard.writeText(code);
+                    
+                    // Görsel geri bildirim
+                    const originalText = this.textContent;
+                    const originalColor = this.style.color;
+                    
+                    this.textContent = '✅ Kopyalandı!';
+                    this.style.color = '#28a745';
+                    this.style.background = 'rgba(40, 167, 69, 0.8)';
+                    
+                    // 1 saniye sonra geri dön
+                    setTimeout(() => {
+                        this.textContent = originalText;
+                        this.style.color = originalColor;
+                        this.style.background = 'rgba(255,255,255,0.7)';
+                    }, 1000);
+                    
+                    console.log(`Referans kodu kopyalandı: ${code}`);
+                    
+                } catch (err) {
+                    console.error('Kopyalama başarısız:', err);
+                    
+                    // Fallback: Eski yöntem
+                    const textArea = document.createElement('textarea');
+                    textArea.value = code;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    // Fallback geri bildirimi
+                    const originalText = this.textContent;
+                    this.textContent = '📋 Kopyalandı!';
+                    this.style.color = '#ffc107';
+                    
+                    setTimeout(() => {
+                        this.textContent = originalText;
+                        this.style.color = '#888';
+                    }, 1000);
+                }
+            });
+            
+            // Hover efekti
+            span.addEventListener('mouseenter', function() {
+                this.style.background = 'rgba(255,255,255,0.9)';
+                this.style.color = '#495057';
+            });
+            
+            span.addEventListener('mouseleave', function() {
+                this.style.background = 'rgba(255,255,255,0.7)';
+                this.style.color = '#888';
+            });
+        });
+    });
+</script>
+{% endblock %}

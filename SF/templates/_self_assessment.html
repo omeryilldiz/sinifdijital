@@ -1,0 +1,59 @@
+<div class="card mb-4">
+    <div class="card-header bg-transparent border-0 pb-0">
+        <h5 class="card-title mb-0"><i class="bi bi-person-badge me-2"></i> Öz Değerlendirme</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <h6 class="text-success"><i class="bi bi-star-fill me-1"></i> Çok Başarılı Yönlerin</h6>
+                <ul>
+                    {% for subject in stats.question_analytics.subject_stats %}
+                        {% for unit in subject.units %}
+                            {% if unit.success_rate >= 85 %}
+                                <li>{{ subject.name }} / {{ unit.name }} <span class="badge bg-success">{{ unit.success_rate }}%</span></li>
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h6 class="text-warning"><i class="bi bi-arrow-up-right-circle me-1"></i> Gelişmeye Açık Yönlerin</h6>
+                <ul>
+                    {% for subject in stats.question_analytics.subject_stats %}
+                        {% for unit in subject.units %}
+                            {% if unit.success_rate >= 70 and unit.success_rate < 85 %}
+                                <li>{{ subject.name }} / {{ unit.name }} <span class="badge bg-warning text-dark">{{ unit.success_rate }}%</span></li>
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h6 class="text-danger"><i class="bi bi-arrow-down-right-circle me-1"></i> Tekrar Edilmesi Gerekenler</h6>
+                <ul>
+                    {% set very_low = false %}
+                    {% for subject in stats.question_analytics.subject_stats %}
+                        {% for unit in subject.units %}
+                            {% if unit.success_rate < 70 %}
+                                <li>
+                                    {{ subject.name }} / {{ unit.name }}
+                                    <span class="badge bg-danger">{{ unit.success_rate }}%</span>
+                                    {% if unit.success_rate <= 30 %}
+                                        <span class="badge bg-warning text-dark ms-2">Dikkat: Çok düşük başarı!</span>
+                                        {% set very_low = true %}
+                                    {% endif %}
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                </ul>
+                {% if very_low %}
+                    <div class="alert alert-warning mt-3">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        Bazı konularda başarı oranınız çok düşük! Lütfen bu konulara öncelik verin.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,273 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Test Sonuçları</h4>
+        </div>
+        <div class="card-body">
+            <!-- Özet Bilgiler -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-light">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Toplam Soru</h5>
+                            <h3 class="mb-0">{{ toplam_soru or 0 }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Doğru</h5>
+                            <h3 class="mb-0">{{ dogru_sayisi or 0 }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-danger text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Yanlış</h5>
+                            <h3 class="mb-0">{{ yanlis_sayisi or 0 }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Boş</h5>
+                            <h3 class="mb-0">{{ bos_sayisi or 0 }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Başarı Durumu, Net Sayısı ve Puan -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Başarı Oranı</h5>
+                            <div class="progress" style="height: 25px;">
+                                {% set basari_yuzdesi = (dogru_sayisi / toplam_soru * 100) | round(1) if toplam_soru and toplam_soru > 0 else 0 %}
+                                <div class="progress-bar bg-success" 
+                                    role="progressbar" 
+                                    style="width: {{ basari_yuzdesi }}%" 
+                                    aria-valuenow="{{ basari_yuzdesi }}" 
+                                    aria-valuemin="0" 
+                                    aria-valuemax="100">
+                                    {{ basari_yuzdesi }}%
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ✅ YENİ: Net Sayısı Bölümü -->
+                <div class="col-md-4">
+                    <div class="card bg-info text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Net Sayısı</h5>
+                            {% set net_sayisi = (dogru_sayisi or 0) - ((yanlis_sayisi or 0) / 3) %}
+                            {% set net_formatted = net_sayisi | round(2) %}
+                            <h2 class="mb-0">{{ net_formatted }}</h2>
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Kazanılan Puan</h5>
+                            <h2 class="mb-0">{{ toplam_puan or 0 }}</h2>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Süre Bilgisi -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Test Süresi</h5>
+                            <p class="mb-0">
+                                {% if toplam_sure %}
+                                    {% set dakika = (toplam_sure / 60) | int %}
+                                    {% set saniye = toplam_sure % 60 %}
+                                    {% if dakika > 0 %}
+                                        {{ dakika }} dakika {{ saniye }} saniye
+                                    {% else %}
+                                        {{ saniye }} saniye
+                                    {% endif %}
+                                {% else %}
+                                    Süre bilgisi yok
+                                {% endif %}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detaylı Sonuçlar -->
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Soru No</th>
+                            <th>Verilen Cevap</th>
+                            <th>Doğru Cevap</th>
+                            <th>Sonuç</th>
+                            <th>Puan</th>
+                            <th>Net Katkısı</th> <!-- ✅ YENİ KOLON -->
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if sonuclar %}
+                        {% for sonuc in sonuclar %}
+                        <tr>
+                            <td>{{ sonuc.soru_no or loop.index }}</td>
+                            <td>{{ sonuc.verilen_cevap if sonuc.verilen_cevap else '-' }}</td>
+                            <td>{{ sonuc.dogru_cevap or '-' }}</td>
+                            <td>
+                                {% if sonuc.sonuc == 'Doğru' %}
+                                    <span class="badge bg-success">Doğru</span>
+                                {% elif sonuc.sonuc == 'Yanlış' %}
+                                    <span class="badge bg-danger">Yanlış</span>
+                                {% else %}
+                                    <span class="badge bg-warning">Boş</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ sonuc.puan or 0 }}</td>
+                            <!-- ✅ YENİ: Net Katkısı Hesaplama -->
+                            <td>
+                                {% if sonuc.sonuc == 'Doğru' %}
+                                    <span class="text-success">+1.00</span>
+                                {% elif sonuc.sonuc == 'Yanlış' %}
+                                    <span class="text-danger">-0.33</span>
+                                {% else %}
+                                    <span class="text-muted">0.00</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{{ url_for('tekil_soru', sinif_slug=sinif.slug, ders_slug=ders.slug, soru_id=sonuc.soru_id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-redo"></i> Tekrar Çöz
+                                </a>
+                                
+                                {% if sonuc.video_path %}
+                                <button type="button" class="btn btn-sm btn-outline-success ms-1" data-bs-toggle="modal" data-bs-target="#videoModal{{ sonuc.soru_id }}">
+                                    <i class="fas fa-play-circle"></i> Video
+                                </button>
+                                {% endif %}
+                                
+                                {% if sonuc.cozum_resim %}
+                                <button type="button" class="btn btn-sm btn-outline-info ms-1" data-bs-toggle="modal" data-bs-target="#resimModal{{ sonuc.soru_id }}">
+                                    <i class="fas fa-image"></i> Çözüm
+                                </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted"> <!-- ✅ colspan 7 yapıldı -->
+                                Sonuç verisi bulunamadı.
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ✅ YENİ: Net Sayısı Açıklama Bölümü -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-calculator"></i> Net Sayısı Hesaplama</h6>
+                        <p class="mb-0">
+                            <small class="text-muted">
+                                • Her doğru cevap: +1 net<br>
+                                • Her yanlış cevap: -0.33 net<br>
+                                • Boş cevap: Net'i etkilemez
+                            </small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Aksiyon Butonları -->
+            <div class="mt-4 text-center">
+                <a href="{{ url_for('soru_coz', sinif_slug=sinif.slug if sinif else '', ders_slug=ders.slug if ders else '') }}" 
+                   class="btn btn-primary me-2">
+                    <i class="fas fa-plus"></i> Yeni Test Çöz
+                </a>
+                <a href="{{ url_for('home') }}" class="btn btn-secondary">
+                    <i class="fas fa-home"></i> Ana Sayfaya Dön
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal yapıları aynı kalacak... -->
+{% if sonuclar %}
+{% for sonuc in sonuclar %}
+    <!-- Video Modal -->
+    {% if sonuc.video_path %}
+    <div class="modal fade" id="videoModal{{ sonuc.soru_id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Soru {{ sonuc.soru_no or loop.index }} - Video Çözüm</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <video controls class="img-fluid" style="max-height: 70vh;">
+                        <source src="{{ url_for('static', filename='video_uploads/' ~ sonuc.video_path) }}" type="video/mp4">
+                        Tarayıcınız video elementini desteklemiyor.
+                    </video>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div> 
+    {% endif %}
+    
+    <!-- Resim Modal -->
+    {% if sonuc.cozum_resim %}
+    <div class="modal fade" id="resimModal{{ sonuc.soru_id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <!-- Modal header -->
+                <div class="modal-header">
+                    <h5 class="modal-title">Soru {{ sonuc.soru_no or loop.index }} - Çözüm</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <!-- Modal body -->
+                <div class="modal-body text-center">
+
+                    
+                    <img src="{{ url_for('static', filename='cozum_uploads/' ~ sonuc.cozum_resim) }}" 
+                         class="img-fluid" style="max-height: 70vh;" alt="Soru çözümü"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div style="display: none;" class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i> Resim yüklenemedi!
+                        <small class="d-block mt-2">Dosya: {{ sonuc.cozum_resim }}</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+{% endfor %}
+{% endif %}
+
+{% endblock %}
+

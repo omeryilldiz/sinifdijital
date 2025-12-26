@@ -1,0 +1,384 @@
+{% extends "layout.html" %}
+
+{% block styles %}
+{{ super() }}
+<style>
+/* CSS Variables for better performance - Container scope ile sınırlandırıldı */
+.sinif-page {
+    --sinif-primary: #007bff;
+    --sinif-success: #28a745;
+    --sinif-warning: #ffc107;
+    --sinif-card-bg: linear-gradient(145deg, #ffffff, #e6e6e6);
+    --sinif-shadow-light: 5px 5px 10px #d1d1d1;
+    --sinif-shadow-dark: -5px -5px 10px #ffffff;
+    --sinif-border-radius: 10px;
+}
+
+/* Genel Stil - Optimized */
+body {
+    background-color: #f5f5f5;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Header Section */
+.sinif-page .header-section {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: linear-gradient(135deg, var(--sinif-primary) 0%, #0056b3 100%);
+    color: white;
+    border-radius: var(--sinif-border-radius);
+    box-shadow: 0 4px 20px rgba(0, 123, 255, 0.2);
+}
+
+.sinif-page .header-section h1 {
+    font-size: clamp(1.8rem, 5vw, 2.5rem);
+    font-weight: 700;
+    margin-bottom: 10px;
+}
+
+.sinif-page .header-section p {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin: 0;
+}
+
+/* Card Styles - Optimized */
+.sinif-page .card {
+    border-radius: var(--sinif-border-radius);
+    overflow: hidden;
+    background: var(--sinif-card-bg);
+    box-shadow: var(--sinif-shadow-light), var(--sinif-shadow-dark);
+    margin-bottom: 20px;
+    border: none;
+    /* Removed hover effects for better performance */
+}
+
+.sinif-page .card-header {
+    font-size: 1.5rem;
+    font-weight: bold;
+    background-color: var(--sinif-primary);
+    color: white;
+    text-align: center;
+    padding: 10px;
+}
+
+.sinif-page .card-body {
+    padding: 15px;
+}
+
+.sinif-page .card-body .btn {
+    border-radius: 30px;
+    font-weight: bold;
+    transition: background-color 0.2s ease;
+    /* Removed hover effects */
+}
+
+.sinif-page .main_card {
+    background-color: #ddf1e1;
+    min-height: 180px;
+}
+
+/* Ders Adı */
+.sinif-page .ders-adi {
+    font-size: clamp(1.5rem, 4vw, 2rem);
+    font-weight: bold;
+    color: #333;
+    text-align: center;
+    margin: 0;
+}
+
+/* Responsive Grid System */
+@media (max-width: 575.98px) {
+    .sinif-page .container {
+        padding: 0 10px;
+    }
+    
+    .sinif-page .header-section {
+        margin-bottom: 20px;
+        padding: 15px;
+    }
+    
+    .sinif-page .header-section h1 {
+        font-size: 1.8rem;
+    }
+    
+    .sinif-page .main_card {
+        flex-direction: column;
+        min-height: auto;
+    }
+    
+    .sinif-page .col-mobile-12 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+    
+    .sinif-page .ders-adi {
+        font-size: 1.5rem;
+        margin-top: 10px;
+    }
+    
+    .sinif-page .card-body .btn {
+        width: 100%;
+        margin-bottom: 8px;
+    }
+}
+
+@media (min-width: 576px) and (max-width: 767.98px) {
+    .sinif-page .header-section {
+        padding: 18px;
+    }
+    
+    .sinif-page .main_card {
+        min-height: 160px;
+    }
+    
+    .sinif-page .ders-adi {
+        font-size: 1.8rem;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .sinif-page .main_card {
+        min-height: 170px;
+    }
+    
+    .sinif-page .ders-adi {
+        font-size: 1.9rem;
+    }
+}
+
+@media (min-width: 992px) {
+    .sinif-page .main_card {
+        min-height: 180px;
+    }
+    
+    .sinif-page .ders-adi {
+        font-size: 2rem;
+    }
+}
+
+/* Button Styles - Optimized */
+.sinif-page .btn {
+    display: inline-block;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 25px;
+    text-decoration: none;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.sinif-page .btn-primary {
+    background-color: var(--sinif-primary);
+    color: white;
+}
+
+.sinif-page .btn-success {
+    background-color: var(--sinif-success);
+    color: white;
+}
+
+.sinif-page .btn-warning {
+    background-color: var(--sinif-warning);
+    color: #212529;
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .sinif-page .card,
+    .sinif-page .btn {
+        transition: none;
+    }
+}
+
+.sinif-page .btn:focus {
+    outline: 2px solid var(--sinif-primary);
+    outline-offset: 2px;
+}
+
+/* Performance optimizations */
+.sinif-page .card img {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Loading state */
+.sinif-page .loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+/* Print styles */
+@media print {
+    .sinif-page .btn {
+        display: none;
+    }
+    
+    .sinif-page .card {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+}
+</style>
+{% endblock styles %}
+
+{% block content %}
+<div class="container mt-5 sinif-page">
+    <!-- Başlık Bölümü -->
+    <div class="header-section">
+        <h1>{{ sinif.sinif }} Dersleri</h1>
+        <p>Sınıfınıza ait dersleri keşfedin ve öğrenmeye başlayın!</p>
+    </div>
+
+    <!-- Ders Kartları -->
+    <div class="row">
+        {% if dersler %}
+            {% for ders in dersler %}
+            <div class="col-12 col-sm-12 col-md-12 col-lg-12">
+                <div class="card shadow mb-4" role="article" aria-labelledby="ders-{{ loop.index }}">
+                    <div class="main_card row g-0">
+                        <!-- Sol Sütun: Ders Adı -->
+                        <div class="col-12 col-sm-12 col-md-6 d-flex align-items-center justify-content-center" 
+                             style="min-height: 150px;">
+                            <h2 id="ders-{{ loop.index }}" class="ders-adi">
+                                {{ ders.ders_adi }}
+                            </h2>
+                        </div>
+                        
+                        <!-- Sağ Sütun: Butonlar -->
+                        <div class="col-12 col-sm-12 col-md-6 p-3 d-flex flex-column">
+                            <div class="d-flex flex-column gap-2 col-12 col-sm-8 col-md-6 mx-auto">
+                                <a href="{{ url_for('ders', sinif_slug=ders.sinif.slug, ders_slug=ders.slug) }}" 
+                                   class="btn btn-primary"
+                                   aria-label="{{ ders.ders_adi }} konu anlatımına git">
+                                    Konu Anlatım
+                                </a>
+                                
+                                <a href="{{ url_for('soru_filtre', sinif_slug=ders.sinif.slug, ders_slug=ders.slug) }}" 
+                                   class="btn btn-success"
+                                   aria-label="{{ ders.ders_adi }} soruları çöz">
+                                    Soruları Çöz
+                                </a>
+                                
+                                <a href="{{ url_for('ders_notu_filtre', sinif_slug=ders.sinif.slug, ders_slug=ders.slug)}}" 
+                                   class="btn btn-warning"
+                                   aria-label="{{ ders.ders_adi }} ders notlarına git">
+                                    Ders Notları
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12 text-center">
+                <div class="card shadow">
+                    <div class="card-body py-5">
+                        <i class="bi bi-info-circle text-muted fs-1 mb-3" aria-hidden="true"></i>
+                        <h3 class="text-muted">Henüz Ders Yok</h3>
+                        <p class="text-muted">Bu sınıfa ait ders bulunmamaktadır.</p>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+(function() {
+    'use strict';
+    
+    // Performance monitoring
+    const perfData = {
+        startTime: performance.now(),
+        cardsLoaded: 0
+    };
+    
+    function logPerformance() {
+        const loadTime = performance.now() - perfData.startTime;
+        console.log(`📊 Sayfa yükleme süresi: ${loadTime.toFixed(2)}ms`);
+        console.log(`📊 Kart sayısı: ${perfData.cardsLoaded}`);
+    }
+    
+    // Optimized DOM ready
+    function domReady(fn) {
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', fn);
+        } else {
+            fn();
+        }
+    }
+    
+    domReady(function() {
+        console.log('📚 Sınıf sayfası hazır');
+        
+        // Count cards for performance tracking
+        const cards = document.querySelectorAll('.card');
+        perfData.cardsLoaded = cards.length;
+        
+        // Optimized button interactions
+        const buttons = document.querySelectorAll('.btn');
+        buttons.forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                // Add loading state
+                this.classList.add('loading');
+                this.textContent = 'Yükleniyor...';
+                
+                // Remove loading after navigation (fallback)
+                setTimeout(() => {
+                    this.classList.remove('loading');
+                    this.textContent = this.getAttribute('data-original-text') || this.textContent;
+                }, 3000);
+            });
+            
+            // Store original text
+            btn.setAttribute('data-original-text', btn.textContent);
+        });
+        
+        // Intersection Observer for lazy loading (if needed)
+        if ('IntersectionObserver' in window) {
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        // Add visible class for potential animations
+                        entry.target.classList.add('visible');
+                    }
+                });
+            }, {
+                threshold: 0.1,
+                rootMargin: '50px'
+            });
+            
+            cards.forEach(card => observer.observe(card));
+        }
+        
+        // Memory cleanup
+        window.addEventListener('beforeunload', function() {
+            buttons.forEach(btn => {
+                btn.removeEventListener('click', arguments.callee);
+            });
+        });
+        
+        logPerformance();
+    });
+    
+    // Error handling
+    window.addEventListener('error', function(e) {
+        console.error('❌ JavaScript hatası:', e.message);
+    });
+    
+    // Unhandled promise rejection
+    window.addEventListener('unhandledrejection', function(e) {
+        console.error('❌ Promise hatası:', e.reason);
+    });
+})();
+</script>
+{% endblock scripts %}

@@ -1,0 +1,222 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0">Profilini Tamamla</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST" novalidate>
+                        {{ form.hidden_tag() }}
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.first_name.label(class="form-label") }}
+                                    {{ form.first_name(class="form-control") }}
+                                    {% if form.first_name.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.first_name.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.last_name.label(class="form-label") }}
+                                    {{ form.last_name(class="form-control") }}
+                                    {% if form.last_name.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.last_name.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.province.label(class="form-label") }}
+                                    {{ form.province(class="form-select", id="province") }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.district.label(class="form-label") }}
+                                    {{ form.district(class="form-select", id="district") }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.school_type.label(class="form-label") }}
+                                    {{ form.school_type(class="form-select", id="school_type") }}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.school.label(class="form-label") }}
+                                    {{ form.school(class="form-select", id="school") }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ✅ Sınıf Seçimi Güncellendi -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.class_no.label(class="form-label") }}
+                                    {{ form.class_no(class="form-select", id="class_no") }}
+                                    {% if form.class_no.errors %}
+                                        <div class="text-danger">
+                                            {% for error in form.class_no.errors %}
+                                                <small>{{ error }}</small>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    <small class="form-text text-muted">
+                                        Sınıfınızı veya hazırlandığınız sınavı seçiniz
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    {{ form.class_name.label(class="form-label") }}
+                                    {{ form.class_name(class="form-control", id="class_name", placeholder="Örn: A, B, C (İsteğe bağlı)") }}
+                                    <small class="form-text text-muted">
+                                        Şube bilgisi (İsteğe bağlı)
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Profili Tamamla</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form elementlerini seç
+    const provinceSelect = document.getElementById('province');
+    const districtSelect = document.getElementById('district');
+    const schoolTypeSelect = document.getElementById('school_type');
+    const schoolSelect = document.getElementById('school');
+    const classNoSelect = document.getElementById('class_no');
+    const classNameField = document.getElementById('class_name');
+
+    // ✅ Null kontrolü ekle
+    if (!classNameField) {
+        console.error('class_name alanı bulunamadı!');
+        return;
+    }
+
+    // ✅ Sınıf seçimi değiştiğinde şube alanını kontrol et
+    classNoSelect.addEventListener('change', function() {
+        const selectedClass = this.value;
+        const classNameGroup = classNameField.closest('.form-group');
+        const helpText = classNameGroup ? classNameGroup.querySelector('.form-text') : null;
+        
+        // LGS, TYT, AYT seçilirse şube alanını gizle
+        if (['LGS', 'TYT', 'AYT'].includes(selectedClass)) {
+            classNameField.style.display = 'none';
+            if (helpText) helpText.style.display = 'none';
+            classNameField.value = ''; // Değeri temizle
+        } else {
+            classNameField.style.display = 'block';
+            if (helpText) helpText.style.display = 'block';
+        }
+    });
+
+    // İl değiştiğinde
+    provinceSelect.addEventListener('change', function() {
+        const provinceId = this.value;
+        resetSelects(['district', 'school']);
+
+        if (!provinceId || provinceId == "0") return;
+
+        fetchDistricts(provinceId);
+    });
+
+    // İlçe veya okul türü değiştiğinde
+    [districtSelect, schoolTypeSelect].forEach(select => {
+        select.addEventListener('change', function() {
+            const districtId = districtSelect.value;
+            const schoolTypeId = schoolTypeSelect.value;
+            updateSchools(districtId, schoolTypeId);
+        });
+    });
+
+    // İlçeleri getir
+    function fetchDistricts(provinceId) {
+        fetch(`/get_districts/${provinceId}`)
+            .then(handleResponse)
+            .then(data => {
+                updateSelect(districtSelect, data, 'İlçe seçiniz');
+            })
+            .catch(handleError);
+    }
+
+    // Okulları güncelle
+    function updateSchools(districtId, schoolTypeId) {
+        if (!districtId || !schoolTypeId || districtId == "0" || schoolTypeId == "0") {
+            resetSelects(['school']);
+            return;
+        }
+
+        fetch(`/get_schools_filtered/${districtId}/${schoolTypeId}`)
+            .then(handleResponse)
+            .then(data => {
+                updateSelect(schoolSelect, data, 'Okul seçiniz');
+            })
+            .catch(handleError);
+    }
+
+    // Yardımcı fonksiyonlar
+    function handleResponse(response) {
+        if (!response.ok) throw new Error('Veri yüklenirken hata oluştu');
+        return response.json();
+    }
+
+    function handleError(error) {
+        console.error(error);
+        alert(error.message);
+    }
+
+    function resetSelects(selectIds) {
+        selectIds.forEach(id => {
+            const select = document.getElementById(id);
+            if (select) {
+                select.innerHTML = `<option value="0">${id === 'district' ? 'İlçe' : 'Okul'} seçiniz</option>`;
+            }
+        });
+    }
+
+    function updateSelect(select, data, defaultText) {
+        select.innerHTML = `<option value="0">${defaultText}</option>`;
+        data.forEach(item => {
+            select.innerHTML += `<option value="${item.id}">${item.name}</option>`;
+        });
+    }
+
+    // Sayfa yüklendiğinde sınıf kontrolü yap
+    classNoSelect.dispatchEvent(new Event('change'));
+});
+</script>
+{% endblock %}

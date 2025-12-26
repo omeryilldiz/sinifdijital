@@ -1,0 +1,129 @@
+{% extends "admin_layout.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Ders Notu Düzenle</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" enctype="multipart/form-data">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="mb-3">
+                            {{ form.baslik.label(class="form-label") }}
+                            {{ form.baslik(class="form-control") }}
+                            {% if form.baslik.errors %}
+                                {% for error in form.baslik.errors %}
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <div class="row mb-4">
+                            <div class="col-md-3 mb-3">
+                                {{ form.sinif.label(class="form-label") }}
+                                {{ form.sinif(class="form-select") }}
+                                {% if form.sinif.errors %}
+                                    {% for error in form.sinif.errors %}
+                                        <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                {{ form.ders.label(class="form-label") }}
+                                {{ form.ders(class="form-select") }}
+                                {% if form.ders.errors %}
+                                    {% for error in form.ders.errors %}
+                                        <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                {{ form.unite.label(class="form-label") }}
+                                {{ form.unite(class="form-select") }}
+                                {% if form.unite.errors %}
+                                    {% for error in form.unite.errors %}
+                                        <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                {{ form.icerik.label(class="form-label") }}
+                                {{ form.icerik(class="form-select") }}
+                                {% if form.icerik.errors %}
+                                    {% for error in form.icerik.errors %}
+                                        <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.pdf.label(class="form-label") }}
+                            {{ form.pdf(class="form-control") }}
+                            {% if form.pdf.errors %}
+                                {% for error in form.pdf.errors %}
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                            <small class="text-muted">Mevcut PDF: {{ ders_notu.dosya_adi }}</small><br>
+                            <small class="text-muted">Yeni bir PDF yüklemezseniz mevcut PDF korunacaktır.</small>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            {{ form.submit(class="btn btn-primary") }}
+                            <a href="{{ url_for('list_ders_notlari') }}" class="btn btn-secondary">İptal</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('sinif').addEventListener('change', function() {
+    fetch('/get_dersler/' + this.value)
+        .then(response => response.json())
+        .then(data => {
+            let dersSelect = document.getElementById('ders');
+            dersSelect.innerHTML = '<option value="0">Ders Seçiniz</option>';
+            data.forEach(ders => {
+                dersSelect.innerHTML += `<option value="${ders.id}">${ders.ders_adi}</option>`;
+            });
+            document.getElementById('unite').innerHTML = '<option value="0">Önce Ders Seçiniz</option>';
+            document.getElementById('icerik').innerHTML = '<option value="0">Önce Ünite Seçiniz</option>';
+        });
+});
+
+document.getElementById('ders').addEventListener('change', function() {
+    fetch('/get_uniteler/' + this.value)
+        .then(response => response.json())
+        .then(data => {
+            let uniteSelect = document.getElementById('unite');
+            uniteSelect.innerHTML = '<option value="0">Ünite Seçiniz</option>';
+            data.forEach(unite => {
+                uniteSelect.innerHTML += `<option value="${unite.id}">${unite.unite}</option>`;
+            });
+            document.getElementById('icerik').innerHTML = '<option value="0">Önce Ünite Seçiniz</option>';
+        });
+});
+
+document.getElementById('unite').addEventListener('change', function() {
+    fetch('/get_icerikler/' + this.value)
+        .then(response => response.json())
+        .then(data => {
+            let icerikSelect = document.getElementById('icerik');
+            icerikSelect.innerHTML = '<option value="0">İçerik Seçiniz</option>';
+            data.forEach(icerik => {
+                icerikSelect.innerHTML += `<option value="${icerik.id}">${icerik.baslik}</option>`;
+            });
+        });
+});
+</script>
+{% endblock %}

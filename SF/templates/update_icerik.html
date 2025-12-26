@@ -1,0 +1,54 @@
+{% extends 'admin_layout.html' %}
+
+{% block content %}
+
+<div class="container">
+
+    <h2 class="my-2">{{ unite.unite }} Ünitesi - İçerik Düzenleme</h2>
+    <hr>
+
+    <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+        <input type="hidden" id="kaydedilmisIcerik" value="{{ kaydedilmis_icerik }}">
+        
+        <div class="mb-3">
+            {{ form.baslik.label(class="form-label") }}
+            {% if form.baslik.errors %}
+                {{ form.baslik(class="form-control is-invalid") }}
+                {% for error in form.baslik.errors %}
+                    <div class="invalid-feedback">{{ error }}</div>
+                {% endfor %}
+            {% else %}
+                {{ form.baslik(class="form-control") }}
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.icerik.label(class="form-label") }}
+            {{ form.icerik(class="form-control", id="icerik") | safe }}
+        </div>
+
+        <div class="d-flex justify-content-between">
+            <a href="{{ url_for('add_icerik', id=id, sub_id=sub_id, unite_id=unite.id) }}" 
+               class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Geri Dön
+            </a>
+            {{ form.submit(class="btn btn-primary") }}
+        </div>
+    </form>
+</div>
+
+<script src="https://cdn.ckeditor.com/ckeditor5/44.1.0/ckeditor5.umd.js" crossorigin></script>
+<script src="{{ url_for('static', filename='main.js') }}" crossorigin></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    window.initCKEditor('#icerik', 'Konu girişini buraya ekleyiniz...').then(editor => {
+        const kaydedilmisIcerik = document.getElementById('kaydedilmisIcerik');
+        if (kaydedilmisIcerik && kaydedilmisIcerik.value) {
+            editor.setData(kaydedilmisIcerik.value);
+        }
+    });
+});
+</script>
+
+{% endblock %}

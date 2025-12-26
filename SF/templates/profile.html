@@ -1,0 +1,432 @@
+{% extends "dashboard_layout.html" %}
+
+{% block styles %}
+<style>
+.competition-info-card {
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+    color: white;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.profile-header {
+    background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+}
+
+.class-info-badge {
+    background-color: rgba(255, 255, 255, 0.2);
+    padding: 8px 12px;
+    border-radius: 6px;
+    display: inline-block;
+    margin-top: 8px;
+}
+
+.alert-class-change {
+    background-color: #fef3c7;
+    border: 1px solid #fbbf24;
+    border-radius: 8px;
+}
+
+.section-header {
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 8px;
+    margin-bottom: 16px;
+}
+
+/* ✅ YENİ: Güvenlik kartı stili */
+.security-card {
+    background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+    border: 1px solid #bae6fd;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+}
+
+.security-card .btn-change-password {
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border: none;
+    color: white;
+    padding: 10px 24px;
+    border-radius: 8px;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.security-card .btn-change-password:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    color: white;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- ✅ Profil Başlığı -->
+    <div class="profile-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h4 class="mb-1">
+                    <i class="bi bi-person-circle me-2"></i>
+                    {% if current_user.first_name and current_user.last_name %}
+                        {{ current_user.first_name }} {{ current_user.last_name }}
+                    {% else %}
+                        {{ current_user.username }}
+                    {% endif %}
+                </h4>
+                <p class="text-muted mb-2">
+                    {% if current_user.school %}
+                        {{ current_user.school.name }}
+                    {% else %}
+                        Okul bilgisi belirtilmemiş
+                    {% endif %}
+                </p>
+                <div class="d-flex align-items-center">
+                    <span class="badge bg-primary me-2">
+                        {{ current_user.get_class_display() }}
+                    </span>
+                    {% if current_user.class_name %}
+                        <span class="badge bg-secondary">
+                            {{ current_user.class_name }} Şubesi
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-4 text-md-end">
+                {% if leaderboard and leaderboard.user_info %}
+                <div class="class-info-badge">
+                    <div class="fw-bold">Yarışma Grubu</div>
+                    <div class="h6 mb-0">{{ leaderboard.user_info.competition_group_name }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- ✅ Yarışma Grubu Detay Kartı -->
+    {% if leaderboard and leaderboard.user_info %}
+    <div class="competition-info-card">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h5 class="mb-1">
+                    <i class="bi bi-trophy me-2"></i>
+                    {{ leaderboard.user_info.competition_group_name }} Grubunda Yarışıyorsun
+                </h5>
+                <p class="mb-0 opacity-90">
+                    {{ leaderboard.user_info.competing_classes|join(', ') }} sınıflarındaki öğrencilerle aynı leaderboard'da yer alıyorsun
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="h3 mb-0">
+                    #{{ leaderboard.all_time.general.my_rank if leaderboard.all_time and leaderboard.all_time.general else '?' }}
+                </div>
+                <small class="opacity-90">Tüm Zamanlar Sıralaması</small>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+
+
+    <!-- ✅ Ana Form -->
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title mb-4">
+                <i class="bi bi-pencil-square me-2"></i>
+                Profil Bilgilerini Düzenle
+            </h5>
+            
+            <!-- ✅ Sınıf Değişikliği Uyarısı -->
+            <div class="alert alert-class-change" role="alert">
+                <div class="d-flex">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <div>
+                        <strong>Önemli:</strong> Sınıf bilginizi değiştirirseniz yarışma grubunuz da değişecektir. 
+                        Bu durumda leaderboard sıralamenız yeniden hesaplanacak.
+                    </div>
+                </div>
+            </div>
+            
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                
+                <!-- Kişisel Bilgiler Bölümü -->
+                <div class="mb-4">
+                    <h6 class="section-header text-muted">
+                        <i class="bi bi-person me-1"></i>
+                        Kişisel Bilgiler
+                    </h6>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.first_name.label(class="form-label") }}
+                            {{ form.first_name(class="form-control") }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.last_name.label(class="form-label") }}
+                            {{ form.last_name(class="form-control") }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.email.label(class="form-label") }}
+                            {{ form.email(class="form-control") }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.phone.label(class="form-label") }}
+                            {{ form.phone(class="form-control") }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Konum ve Okul Bilgileri -->
+                <div class="mb-4">
+                    <h6 class="section-header text-muted">
+                        <i class="bi bi-geo-alt me-1"></i>
+                        Konum ve Okul Bilgileri
+                    </h6>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.province.label(class="form-label") }}
+                            {{ form.province(class="form-select", id="province") }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.district.label(class="form-label") }}
+                            {{ form.district(class="form-select", id="district") }}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.school_type.label(class="form-label") }}
+                            {{ form.school_type(class="form-select", id="school_type") }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.school.label(class="form-label") }}
+                            {{ form.school(class="form-select", id="school") }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ✅ Sınıf ve Yarışma Grubu Bilgileri -->
+                <div class="mb-4">
+                    <h6 class="section-header text-muted">
+                        <i class="bi bi-mortarboard me-1"></i>
+                        Sınıf ve Yarışma Grubu Bilgileri
+                    </h6>
+                    
+                    <!-- Mevcut Sınıf Bilgisi Gösterimi -->
+                    <div class="alert alert-info mb-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <strong>Şu Anki Sınıfın:</strong> {{ current_user.get_class_display() }}
+                                {% if current_user.class_name %}
+                                    ({{ current_user.class_name }} Şubesi)
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4 text-md-end">
+                                {% if leaderboard and leaderboard.user_info %}
+                                    <span class="badge bg-primary">
+                                        {{ leaderboard.user_info.competition_group_name }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.class_no.label(class="form-label") }}
+                            {{ form.class_no(class="form-select", id="class_no") }}
+                            <small class="form-text text-muted">
+                                <i class="bi bi-info-circle me-1"></i>
+                                Sınıfınızı veya hazırlandığınız sınavı seçiniz
+                            </small>
+                        </div>
+                        <div class="col-md-6" id="class-name-group">
+                            {{ form.class_name.label(class="form-label") }}
+                            {{ form.class_name(class="form-control", placeholder="Örn: A, B, C (İsteğe bağlı)") }}
+                            <small class="form-text text-muted">
+                                Şube bilgisi (İsteğe bağlı)
+                            </small>
+                        </div>
+                    </div>
+
+                    <!-- ✅ Grup Değişikliği Önizlemesi -->
+                    <div id="group-preview" class="alert alert-warning" style="display: none;">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-arrow-right-circle me-2"></i>
+                            <div>
+                                <strong>Grup Değişikliği:</strong>
+                                <span id="new-group-name"></span> grubuyla yarışmaya başlayacaksın.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>
+                        Dashboard'a Dön
+                    </a>
+                    {{ form.submit(class="btn btn-primary") }}
+                </div>
+            </form>
+        </div>
+    </div>
+        <!-- ✅ YENİ: Güvenlik ve Şifre Kartı -->
+    <div class="security-card">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h5 class="mb-1">
+                    <i class="bi bi-shield-lock me-2 text-primary"></i>
+                    Hesap Güvenliği
+                </h5>
+                <p class="text-muted mb-0">
+                    Hesabınızın güvenliği için şifrenizi düzenli olarak değiştirmenizi öneririz.
+                    {% if current_user.password_changed_at %}
+                        <br><small class="text-muted">
+                            <i class="bi bi-clock-history me-1"></i>
+                            Son şifre değişikliği: {{ current_user.password_changed_at.strftime('%d.%m.%Y %H:%M') }}
+                        </small>
+                    {% endif %}
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{{ url_for('change_password') }}" class="btn btn-change-password">
+                    <i class="bi bi-key me-2"></i>Şifre Değiştir
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form elementlerini seç
+    const provinceSelect = document.getElementById('province');
+    const districtSelect = document.getElementById('district');
+    const schoolTypeSelect = document.getElementById('school_type');
+    const schoolSelect = document.getElementById('school');
+    const classNoSelect = document.getElementById('class_no');
+    const classNameGroup = document.getElementById('class-name-group');
+    const groupPreview = document.getElementById('group-preview');
+    const newGroupName = document.getElementById('new-group-name');
+
+    // ✅ YENİ: Sınıf grup bilgileri
+    const classGroups = {
+        '5': 'Ortaokul 5. Sınıf',
+        '6': 'Ortaokul 6. Sınıf', 
+        '7': 'Ortaokul 7. Sınıf',
+        '8': 'LGS Grubu',
+        '9': 'Lise 9. Sınıf',
+        '10': 'Lise 10. Sınıf',
+        '11': 'Lise 11. Sınıf', 
+        '12': 'Üniversite Hazırlık',
+        'LGS': 'LGS Grubu',
+        'TYT': 'Üniversite Hazırlık',
+        'AYT': 'Üniversite Hazırlık'
+    };
+
+    // ✅ GÜNCELLENMİŞ: Sınıf seçimi değiştiğinde
+    classNoSelect.addEventListener('change', function() {
+        const selectedClass = this.value;
+        const classNameField = document.querySelector('input[name="class_name"]');
+        
+        // Şube alanını kontrol et
+        if (['LGS', 'TYT', 'AYT'].includes(selectedClass)) {
+            classNameGroup.style.display = 'none';
+            classNameField.value = '';
+        } else {
+            classNameGroup.style.display = 'block';
+        }
+
+        // ✅ YENİ: Grup değişikliği önizlemesi
+        if (selectedClass && classGroups[selectedClass]) {
+            const currentClass = '{{ current_user.class_no }}';
+            if (selectedClass !== currentClass) {
+                newGroupName.textContent = classGroups[selectedClass];
+                groupPreview.style.display = 'block';
+            } else {
+                groupPreview.style.display = 'none';
+            }
+        } else {
+            groupPreview.style.display = 'none';
+        }
+    });
+
+    // Mevcut form validasyon kodları
+    provinceSelect.addEventListener('change', function() {
+        const provinceId = this.value;
+        resetSelects(['district', 'school']);
+
+        if (!provinceId || provinceId == "0") return;
+
+        fetchDistricts(provinceId);
+    });
+
+    [districtSelect, schoolTypeSelect].forEach(select => {
+        select.addEventListener('change', function() {
+            const districtId = districtSelect.value;
+            const schoolTypeId = schoolTypeSelect.value;
+            updateSchools(districtId, schoolTypeId);
+        });
+    });
+
+    function fetchDistricts(provinceId) {
+        fetch(`/get_districts/${provinceId}`)
+            .then(handleResponse)
+            .then(data => {
+                updateSelect(districtSelect, data, 'İlçe seçiniz');
+            })
+            .catch(handleError);
+    }
+
+    function updateSchools(districtId, schoolTypeId) {
+        if (!districtId || !schoolTypeId || districtId == "0" || schoolTypeId == "0") {
+            resetSelects(['school']);
+            return;
+        }
+
+        fetch(`/get_schools_filtered/${districtId}/${schoolTypeId}`)
+            .then(handleResponse)
+            .then(data => {
+                updateSelect(schoolSelect, data, 'Okul seçiniz');
+            })
+            .catch(handleError);
+    }
+
+    function handleResponse(response) {
+        if (!response.ok) throw new Error('Veri yüklenirken hata oluştu');
+        return response.json();
+    }
+
+    function handleError(error) {
+        console.error(error);
+        alert(error.message);
+    }
+
+    function resetSelects(selectIds) {
+        selectIds.forEach(id => {
+            const select = document.getElementById(id);
+            select.innerHTML = `<option value="0">${id === 'district' ? 'İlçe' : 'Okul'} seçiniz</option>`;
+        });
+    }
+
+    function updateSelect(select, data, defaultText) {
+        select.innerHTML = `<option value="0">${defaultText}</option>`;
+        data.forEach(item => {
+            select.innerHTML += `<option value="${item.id}">${item.name}</option>`;
+        });
+    }
+
+    // Sayfa yüklendiğinde sınıf kontrolü yap
+    classNoSelect.dispatchEvent(new Event('change'));
+});
+</script>
+{% endblock %}

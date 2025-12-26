@@ -1,0 +1,13 @@
+[Unit]
+Description=SF Database Backup (oneshot)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/root/SF
+ExecStart=/root/SF/scripts/db_backup.sh
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,54 @@
+{% extends "admin_layout.html" %}
+{% block content %}
+<h3>Okul Düzenle</h3>
+<hr>
+<form method="POST" class="mb-4">
+    <div class="mb-3">
+        <label class="form-label">Okul Adı</label>
+        <input type="text" name="name" class="form-control" value="{{ school.name }}" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">İl</label>
+        <select id="province" class="form-select" required onchange="updateDistricts()">
+            <option value="">İl Seçiniz</option>
+            {% for province in provinces %}
+                <option value="{{ province.id }}" {% if province.id == school.district.province_id %}selected{% endif %}>{{ province.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">İlçe</label>
+        <select name="district_id" id="district" class="form-select" required>
+            <option value="">İlçe Seçiniz</option>
+            {% for district in districts %}
+                <option value="{{ district.id }}" {% if district.id == school.district_id %}selected{% endif %}>{{ district.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Okul Türü</label>
+        <select name="school_type_id" class="form-select" required>
+            <option value="">Okul Türü Seçiniz</option>
+            {% for st in school_types %}
+                <option value="{{ st.id }}" {% if st.id == school.school_type_id %}selected{% endif %}>{{ st.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Kaydet</button>
+    <a href="{{ url_for('admin_schools') }}" class="btn btn-secondary">Geri Dön</a>
+</form>
+<script>
+function updateDistricts() {
+    var provinceId = document.getElementById('province').value;
+    fetch('/get_districts/' + provinceId)
+        .then(response => response.json())
+        .then(data => {
+            var districtSelect = document.getElementById('district');
+            districtSelect.innerHTML = '<option value="">İlçe Seçiniz</option>';
+            data.forEach(function(d) {
+                districtSelect.innerHTML += `<option value="${d.id}">${d.name}</option>`;
+            });
+        });
+}
+</script>
+{% endblock %}

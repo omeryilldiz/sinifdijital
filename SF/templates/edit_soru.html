@@ -1,0 +1,378 @@
+{% extends 'admin_layout.html' %}
+
+{% block styles %}
+<style>
+.current-values {
+    background-color: #f8f9fa;
+    border-left: 4px solid #0d6efd;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+#imagePreview {
+    min-height: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+}
+
+#preview {
+    max-width: 100%;
+    max-height: 300px;
+    object-fit: contain;
+}
+
+#videoPreview {
+    min-height: 250px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+    border: 2px dashed #dee2e6;
+}
+
+#videoPlayer {
+    max-width: 100%;
+    max-height: 250px;
+}
+
+#cozumPreview {
+    min-height: 250px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+    border: 2px dashed #dee2e6;
+}
+
+#cozumImage {
+    max-width: 100%;
+    max-height: 250px;
+    object-fit: contain;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Soru Düzenleme</h2>
+        <a href="{{ url_for('list_sorular') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Geri Dön
+        </a>
+    </div>
+
+    <!-- Mevcut Değerler -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="card-title mb-0">Mevcut Bilgiler</h5>
+        </div>
+        <div class="card-body">
+            <div class="current-values">
+                <p><strong>Soru ID:</strong> {{ soru.id }}</p>
+                <p><strong>Sınıf:</strong> {{ soru.unite.ders.sinif.sinif }}</p>
+                <p><strong>Ders:</strong> {{ soru.unite.ders.ders_adi }}</p>
+                <p><strong>Ünite:</strong> {{ soru.unite.unite }}</p>
+                <p><strong>İçerik:</strong> {{ soru.icerik.baslik }}</p>
+                <p><strong>Doğru Cevap:</strong> {{ soru.cevap }}</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form -->
+    <form method="POST" enctype="multipart/form-data" id="soruForm">
+        {{ form.hidden_tag() }}
+        
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="card-title mb-0">Kategoriler</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <!-- Sınıf Seçimi -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.sinif.label(class="form-label") }}
+                                {{ form.sinif(class="form-select", id="sinifSelect") }}
+                            </div>
+
+                            <!-- Ders Seçimi -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.ders.label(class="form-label") }}
+                                {{ form.ders(class="form-select", id="dersSelect") }}
+                            </div>
+
+                            <!-- Ünite Seçimi -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.unite.label(class="form-label") }}
+                                {{ form.unite(class="form-select", id="uniteSelect") }}
+                            </div>
+
+                            <!-- İçerik Seçimi -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.icerik.label(class="form-label") }}
+                                {{ form.icerik(class="form-select", id="icerikSelect") }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Soru ve Cevap -->
+                <div class="card mb-4">
+                    <div class="card-header bg-success text-white">
+                        <h5 class="card-title mb-0">Soru & Cevap</h5>
+                    </div>
+                    <div class="card-body">
+                        <!-- Soru Resmi -->
+                        <div class="mb-3">
+                            {{ form.soru.label(class="form-label") }}
+                            {{ form.soru(class="form-control", id="soruInput", accept="image/*") }}
+                            <small class="text-muted">Yeni resim seçmezseniz mevcut resim korunacaktır</small>
+                        </div>
+
+                        <!-- Cevap Seçimi -->
+                        <div class="mb-4">
+                            <label class="form-label d-block">{{ form.cevap.label.text }}</label>
+                            <div class="btn-group w-100" role="group">
+                                {% for value, label in form.cevap.choices %}
+                                    <input 
+                                        type="radio" 
+                                        class="btn-check" 
+                                        name="{{ form.cevap.name }}" 
+                                        id="cevap_{{ loop.index }}" 
+                                        value="{{ value }}"
+                                        autocomplete="off"
+                                        {% if form.cevap.data == value %}checked{% endif %}
+                                    >
+                                    <label class="btn btn-outline-success" for="cevap_{{ loop.index }}">
+                                        {{ label }}
+                                    </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video ve Çözüm Resmi -->
+                <div class="card mb-4">
+                    <div class="card-header bg-warning">
+                        <h5 class="card-title mb-0">Video & Çözüm Resmi</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <!-- Video Yükleme -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.video.label(class="form-label") }}
+                                {{ form.video(class="form-control", id="videoInput", accept="video/mp4") }}
+                                <small class="text-muted">MP4 formatı desteklenir (max 20MB)</small>
+                            </div>
+
+                            <!-- Çözüm Resmi Yükleme -->
+                            <div class="col-md-6 mb-3">
+                                {{ form.cozum_resim.label(class="form-label") }}
+                                {{ form.cozum_resim(class="form-control", id="cozumInput", accept="image/webp,image/*") }}
+                                <small class="text-muted">WebP formatı önerilir (max 5MB)</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Submit Butonu -->
+                <div class="d-grid mb-4">
+                    {{ form.submit(class="btn btn-primary btn-lg") }}
+                </div>
+            </div>
+
+            <!-- Önizleme Alanları -->
+            <div class="col-md-6">
+                <!-- Resim Önizleme -->
+                <div class="card mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="card-title mb-0">Soru Resmi</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="imagePreview" class="text-center p-3 border rounded">
+                            <img id="preview" src="{{ url_for('static', filename=soru.get_image_path()) }}" 
+                                 alt="Soru Resmi" class="img-fluid">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Video Önizleme -->
+                <div class="card mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="card-title mb-0">Video Çözüm</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="videoPreview" class="text-center p-3 border rounded">
+                            {% if soru.video_path %}
+                                <video id="videoPlayer" controls>
+                                    <source src="{{ url_for('static', filename='video_uploads/' ~ soru.video_path) }}" type="video/mp4">
+                                    Tarayıcınız video elementini desteklemiyor.
+                                </video>
+                            {% else %}
+                                <div id="videoPlaceholder" class="text-muted">
+                                    <i class="fas fa-video fa-3x mb-2"></i>
+                                    <p>Video yüklendiğinde önizleme burada görünecek</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Çözüm Resmi Önizleme -->
+                <div class="card mb-4">
+                    <div class="card-header bg-dark text-white">
+                        <h5 class="card-title mb-0">Çözüm Resmi</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="cozumPreview" class="text-center p-3 border rounded">
+                            {% if soru.cozum_resim %}
+                                <img id="cozumImage" src="{{ url_for('static', filename='cozum_uploads/' ~ soru.cozum_resim) }}" 
+                                     alt="Çözüm Resmi" class="img-fluid">
+                            {% else %}
+                                <div id="cozumPlaceholder" class="text-muted">
+                                    <i class="fas fa-image fa-3x mb-2"></i>
+                                    <p>Çözüm resmi yüklendiğinde önizleme burada görünecek</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form elementleri
+    const sinifSelect = document.getElementById('sinifSelect');
+    const dersSelect = document.getElementById('dersSelect');
+    const uniteSelect = document.getElementById('uniteSelect');
+    const icerikSelect = document.getElementById('icerikSelect');
+    const soruInput = document.getElementById('soruInput');
+    const videoInput = document.getElementById('videoInput');
+    const cozumInput = document.getElementById('cozumInput');
+    const preview = document.getElementById('preview');
+    const videoPreview = document.getElementById('videoPreview');
+    const cozumPreview = document.getElementById('cozumPreview');
+    const videoPlayer = document.getElementById('videoPlayer');
+    const cozumImage = document.getElementById('cozumImage');
+    const videoPlaceholder = document.getElementById('videoPlaceholder');
+    const cozumPlaceholder = document.getElementById('cozumPlaceholder');
+
+    // Sınıf değiştiğinde
+    sinifSelect.addEventListener('change', async function() {
+        const sinifId = this.value;
+        if (sinifId) {
+            const response = await fetch(`/get_dersler/${sinifId}`);
+            const dersler = await response.json();
+            
+            dersSelect.innerHTML = '<option value="">Ders Seçiniz</option>';
+            uniteSelect.innerHTML = '<option value="">Önce Ders Seçiniz</option>';
+            icerikSelect.innerHTML = '<option value="">Önce Ünite Seçiniz</option>';
+            
+            dersler.forEach(ders => {
+                const option = new Option(ders.ders_adi, ders.id);
+                dersSelect.add(option);
+            });
+        }
+    });
+
+    // Ders değiştiğinde
+    dersSelect.addEventListener('change', async function() {
+        const dersId = this.value;
+        if (dersId) {
+            const response = await fetch(`/get_uniteler/${dersId}`);
+            const uniteler = await response.json();
+            
+            uniteSelect.innerHTML = '<option value="">Ünite Seçiniz</option>';
+            icerikSelect.innerHTML = '<option value="">Önce Ünite Seçiniz</option>';
+            
+            uniteler.forEach(unite => {
+                const option = new Option(unite.unite, unite.id);
+                uniteSelect.add(option);
+            });
+        }
+    });
+
+    // Ünite değiştiğinde
+    uniteSelect.addEventListener('change', async function() {
+        const uniteId = this.value;
+        if (uniteId) {
+            const response = await fetch(`/get_icerikler/${uniteId}`);
+            const icerikler = await response.json();
+            
+            icerikSelect.innerHTML = '<option value="">İçerik Seçiniz</option>';
+            
+            icerikler.forEach(icerik => {
+                const option = new Option(icerik.baslik, icerik.id);
+                icerikSelect.add(option);
+            });
+        }
+    });
+
+    // Soru resmi önizleme
+    soruInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+
+    // Video önizleme
+    videoInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            if (videoPlaceholder) videoPlaceholder.style.display = 'none';
+            if (!videoPlayer) {
+                const video = document.createElement('video');
+                video.id = 'videoPlayer';
+                video.controls = true;
+                video.style.maxWidth = '100%';
+                video.style.maxHeight = '250px';
+                videoPreview.innerHTML = '';
+                videoPreview.appendChild(video);
+            }
+            
+            const videoPlayer = document.getElementById('videoPlayer');
+            const url = URL.createObjectURL(file);
+            videoPlayer.src = url;
+        }
+    });
+
+    // Çözüm resmi önizleme
+    cozumInput.addEventListener('change', function() {
+        const file = this.files[0];
+        if (file) {
+            if (cozumPlaceholder) cozumPlaceholder.style.display = 'none';
+            if (!cozumImage) {
+                const img = document.createElement('img');
+                img.id = 'cozumImage';
+                img.className = 'img-fluid';
+                img.style.maxWidth = '100%';
+                img.style.maxHeight = '250px';
+                cozumPreview.innerHTML = '';
+                cozumPreview.appendChild(img);
+            }
+            
+            const cozumImage = document.getElementById('cozumImage');
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                cozumImage.src = e.target.result;
+            }
+            reader.readAsDataURL(file);
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,172 @@
+<div class="card mb-4">
+    <div class="card-header bg-transparent border-0 pb-0">
+        <h5 class="card-title mb-0"><i class="bi bi-graph-up-arrow me-2"></i> Gelişim Raporu</h5>
+        <small class="text-muted">Son 7 günlük performans</small>
+    </div>
+    <div class="card-body">
+        <div style="position: relative; height: 300px;">
+            <canvas id="progressChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// Gün çeviri fonksiyonu - Bu satırları ekleyin
+function translateDayToTurkish(englishDay) {
+    const dayTranslations = {
+        'Mon': 'Pzt',
+        'Tue': 'Sal',
+        'Wed': 'Çar',
+        'Thu': 'Per',
+        'Fri': 'Cum',
+        'Sat': 'Cmt',
+        'Sun': 'Paz',
+        // Tam günler için
+        'Monday': 'Pazartesi',
+        'Tuesday': 'Salı',
+        'Wednesday': 'Çarşamba',
+        'Thursday': 'Perşembe',
+        'Friday': 'Cuma',
+        'Saturday': 'Cumartesi',
+        'Sunday': 'Pazar'
+    };
+    
+    return dayTranslations[englishDay] || englishDay;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/api/user/weekly-progress')
+        .then(response => response.json())
+        .then(data => {
+            // Eğer veri yoksa örnek veri ile doldur
+            if (!data || !Array.isArray(data) || data.length === 0) {
+                data = [
+                    { day: 'Pzt', dogru: 0, yanlis: 0 },
+                    { day: 'Sal', dogru: 0, yanlis: 0 },
+                    { day: 'Çar', dogru: 0, yanlis: 0 },
+                    { day: 'Per', dogru: 0, yanlis: 0 },
+                    { day: 'Cum', dogru: 0, yanlis: 0 },
+                    { day: 'Cmt', dogru: 0, yanlis: 0 },
+                    { day: 'Paz', dogru: 0, yanlis: 0 },
+                ];
+            } else {
+                // Günleri Türkçeye çevir
+                data = data.map(item => ({
+                    ...item,
+                    day: translateDayToTurkish(item.day)
+                }));
+            }
+            
+            const labels = data.map(x => x.day);
+            const correctData = data.map(x => x.dogru);
+            const wrongData = data.map(x => x.yanlis);
+            const accuracyData = data.map(x => {
+                const total = x.dogru + x.yanlis;
+                return total > 0 ? Math.round((x.dogru / total) * 100) : 0;
+            });
+
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Doğru',
+                            data: correctData,
+                            backgroundColor: 'rgba(25, 135, 84, 0.8)',
+                            stack: 'stack1',
+                            yAxisID: 'y',
+                        },
+                        {
+                            label: 'Yanlış',
+                            data: wrongData,
+                            backgroundColor: 'rgba(220, 53, 69, 0.8)',
+                            stack: 'stack1',
+                            yAxisID: 'y',
+                        },
+                        {
+                            label: 'Başarı Oranı',
+                            type: 'line',
+                            data: accuracyData,
+                            borderColor: 'rgba(13, 110, 253, 1)',
+                            backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                            tension: 0.3,
+                            fill: false,
+                            yAxisID: 'y1',
+                            pointBackgroundColor: 'rgba(13, 110, 253, 1)',
+                            pointRadius: 5
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 10,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.dataset.label || '';
+                                    if (context.dataset.type === 'line') {
+                                        return `${label}: ${context.parsed.y}%`;
+                                    } else {
+                                        return `${label}: ${context.parsed.y} soru`;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Soru Sayısı'
+                            },
+                            beginAtZero: true,
+                            stacked: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        y1: {
+                            position: 'right',
+                            beginAtZero: true,
+                            max: 100,
+                            title: {
+                                display: true,
+                                text: 'Başarı Oranı (%)'
+                            },
+                            grid: {
+                                drawOnChartArea: false
+                            },
+                            ticks: {
+                                callback: value => `${value}%`
+                            }
+                        },
+                        x: {
+                            stacked: true,
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+        });
+});
+</script>

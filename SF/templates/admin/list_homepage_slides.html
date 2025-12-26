@@ -1,0 +1,49 @@
+{% extends "admin.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Ana Sayfa Slaytları</h2>
+    <a href="{{ url_for('add_homepage_slide') }}" class="btn btn-success mb-3">Yeni Slayt Ekle</a>
+    <table class="table table-bordered table-hover">
+        <thead>
+            <tr>
+                <th>Sıra</th>
+                <th>Başlık</th>
+                <th>Tip</th>
+                <th>Aktif</th>
+                <th>Görsel</th>
+                <th>İşlemler</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for slide in slides %}
+            <tr>
+                <td>{{ slide.order }}</td>
+                <td>{{ slide.title }}</td>
+                <td>{{ slide.slide_type }}</td>
+                <td>
+                    {% if slide.is_active %}
+                        <span class="badge bg-success">Aktif</span>
+                    {% else %}
+                        <span class="badge bg-secondary">Pasif</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if slide.image_path %}
+                        <img src="{{ url_for('static', filename='homepage_slides/' ~ slide.image_path) }}" alt="Görsel" style="max-width: 80px; max-height: 60px;">
+                    {% else %}
+                        <span class="text-muted">Yok</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('edit_homepage_slide', slide_id=slide.id) }}" class="btn btn-sm btn-primary">Düzenle</a>
+                    <form action="{{ url_for('delete_homepage_slide', slide_id=slide.id) }}" method="post" style="display:inline;" onsubmit="return confirm('Slaytı silmek istediğinize emin misiniz?');">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-danger">Sil</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

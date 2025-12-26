@@ -1,0 +1,15 @@
+[Unit]
+Description=SF Eğitim Gunicorn Service
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/root/SF
+EnvironmentFile=/root/SF/.env.production
+ExecStart=/root/SF/venv/bin/gunicorn -c /root/SF/gunicorn_config.py wsgi:app
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

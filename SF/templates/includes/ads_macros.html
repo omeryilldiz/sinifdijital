@@ -1,0 +1,10 @@
+{% macro render_ad(slot_id, ad_name, format='horizontal', style='display:block', responsive='false') %}
+<div class="ad-container ad-{{ format }}" data-ad-name="{{ ad_name }}">
+  <ins class="adsbygoogle"
+       style="{{ style }}"
+       data-ad-client="ca-pub-7728832097527782"
+       data-ad-slot="{{ slot_id }}"
+       data-ad-format="{{ format }}"
+       data-full-width-responsive="{{ responsive }}"></ins>
+</div>
+{% endmacro %}

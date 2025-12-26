@@ -1,0 +1,181 @@
+{% extends "admin_layout.html" %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2><i class="bi bi-people me-2"></i>Öğrenci Yönetimi</h2>
+        </div>
+    </div>
+    
+    <!-- İstatistik Kartları -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3>{{ total_students }}</h3>
+                    <p class="mb-0">Toplam Öğrenci</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3>{{ active_students }}</h3>
+                    <p class="mb-0">Aktif Öğrenci</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3>{{ profile_completed }}</h3>
+                    <p class="mb-0">Profil Tamamlayan</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filtreler -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" name="search" class="form-control" 
+                           placeholder="İsim, email veya kullanıcı adı ara..." 
+                           value="{{ search }}">
+                </div>
+                <div class="col-md-2">
+                    <select name="class_no" class="form-select">
+                        <option value="">Tüm Sınıflar</option>
+                        {% for cls in class_options %}
+                        <option value="{{ cls }}" {% if class_filter == cls %}selected{% endif %}>
+                            {{ cls }}. Sınıf
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="status" class="form-select">
+                        <option value="">Tüm Durumlar</option>
+                        <option value="active" {% if status_filter == 'active' %}selected{% endif %}>Aktif</option>
+                        <option value="inactive" {% if status_filter == 'inactive' %}selected{% endif %}>Pasif</option>
+                        <option value="profile_incomplete" {% if status_filter == 'profile_incomplete' %}selected{% endif %}>Profil Eksik</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-search me-1"></i>Filtrele
+                    </button>
+                </div>
+                <div class="col-md-2">
+                    <a href="{{ url_for('admin_students') }}" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-x-circle me-1"></i>Temizle
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Öğrenci Tablosu -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Kullanıcı Adı</th>
+                            <th>Ad Soyad</th>
+                            <th>Email</th>
+                            <th>Sınıf</th>
+                            <th>Profil</th>
+                            <th>Durum</th>
+                            <th>Kayıt Tarihi</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in students %}
+                        <tr>
+                            <td>{{ student.id }}</td>
+                            <td>{{ student.username }}</td>
+                            <td>{{ student.first_name or '-' }} {{ student.last_name or '' }}</td>
+                            <td>{{ student.email }}</td>
+                            <td>{{ student.class_no or '-' }}</td>
+                            <td>
+                                {% if student.profile_completed %}
+                                <span class="badge bg-success">Tamamlandı</span>
+                                {% else %}
+                                <span class="badge bg-warning">Eksik</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if student.is_active %}
+                                <span class="badge bg-success">Aktif</span>
+                                {% else %}
+                                <span class="badge bg-danger">Pasif</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ student.date_created.strftime('%d.%m.%Y') if student.date_created else '-' }}</td>
+                            <td>
+                                <a href="{{ url_for('admin_student_detail', student_id=student.id) }}" 
+                                   class="btn btn-sm btn-info" title="Detay">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('admin_student_edit', student_id=student.id) }}" 
+                                   class="btn btn-sm btn-warning" title="Düzenle">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="9" class="text-center text-muted py-4">
+                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                Öğrenci bulunamadı.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Sayfalama -->
+            {% if pagination.pages > 1 %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin_students', page=pagination.prev_num, search=search, class_no=class_filter, status=status_filter) }}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for page_num in pagination.iter_pages() %}
+                        {% if page_num %}
+                        <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('admin_students', page=page_num, search=search, class_no=class_filter, status=status_filter) }}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                        {% else %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('admin_students', page=pagination.next_num, search=search, class_no=class_filter, status=status_filter) }}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

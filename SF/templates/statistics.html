@@ -1,0 +1,729 @@
+{% extends "dashboard_layout.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Başlık -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="mb-1">İstatistiklerim</h4>
+            <p class="text-muted mb-0">Öğrenme yolculuğundaki ilerlemenizi görüntüleyin</p>
+        </div>
+    </div>
+
+    <!-- Ana Metrikler -->
+    <div class="row g-3 mb-4">
+        <!-- Başarı Oranı -->
+        <div class="col-lg-3">
+            <div class="card border-0 shadow-sm stat-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-success-subtle rounded-3 p-3 me-3">
+                            <i class="bi bi-graph-up text-success fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Başarı Oranı</h6>
+                            <h3 class="mb-0">%{{ genel_istatistikler.success_rate if genel_istatistikler else 0 }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Günlük Puan -->
+        <div class="col-lg-3">
+            <div class="card border-0 shadow-sm stat-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-primary-subtle rounded-3 p-3 me-3">
+                            <i class="bi bi-calendar-day text-primary fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Bugünkü Puan</h6>
+                            <h3 class="mb-0">{{ daily_points }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Haftalık Puan -->
+        <div class="col-lg-3">
+            <div class="card border-0 shadow-sm stat-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-warning-subtle rounded-3 p-3 me-3">
+                            <i class="bi bi-calendar-week text-warning fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Haftalık Puan</h6>
+                            <h3 class="mb-0">{{ weekly_points }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toplam Puan -->
+        <div class="col-lg-3">
+            <div class="card border-0 shadow-sm stat-card">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="stat-icon bg-info-subtle rounded-3 p-3 me-3">
+                            <i class="bi bi-trophy text-info fs-4"></i>
+                        </div>
+                        <div>
+                            <h6 class="text-muted mb-1">Toplam Puan</h6>
+                            <h3 class="mb-0">{{ total_points }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaderboard Bölümü -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-list-ol text-primary me-2"></i>
+                        Detaylı Sıralama
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Leaderboard Section Include -->
+                    {% include 'leaderboard_section.html' %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Çalışma Süreleri - Geliştirilmiş Versiyon -->
+    <div class="row g-4 mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 pb-0">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-clock-history text-warning me-2"></i>
+                        Çalışma Süreleri
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <!-- Toplam Süre Özetleri -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-lg-2 col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <div class="display-6 text-warning">
+                                    {% if genel_istatistikler and genel_istatistikler.total_time %}
+                                        {{ genel_istatistikler.total_time.hours }}s {{ genel_istatistikler.total_time.minutes }}dk
+                                    {% else %}
+                                        0s 0dk
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">Genel Toplam</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4">
+                            <div class="text-center p-3 bg-primary-subtle rounded">
+                                <div class="h4 text-primary">
+                                    {% if genel_istatistikler and genel_istatistikler.daily_time %}
+                                        {{ genel_istatistikler.daily_time.hours }}s {{ genel_istatistikler.daily_time.minutes }}dk
+                                    {% else %}
+                                        0s 0dk
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">Bugün</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4">
+                            <div class="text-center p-3 bg-success-subtle rounded">
+                                <div class="h4 text-success">
+                                    {% if genel_istatistikler and genel_istatistikler.weekly_time %}
+                                        {{ genel_istatistikler.weekly_time.hours }}s {{ genel_istatistikler.weekly_time.minutes }}dk
+                                    {% else %}
+                                        0s 0dk
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">Bu Hafta</small>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4">
+                            <div class="text-center p-3 bg-info-subtle rounded">
+                                <div class="h4 text-info">
+                                    {% if genel_istatistikler and genel_istatistikler.monthly_time %}
+                                        {{ genel_istatistikler.monthly_time.hours }}s {{ genel_istatistikler.monthly_time.minutes }}dk
+                                    {% else %}
+                                        0s 0dk
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">Bu Ay</small>
+                            </div>
+                        </div>
+                        
+                        <!-- Aktivite Türlerine Göre Süreler -->
+                        <div class="col-lg-2 col-md-4">
+                            <div class="text-center p-3 bg-warning-subtle rounded">
+                                <div class="h5 text-warning">
+                                    {% if genel_istatistikler and genel_istatistikler.content_reading_time %}
+                                        {{ genel_istatistikler.content_reading_time.hours }}s {{ genel_istatistikler.content_reading_time.minutes }}dk
+                                    {% else %}
+                                        0s 0dk
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">
+                                    <i class="bi bi-book me-1"></i>İçerik Okuma
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-lg-2 col-md-4">
+                            <div class="text-center p-3 bg-danger-subtle rounded">
+                                <div class="h5 text-danger">
+                                    {% if genel_istatistikler and genel_istatistikler.question_solving_time %}
+                                        {{ genel_istatistikler.question_solving_time.hours }}s 
+                                        {{ genel_istatistikler.question_solving_time.minutes }}dk
+                                        {% if genel_istatistikler.question_solving_time.seconds %}
+                                            {{ genel_istatistikler.question_solving_time.seconds }}sn
+                                        {% endif %}
+                                    {% else %}
+                                        0s 0dk 0sn
+                                    {% endif %}
+                                </div>
+                                <small class="text-muted">
+                                    <i class="bi bi-puzzle me-1"></i>Soru Çözme
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Aktivite Dağılımı ve Grafikler -->
+                    <div class="row">
+                        <!-- Pie Chart -->
+                        <div class="col-md-6">
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-header bg-transparent border-0">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-pie-chart me-2 text-primary"></i>
+                                        Aktivite Dağılımı
+                                    </h6>
+                                </div>
+                                <div class="card-body text-center">
+                                    <div class="chart-container">
+                                        <canvas id="activityPieChart" width="300" height="300"></canvas>
+                                    </div>
+                                    <!-- Loading State -->
+                                    <div id="chart-loading" class="mt-3">
+                                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                            <span class="visually-hidden">Grafik yükleniyor...</span>
+                                        </div>
+                                        <small class="text-muted ms-2">Grafik yükleniyor...</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Detay Bilgileri -->
+                        <div class="col-md-6">
+                            <h6 class="mb-3">
+                                <i class="bi bi-info-circle me-2"></i>
+                                Aktivite Detayları
+                            </h6>
+                            
+                            <!-- İçerik Okuma -->
+                            <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-warning-subtle rounded">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="bi bi-book-fill text-warning fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">İçerik Okuma</div>
+                                        <small class="text-muted">Ders materyali çalışma süresi</small>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="fw-bold text-warning">
+                                        {% if genel_istatistikler and genel_istatistikler.content_reading_time %}
+                                            {{ genel_istatistikler.content_reading_time.hours }}s {{ genel_istatistikler.content_reading_time.minutes }}dk
+                                        {% else %}
+                                            0s 0dk
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">
+                                        {% if genel_istatistikler and genel_istatistikler.content_reading_percentage %}
+                                            %{{ genel_istatistikler.content_reading_percentage }}
+                                        {% else %}
+                                            %0
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- Soru Çözme -->
+                            <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-danger-subtle rounded">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="bi bi-puzzle-fill text-danger fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">Soru Çözme</div>
+                                        <small class="text-muted">Test ve quiz çözme süresi</small>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="fw-bold text-danger">
+                                        {% if genel_istatistikler and genel_istatistikler.question_solving_time %}
+                                            {{ genel_istatistikler.question_solving_time.hours }}s 
+                                            {{ genel_istatistikler.question_solving_time.minutes }}dk
+                                            {% if genel_istatistikler.question_solving_time.seconds %}
+                                                {{ genel_istatistikler.question_solving_time.seconds }}sn
+                                            {% endif %}
+                                        {% else %}
+                                            0s 0dk 0sn
+                                        {% endif %}
+                                    </div>
+                                    <small class="text-muted">
+                                        {% if genel_istatistikler and genel_istatistikler.question_solving_percentage %}
+                                            %{{ genel_istatistikler.question_solving_percentage }}
+                                        {% else %}
+                                            %0
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+
+                            <!-- İstatistikler -->
+                            <div class="row g-2 mt-3">
+                                <div class="col-6">
+                                    <div class="text-center p-2 bg-light rounded">
+                                        <div class="fw-bold text-primary">
+                                            {% if genel_istatistikler and genel_istatistikler.average_session_time %}
+                                                {{ genel_istatistikler.average_session_time }}dk
+                                            {% else %}
+                                                0dk
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">Ortalama Oturum</small>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-center p-2 bg-light rounded">
+                                        <div class="fw-bold text-success">
+                                            {% if genel_istatistikler and genel_istatistikler.study_days %}
+                                                {{ genel_istatistikler.study_days }}
+                                            {% else %}
+                                                0
+                                            {% endif %}
+                                        </div>
+                                        <small class="text-muted">Çalışma Günü</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+/* CSS Değişkenleri Ekleme */
+:root {
+    --primary-color: #2563eb;
+    --primary-dark: #1d4ed8;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --danger-color: #ef4444;
+    --info-color: #06b6d4;
+    --light-color: #f8fafc;
+    --dark-color: #1e293b;
+    --border-color: #e2e8f0;
+    --shadow: 0 1px 3px rgba(0,0,0,0.1);
+    --shadow-lg: 0 4px 12px rgba(37, 99, 235, 0.15);
+    --border-radius: 8px;
+    --transition: all 0.3s ease;
+}
+
+/* Ana Metrik Kartları - Optimize Edilmiş */
+.stat-card {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--shadow);
+    transition: var(--transition);
+    background: white;
+    overflow: hidden;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+}
+
+.stat-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: var(--border-radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: var(--transition);
+}
+
+.stat-card:hover .stat-icon {
+    transform: scale(1.05);
+}
+
+/* Renk Sistemleri - Optimize Edilmiş */
+.bg-primary-subtle { background-color: rgba(37, 99, 235, 0.1) !important; }
+.bg-success-subtle { background-color: rgba(22, 163, 74, 0.1) !important; }
+.bg-warning-subtle { background-color: rgba(234, 179, 8, 0.1) !important; }
+.bg-info-subtle { background-color: rgba(6, 182, 212, 0.1) !important; }
+.bg-danger-subtle { background-color: rgba(220, 53, 69, 0.1) !important; }
+
+/* Çalışma Süreleri Bölümü - Optimize Edilmiş */
+.time-summary-card {
+    background: linear-gradient(135deg, var(--light-color), #ffffff);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    text-align: center;
+    transition: var(--transition);
+    height: 100%;
+}
+
+.time-summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.time-summary-card .display-6 {
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.time-summary-card small {
+    color: var(--secondary-color);
+    font-weight: 500;
+}
+
+/* Aktivite Detay Kartları - Optimize Edilmiş */
+.activity-detail-card {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 1.25rem;
+    transition: var(--transition);
+    background: white;
+}
+
+.activity-detail-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+.activity-detail-card .activity-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-right: 1rem;
+}
+
+/* Chart Container - Optimize Edilmiş */
+.chart-container {
+    position: relative;
+    height: 350px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+#activityPieChart {
+    max-width: 100%;
+    max-height: 100%;
+    margin: 0 auto;
+}
+
+.empty-chart-message {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: #6c757d;
+    font-size: 0.9rem;
+    z-index: 10;
+}
+
+.empty-chart-message i {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.6;
+}
+
+/* İstatistik Mini Kartlar - Optimize Edilmiş */
+.mini-stat-card {
+    background: var(--light-color);
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    text-align: center;
+    border: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+
+.mini-stat-card:hover {
+    background: white;
+    box-shadow: var(--shadow);
+}
+
+.mini-stat-card .fw-bold {
+    font-size: 1.25rem;
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+}
+
+.mini-stat-card small {
+    color: var(--secondary-color);
+    font-weight: 500;
+}
+
+/* Responsive Tasarım - Optimize Edilmiş */
+@media (max-width: 768px) {
+    .stat-card {
+        margin-bottom: 1rem;
+    }
+    
+    .stat-card .card-body {
+        padding: 1rem;
+    }
+    
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+    }
+    
+    .time-summary-card {
+        padding: 1rem;
+    }
+    
+    .activity-detail-card {
+        padding: 1rem;
+    }
+    
+    .chart-container {
+        height: 280px;
+    }
+}
+
+@media (max-width: 576px) {
+    .stat-card .d-flex {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .stat-icon {
+        margin-bottom: 1rem;
+        margin-right: 0;
+    }
+    
+    .time-summary-card .display-6 {
+        font-size: 1.5rem;
+    }
+    
+    .activity-detail-card .d-flex {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .activity-detail-card .activity-icon {
+        margin-bottom: 1rem;
+        margin-right: 0;
+    }
+}
+
+/* Accessibility İyileştirmeleri */
+@media (prefers-reduced-motion: reduce) {
+    .stat-card,
+    .time-summary-card,
+    .activity-detail-card,
+    .mini-stat-card {
+        transition: none;
+    }
+    
+    .stat-card:hover,
+    .time-summary-card:hover,
+    .activity-detail-card:hover,
+    .mini-stat-card:hover {
+        transform: none;
+    }
+}
+
+/* Dark Mode Desteği */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --light-color: #1e293b;
+        --dark-color: #f8fafc;
+        --border-color: #334155;
+    }
+    
+    .stat-card,
+    .time-summary-card,
+    .activity-detail-card,
+    .mini-stat-card {
+        background-color: var(--light-color);
+        color: var(--dark-color);
+        border-color: var(--border-color);
+    }
+}
+
+/* Print Styles */
+@media print {
+    .stat-card,
+    .time-summary-card,
+    .activity-detail-card,
+    .mini-stat-card {
+        box-shadow: none;
+        border: 1px solid #ddd;
+        break-inside: avoid;
+    }
+    
+    #activityPieChart {
+        display: none;
+    }
+    
+    .empty-chart-message {
+        position: static;
+        transform: none;
+        display: block;
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const loadingElement = document.getElementById('chart-loading');
+    const chartCanvas = document.getElementById('activityPieChart');
+    
+    // Chart.js kontrolü - biraz bekle
+    setTimeout(function() {
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js yüklenemedi!');
+            if (loadingElement) {
+                loadingElement.innerHTML = '<i class="bi bi-exclamation-triangle text-warning"></i><small class="text-muted ms-2">Grafik kütüphanesi yüklenemedi</small>';
+            }
+            return;
+        }
+        
+        try {
+            // Veriyi güvenli şekilde al
+            var genel_istatistikler = null;
+            try {
+                var rawData = '{{ genel_istatistikler | tojson | safe }}';
+                console.log('Raw data:', rawData);
+                if (rawData && rawData !== 'null' && rawData !== 'None') {
+                    genel_istatistikler = JSON.parse(rawData);
+                }
+            } catch (parseError) {
+                console.warn('JSON parse hatası:', parseError);
+                genel_istatistikler = {};
+            }
+            
+            console.log('📊 İstatistik verisi:', genel_istatistikler);
+
+            // Süreleri hesapla
+            var contentTime = 0;
+            var questionTime = 0;
+
+            if (genel_istatistikler) {
+                if (genel_istatistikler.content_reading_time) {
+                    contentTime = (parseInt(genel_istatistikler.content_reading_time.hours) || 0) * 60 +
+                                  (parseInt(genel_istatistikler.content_reading_time.minutes) || 0);
+                }
+                if (genel_istatistikler.question_solving_time) {
+                    questionTime = (parseInt(genel_istatistikler.question_solving_time.hours) || 0) * 60 +
+                                   (parseInt(genel_istatistikler.question_solving_time.minutes) || 0) +
+                                   (parseInt(genel_istatistikler.question_solving_time.seconds) || 0) / 60;
+                }
+            }
+
+            console.log('Content Time:', contentTime, 'Question Time:', questionTime);
+
+            var ctx = document.getElementById('activityPieChart');
+            if (!ctx) {
+                console.error('Canvas elementi bulunamadı!');
+                return;
+            }
+            
+            var context = ctx.getContext('2d');
+            var hasData = contentTime > 0 || questionTime > 0;
+
+            // Chart oluştur
+            var activityChart = new Chart(context, {
+                type: 'pie',
+                data: {
+                    labels: hasData ? ['İçerik Okuma', 'Soru Çözme'] : ['Henüz veri yok'],
+                    datasets: [{
+                        data: hasData ? [contentTime, questionTime] : [1],
+                        backgroundColor: hasData ? [
+                            'rgba(255, 193, 7, 0.8)',
+                            'rgba(220, 53, 69, 0.8)'
+                        ] : ['rgba(108, 117, 125, 0.3)'],
+                        borderColor: hasData ? [
+                            'rgba(255, 193, 7, 1)',
+                            'rgba(220, 53, 69, 1)'
+                        ] : ['rgba(108, 117, 125, 0.5)'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 15,
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            enabled: hasData
+                        }
+                    }
+                }
+            });
+
+            // Loading'i gizle
+            if (loadingElement) {
+                loadingElement.style.display = 'none';
+            }
+            
+            // Veri yoksa mesaj ekle
+            if (!hasData) {
+                var container = ctx.parentElement;
+                var msg = document.createElement('div');
+                msg.className = 'text-center text-muted mt-2';
+                msg.innerHTML = '<small>Henüz çalışma verisi bulunmuyor</small>';
+                container.appendChild(msg);
+            }
+            
+            console.log('✅ Chart başarıyla oluşturuldu');
+            
+        } catch (error) {
+            console.error('❌ Chart hatası:', error);
+            if (loadingElement) {
+                loadingElement.innerHTML = '<i class="bi bi-x-circle text-danger"></i><small class="text-muted ms-2">Grafik hatası: ' + error.message + '</small>';
+            }
+        }
+    }, 500); // 500ms bekle
+});
+</script>
+{% endblock %}

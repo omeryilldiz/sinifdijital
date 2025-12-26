@@ -1,0 +1,86 @@
+{% extends "admin_layout.html"%}
+
+
+{% block content %}
+
+<h2>{{ sinif.sinif }} Bölümüne Ders Ekle</h2>
+<form method="POST" novalidate>
+{{ form.hidden_tag() }}
+    <div class="mb-3">
+        {{ form.ders.label }}
+        {% if form.ders.errors %}
+            {{ form.ders(class="form-control is-invalid") }}
+            {% for error in form.ders.errors %}
+                <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        {% else %}
+            {{ form.ders(class="form-control") }}
+        {% endif %}
+    </div>
+
+    {{ form.submit(class="btn btn-primary w-100") }}
+</form>
+
+<table class="table table-striped table-hover table-bordered mt-5">
+    <thead class="table-dark">
+        <tr>
+            <th class="text-center">Ders ID</th>
+            <th class="text-center">Bölüm/Sınıf</th>
+            <th class="text-center">Ders Adı</th>
+            <th class="text-center">İşlemler</th>
+        </tr>
+    </thead>
+    {% for ders in dersler %} 
+    <tr>
+        <td class="text-center">{{ ders.id }}</td>
+        <td class="text-center">{{ sinif.sinif }}</td>
+        <td>{{ ders.ders_adi }}</td>
+        <td class="text-center">
+            <div class="btn-group">
+                <a class="btn btn-secondary btn-sm" 
+                href="{{ url_for('update_ders', id=ders.sinif_id, sub_id=ders.id) }}">
+                    <i class="bi bi-pencil-square"></i>
+                    Güncelle
+                </a>
+                <a class="btn btn-info btn-sm" 
+                href="{{ url_for('add_unite', id=ders.sinif_id, sub_id=ders.id) }}">
+                    <i class="fa fa-plus"></i>
+                    Ünite Ekle
+                </a>
+                <button type="button" class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal{{ders.id}}">
+                    <i class="fa fa-trash"></i>
+                    Sil 
+                </button>
+            </div>
+        </td>
+    </tr> 
+         
+         
+            <!-- Her sınıf için ayrı modal -->
+            <div class="modal fade" 
+                 id="deleteModal{{ders.id}}" 
+                 tabindex="-1" 
+                 aria-labelledby="deleteModalLabel{{sinif.id}}">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Sınıf Silme</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p><span class="text-danger">{{ders.ders_adi}}</span> dersini silmek istediğinize emin misiniz?</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                            <form action="{{ url_for('delete_ders', id=sinif.id, sub_id=ders.id) }}" method="POST" style="display: inline;">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-danger">Sil</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    {% endfor %}
+    </table>  
+
+{% endblock %}

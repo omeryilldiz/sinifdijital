@@ -1,0 +1,20 @@
+[Unit]
+Description=SF Eğitim Platform - Gunicorn
+After=network.target
+
+[Service]
+Type=notify
+User=postgres
+Group=www-data
+WorkingDirectory=/root/SF
+EnvironmentFile=/root/SF/.env.production
+
+ExecStart=/root/SF/venv/bin/gunicorn \
+    -c /root/SF/gunicorn_config.py \
+    wsgi:app
+
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,285 @@
+<!-- 📭 BOŞ DURUM MESAJI -->
+<div class="empty-leaderboard-container">
+    <div class="text-center py-5">
+        
+        <!-- Ana İkon ve Başlık -->
+        <div class="empty-icon mb-4">
+            {% if period_icon %}
+                <i class="bi bi-{{ period_icon }} display-1 text-muted opacity-50"></i>
+            {% else %}
+                <i class="bi bi-list-ol display-1 text-muted opacity-50"></i>
+            {% endif %}
+        </div>
+
+        <!-- Dinamik Başlık -->
+        <h4 class="text-muted mb-3">
+            {% if period_title %}
+                {{ period_title }} Verisi Bulunamadı
+            {% else %}
+                Sıralama Verisi Bulunamadı
+            {% endif %}
+        </h4>
+
+        <!-- Açıklama Mesajı -->
+        <div class="empty-message mb-4">
+            {% if empty_message %}
+                <p class="text-muted">{{ empty_message }}</p>
+            {% else %}
+                {% if period_title %}
+                    {% set period_lower = period_title.lower() %}
+                    {% if 'günlük' in period_lower %}
+                        <p class="text-muted">
+                            Bu gün için henüz {% if 'genel' in period_lower %}genel{% elif 'okul' in period_lower %}okul{% elif 'sınıf' in period_lower %}sınıf{% endif %} sıralama verisi oluşturulmamış.
+                        </p>
+                    {% elif 'haftalık' in period_lower %}
+                        <p class="text-muted">
+                            Bu hafta için henüz {% if 'genel' in period_lower %}genel{% elif 'okul' in period_lower %}okul{% elif 'sınıf' in period_lower %}sınıf{% endif %} sıralama verisi oluşturulmamış.
+                        </p>
+                    {% elif 'aylık' in period_lower %}
+                        <p class="text-muted">
+                            Bu ay için henüz {% if 'genel' in period_lower %}genel{% elif 'okul' in period_lower %}okul{% elif 'sınıf' in period_lower %}sınıf{% endif %} sıralama verisi oluşturulmamış.
+                        </p>
+                    {% elif 'tüm zamanlar' in period_lower %}
+                        <p class="text-muted">
+                            {% if 'genel' in period_lower %}Genel{% elif 'okul' in period_lower %}Okul{% elif 'sınıf' in period_lower %}Sınıf{% endif %} sıralama verisi henüz oluşturulmamış.
+                        </p>
+                    {% else %}
+                        <p class="text-muted">Bu dönem için sıralama verisi bulunamadı.</p>
+                    {% endif %}
+                {% else %}
+                    <p class="text-muted">Bu öğrenci için sıralama verisi bulunamadı.</p>
+                {% endif %}
+            {% endif %}
+        </div>
+
+        <!-- Duruma Özel Açıklama Kartları -->
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="row">
+                    
+                    <!-- Öğrenci Durumu -->
+                    <div class="col-md-6 mb-3">
+                        <div class="explanation-card">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body text-center py-3">
+                                    <i class="bi bi-person-circle text-primary mb-2" style="font-size: 2rem;"></i>
+                                    <h6 class="card-title">Öğrenci Durumu</h6>
+                                    <small class="text-muted">
+                                        {% if current_user and current_user.username %}
+                                            <strong>{{ current_user.username }}</strong> henüz bu kategori için puan kazanmamış.
+                                        {% else %}
+                                            Öğrenci henüz bu kategori için puan kazanmamış.
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sıralama Bilgisi -->
+                    <div class="col-md-6 mb-3">
+                        <div class="explanation-card">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body text-center py-3">
+                                    <i class="bi bi-clock-history text-info mb-2" style="font-size: 2rem;"></i>
+                                    <h6 class="card-title">Güncelleme Zamanı</h6>
+                                    <small class="text-muted">
+                                        {% if period_title and 'günlük' in period_title.lower() %}
+                                            Günlük sıralama her 5 dakikada bir güncellenir.
+                                        {% elif period_title and 'haftalık' in period_title.lower() %}
+                                            Haftalık sıralama her Pazartesi güncellenir.
+                                        {% elif period_title and 'aylık' in period_title.lower() %}
+                                            Aylık sıralama her ayın 1'inde güncellenir.
+                                        {% else %}
+                                            Sıralama verisi düzenli olarak güncellenir.
+                                        {% endif %}
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- Eylem Önerileri -->
+        <div class="action-suggestions mt-4">
+            <div class="alert alert-light border">
+                <h6 class="alert-heading">
+                    <i class="bi bi-lightbulb text-warning me-1"></i>
+                    Sıralama İçin Öneri
+                </h6>
+                <div class="row text-start">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-1">
+                                <i class="bi bi-check-circle text-success me-1"></i>
+                                <small>Günlük soru çözün</small>
+                            </li>
+                            <li class="mb-1">
+                                <i class="bi bi-check-circle text-success me-1"></i>
+                                <small>Quiz'lere katılın</small>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-1">
+                                <i class="bi bi-check-circle text-success me-1"></i>
+                                <small>Doğru cevap oranınızı artırın</small>
+                            </li>
+                            <li class="mb-1">
+                                <i class="bi bi-check-circle text-success me-1"></i>
+                                <small>Düzenli çalışma yapın</small>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Alternatif Sıralama Önerisi -->
+        {% if period_title %}
+        <div class="alternative-suggestions mt-3">
+            <p class="text-muted mb-2">
+                <small>
+                    <i class="bi bi-arrow-right me-1"></i>
+                    Diğer zaman dilimlerini veya kategorileri kontrol edebilirsiniz
+                </small>
+            </p>
+            
+            <!-- Önerilen Filtreler -->
+            <div class="suggested-filters">
+                {% if 'günlük' in period_title.lower() %}
+                    <small class="text-muted">
+                        <span class="badge bg-light text-dark me-1">Haftalık</span>
+                        <span class="badge bg-light text-dark me-1">Aylık</span>
+                        verilerini kontrol edin
+                    </small>
+                {% elif 'haftalık' in period_title.lower() %}
+                    <small class="text-muted">
+                        <span class="badge bg-light text-dark me-1">Günlük</span>
+                        <span class="badge bg-light text-dark me-1">Aylık</span>
+                        verilerini kontrol edin
+                    </small>
+                {% elif 'aylık' in period_title.lower() %}
+                    <small class="text-muted">
+                        <span class="badge bg-light text-dark me-1">Günlük</span>
+                        <span class="badge bg-light text-dark me-1">Haftalık</span>
+                        verilerini kontrol edin
+                    </small>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Debug Bilgisi (Sadece Geliştirme Modunda) -->
+        {% if config.DEBUG %}
+        <div class="debug-info mt-4">
+            <details class="text-start">
+                <summary class="text-muted" style="cursor: pointer;">
+                    <small>🔧 Debug Bilgisi (Sadece Geliştirme Modu)</small>
+                </summary>
+                <div class="mt-2 p-2 bg-light rounded">
+                    <small class="text-muted">
+                        <strong>Period Title:</strong> {{ period_title or 'Tanımsız' }}<br>
+                        <strong>Period Icon:</strong> {{ period_icon or 'Tanımsız' }}<br>
+                        <strong>Empty Message:</strong> {{ empty_message or 'Otomatik mesaj' }}<br>
+                        <strong>Current User:</strong> {{ current_user.username if current_user else 'Tanımsız' }}<br>
+                        <strong>Leaderboard Data:</strong> {{ 'Var' if leaderboard else 'Yok' }}
+                    </small>
+                </div>
+            </details>
+        </div>
+        {% endif %}
+
+    </div>
+</div>
+
+<!-- 🎨 Özel CSS Stilleri -->
+<style>
+.empty-leaderboard-container {
+    min-height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.empty-icon {
+    opacity: 0.7;
+}
+
+.explanation-card .card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.explanation-card .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.action-suggestions .alert {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+}
+
+.suggested-filters .badge {
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.suggested-filters .badge:hover {
+    background-color: #6c757d !important;
+    color: white !important;
+}
+
+.debug-info {
+    max-width: 500px;
+    margin: 0 auto;
+}
+
+/* Responsive düzenlemeler */
+@media (max-width: 768px) {
+    .empty-leaderboard-container {
+        min-height: 300px;
+    }
+    
+    .empty-icon i {
+        font-size: 4rem !important;
+    }
+    
+    .explanation-card .card-body {
+        padding: 1rem !important;
+    }
+}
+
+/* Animasyon efektleri */
+.empty-leaderboard-container > div {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.explanation-card {
+    animation: fadeInUp 0.8s ease-out;
+    animation-fill-mode: both;
+}
+
+.explanation-card:nth-child(1) { animation-delay: 0.1s; }
+.explanation-card:nth-child(2) { animation-delay: 0.2s; }
+
+.action-suggestions {
+    animation: fadeInUp 1s ease-out;
+    animation-fill-mode: both;
+    animation-delay: 0.3s;
+}
+</style>

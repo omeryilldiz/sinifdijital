@@ -1,0 +1,32 @@
+{% extends "admin_layout.html" %}
+{% block content %}
+<div class="container py-4">
+    <h3>Mesajı Düzenle</h3>
+    <hr>
+    <form method="POST" novalidate>
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <input type="hidden" id="kaydedilmisIcerik" value="{{ message.content }}">
+        <div class="mb-3">
+            <label for="content" class="form-label">Mesaj İçeriği</label>
+            <textarea class="form-control" id="content" name="content" rows="8"></textarea>
+        </div>
+        <div class="d-flex justify-content-between">
+            <button type="submit" class="btn btn-primary">Kaydet</button>
+            <a href="{{ url_for('admin_messages') }}" class="btn btn-secondary">İptal</a>
+        </div>
+    </form>
+</div>
+
+<script src="https://cdn.ckeditor.com/ckeditor5/44.1.0/ckeditor5.umd.js" crossorigin></script>
+<script src="{{ url_for('static', filename='main.js') }}" crossorigin></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    window.initCKEditor('#content', 'Mesaj içeriğini buraya yazınız...').then(editor => {
+        const kaydedilmisIcerik = document.getElementById('kaydedilmisIcerik');
+        if (kaydedilmisIcerik && kaydedilmisIcerik.value) {
+            editor.setData(kaydedilmisIcerik.value);
+        }
+    });
+});
+</script>
+{% endblock %}

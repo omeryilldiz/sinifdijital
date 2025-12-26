@@ -1,0 +1,209 @@
+{% extends "admin_layout.html"%}
+
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Soru Listesi</h2>
+        <a href="{{ url_for('add_soru') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Yeni Soru Ekle
+        </a>
+    </div>
+
+    <!-- Filtreleme Formu -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" action="{{ url_for('list_sorular') }}">
+                <!-- Referans Kodu Arama - YENİ -->
+                <div class="row mb-3">
+                    <div class="col-md-9">
+                        <div class="input-group">
+                            <input type="text" name="reference_code" class="form-control" 
+                                   placeholder="Referans Kodu ile Ara (Ör: MAT-8-ABC123)" 
+                                   value="{{ reference_code or '' }}">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-search"></i> Ara
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-end">
+                        <a href="{{ url_for('list_sorular') }}" class="btn btn-secondary">
+                            <i class="fas fa-sync"></i> Filtreleri Temizle
+                        </a>
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <!-- Sınıf Seçimi -->
+                    <div class="col-md-3">
+                        <select name="sinif_id" id="sinifSelect" class="form-select" onchange="this.form.submit()">
+                            <option value="">Sınıf Seçiniz</option>
+                            {% for sinif in siniflar %}
+                            <option value="{{ sinif.id }}" {% if sinif_id == sinif.id %}selected{% endif %}>
+                                {{ sinif.sinif }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Ders Seçimi -->
+                    <div class="col-md-3">
+                        <select name="ders_id" id="dersSelect" class="form-select" onchange="this.form.submit()">
+                            <option value="">Ders Seçiniz</option>
+                            {% for ders in dersler %}
+                            <option value="{{ ders.id }}" {% if ders_id == ders.id %}selected{% endif %}>
+                                {{ ders.ders_adi }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Ünite Seçimi -->
+                    <div class="col-md-3">
+                        <select name="unite_id" id="uniteSelect" class="form-select" onchange="this.form.submit()">
+                            <option value="">Ünite Seçiniz</option>
+                            {% for unite in uniteler %}
+                            <option value="{{ unite.id }}" {% if unite_id == unite.id %}selected{% endif %}>
+                                {{ unite.unite }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- İçerik Seçimi -->
+                    <div class="col-md-3">
+                        <select name="icerik_id" id="icerikSelect" class="form-select" onchange="this.form.submit()">
+                            <option value="">İçerik Seçiniz</option>
+                            {% for icerik in icerikler %}
+                            <option value="{{ icerik.id }}" {% if icerik_id == icerik.id %}selected{% endif %}>
+                                {{ icerik.baslik }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12">
+                        <a href="{{ url_for('list_sorular') }}" class="btn btn-secondary">
+                            <i class="fas fa-sync"></i> Filtreleri Temizle
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Soru Listesi -->
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <!-- YENİ Sütun -->
+                    <th>Referans Kodu</th>
+                    <th>Sınıf</th>
+                    <th>Ders</th>
+                    <th>Ünite</th>
+                    <th>İçerik</th>
+                    <th>İşlemler</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for soru in sorular %}
+                <tr>
+                    <td>{{ soru.id }}</td>
+                    <!-- YENİ Hücre -->
+                    <td><code>{{ soru.reference_code }}</code></td>
+                    <td>{{ soru.unite.ders.sinif.sinif }}</td>
+                    <td>{{ soru.unite.ders.ders_adi }}</td>
+                    <td>{{ soru.unite.unite }}</td>
+                    <td>{{ soru.icerik.baslik }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="{{ url_for('edit_soru', id=soru.id) }}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit" title="Düzenle"></i>
+                            </a>
+                            <!-- Silme butonu -->
+                            <button type="button" class="btn btn-sm btn-danger" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#deleteModal{{ soru.id }}">
+                                <i class="fas fa-trash" title="Sil"></i>
+                            </button>
+                        </div>
+
+                            <!-- Her soru için ayrı modal -->
+                                <div class="modal fade" id="deleteModal{{ soru.id }}" tabindex="-1" 
+                                aria-labelledby="deleteModalLabel{{ soru.id }}" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h1 class="modal-title fs-5" id="deleteModalLabel{{ soru.id }}">
+                                                 Bu İşlem Geri Alınamaz!!!
+                                                </h1>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                    <div class="modal-body">
+                                        {{ soru.id }} numaralı soruyu silmek istediğinize emin misiniz?
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                                        <form action="{{ url_for('delete_soru', id=soru.id) }}" method="POST" class="d-inline">
+                                            {{ form.csrf_token }}  <!-- CSRF token eklendi -->
+                                            <button type="submit" class="btn btn-danger">Soruyu Sil</button>
+                                        </form>
+                                    </div>
+                                    </div>
+                                </div>
+                            </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Modal -->
+
+
+
+    <!-- Sayfalama -->
+    {% if pagination.pages > 1 %}
+    <nav aria-label="Sayfalama">
+        <ul class="pagination justify-content-center">
+            {% if pagination.has_prev %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('list_sorular', page=pagination.prev_num,
+                   sinif_id=sinif_id, ders_id=ders_id, unite_id=unite_id, icerik_id=icerik_id) }}">
+                    Önceki
+                </a>
+            </li>
+            {% endif %}
+
+            {% for page in pagination.iter_pages() %}
+                {% if page %}
+                    <li class="page-item {% if page == pagination.page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('list_sorular', page=page,
+                           sinif_id=sinif_id, ders_id=ders_id, unite_id=unite_id, icerik_id=icerik_id) }}">
+                            {{ page }}
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if pagination.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('list_sorular', page=pagination.next_num,
+                   sinif_id=sinif_id, ders_id=ders_id, unite_id=unite_id, icerik_id=icerik_id) }}">
+                    Sonraki
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+{% endblock %}

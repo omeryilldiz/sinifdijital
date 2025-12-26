@@ -1,0 +1,41 @@
+{% extends "admin_layout.html" %}
+{% block content %}
+<h3>İl Yönetimi</h3>
+<hr>
+<form method="POST" class="row g-3 mb-4">
+    <div class="col-md-3">
+        <input type="text" name="name" class="form-control" placeholder="İl Adı" required>
+    </div>
+    <div class="col-md-3">
+        <input type="text" name="code" class="form-control" placeholder="İl Kodu" required>
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-success">Ekle</button>
+    </div>
+</form>
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th>#</th>
+            <th>İl Adı</th>
+            <th>Kodu</th>
+            <th>İşlem</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for province in provinces %}
+        <tr>
+            <td>{{ province.id }}</td>
+            <td>{{ province.name }}</td>
+            <td>{{ province.code }}</td>
+            <td>
+                <a href="{{ url_for('admin_province_edit', province_id=province.id) }}" class="btn btn-sm btn-warning">Düzenle</a>
+                <form method="POST" action="{{ url_for('admin_province_delete', province_id=province.id) }}" style="display:inline;" onsubmit="return confirm('Silmek istediğinize emin misiniz?');">
+                    <button type="submit" class="btn btn-sm btn-danger">Sil</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,189 @@
+{% extends "admin_layout.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="row mb-4">
+        <div class="col">
+            <h2>Videolar</h2>
+            <a href="{{ url_for('video_ekle') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Yeni Video Ekle
+            </a>
+        </div>
+    </div>
+
+    <!-- Filtreler -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Sınıf</label>
+                    <select name="sinif_id" id="sinif" class="form-select">
+                        <option value="">Tüm Sınıflar</option>
+                        {% for sinif in siniflar %}
+                        <option value="{{ sinif.id }}" {% if sinif_id == sinif.id %}selected{% endif %}>
+                            {{ sinif.sinif }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Ders</label>
+                    <select name="ders_id" id="ders" class="form-select">
+                        <option value="">Tüm Dersler</option>
+                        {% for ders in dersler %}
+                        <option value="{{ ders.id }}" {% if ders_id == ders.id %}selected{% endif %}>
+                            {{ ders.ders_adi }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">Ünite</label>
+                    <select name="unite_id" id="unite" class="form-select">
+                        <option value="">Tüm Üniteler</option>
+                        {% for unite in uniteler %}
+                        <option value="{{ unite.id }}" {% if unite_id == unite.id %}selected{% endif %}>
+                            {{ unite.unite }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">İçerik</label>
+                    <select name="icerik_id" id="icerik" class="form-select">
+                        <option value="">Tüm İçerikler</option>
+                        {% for icerik in icerikler %}
+                        <option value="{{ icerik.id }}" {% if icerik_id == icerik.id %}selected{% endif %}>
+                            {{ icerik.baslik }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Filtrele</button>
+                    <a href="{{ url_for('list_videolar') }}" class="btn btn-secondary">Filtreleri Temizle</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Video Listesi -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Sıra</th>
+                            <th>Başlık</th>
+                            <th>Video URL</th>
+                            <th>İçerik</th>
+                            <th>Ünite</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for video in videolar %}
+                        <tr>
+                            <td>{{ video.sira }}</td>
+                            <td>{{ video.video_title }}</td>
+                            <td>
+                                <a href="{{ video.video_url }}" target="_blank" class="text-truncate d-inline-block" style="max-width: 200px;">
+                                    {{ video.video_url }}
+                                </a>
+                            </td>
+                            <td>{{ video.icerik.baslik }}</td>
+                            <td>{{ video.icerik.unite.unite }}</td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{{ url_for('edit_video', id=video.id) }}" class="btn btn-sm btn-primary">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-danger" 
+                                            onclick="if(confirm('Bu videoyu silmek istediğinizden emin misiniz?')) 
+                                                    document.getElementById('delete-form-{{ video.id }}').submit();">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                                <form id="delete-form-{{ video.id }}" 
+                                      action="{{ url_for('delete_video', id=video.id) }}" 
+                                      method="POST" style="display: none;">
+                                      {{ form.csrf_token }}
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center">Henüz video eklenmemiş.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Sayfalama -->
+            {% if pagination and pagination.pages > 1 %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center">
+                    {% for page in pagination.iter_pages() %}
+                        {% if page %}
+                            <li class="page-item {% if page == pagination.page %}active{% endif %}">
+                                <a class="page-link" href="{{ url_for('list_videolar', page=page, sinif_id=sinif_id, ders_id=ders_id, unite_id=unite_id, icerik_id=icerik_id) }}">
+                                    {{ page }}
+                                </a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('sinif').addEventListener('change', function() {
+    fetch('/get_dersler/' + this.value)
+        .then(response => response.json())
+        .then(data => {
+            let dersSelect = document.getElementById('ders');
+            dersSelect.innerHTML = '<option value="">Tüm Dersler</option>';
+            data.forEach(ders => {
+                dersSelect.innerHTML += `<option value="${ders.id}">${ders.ders_adi}</option>`;
+            });
+            document.getElementById('unite').innerHTML = '<option value="">Tüm Üniteler</option>';
+            document.getElementById('icerik').innerHTML = '<option value="">Tüm İçerikler</option>';
+        });
+});
+
+document.getElementById('ders').addEventListener('change', function() {
+    fetch('/get_uniteler/' + this.value)
+        .then(response => response.json())
+        .then(data => {
+            let uniteSelect = document.getElementById('unite');
+            uniteSelect.innerHTML = '<option value="">Tüm Üniteler</option>';
+            data.forEach(unite => {
+                uniteSelect.innerHTML += `<option value="${unite.id}">${unite.unite}</option>`;
+            });
+            document.getElementById('icerik').innerHTML = '<option value="">Tüm İçerikler</option>';
+        });
+});
+
+document.getElementById('unite').addEventListener('change', function() {
+    fetch('/get_icerikler/' + this.value)
+        .then(response => response.json())
+        .then(data => {
+            let icerikSelect = document.getElementById('icerik');
+            icerikSelect.innerHTML = '<option value="">Tüm İçerikler</option>';
+            data.forEach(icerik => {
+                icerikSelect.innerHTML += `<option value="${icerik.id}">${icerik.baslik}</option>`;
+            });
+        });
+});
+</script>
+{% endblock %}

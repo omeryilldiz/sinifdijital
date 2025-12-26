@@ -1,0 +1,144 @@
+{% extends "layout.html" %}
+
+{% block title %}Gizlilik ve Çerez Politikası - Sınıf Dijital{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <article class="legal-document">
+                <header class="text-center mb-5">
+                    <h1 class="h3 fw-bold">GİZLİLİK VE ÇEREZ POLİTİKASI</h1>
+                    <p class="text-muted">Son Güncellenme Tarihi: 04.12.2025</p>
+                </header>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">1. Giriş</h2>
+                    <p>Bu Gizlilik ve Çerez Politikası, Sınıf Dijital (www.sinifdijital.com) tarafından toplanan bilgilerin nasıl kullanıldığını, korunduğunu ve paylaşıldığını açıklamaktadır.</p>
+                    <p>Kişisel verilerin işlenmesine ilişkin detaylı bilgi için <a href="{{ url_for('kvkk') }}">KVKK Aydınlatma Metni</a>'ni inceleyiniz.</p>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">2. Çerezler (Cookies)</h2>
+                    <p>Web sitemiz, kullanıcı deneyimini iyileştirmek amacıyla çerezler kullanmaktadır.</p>
+                    
+                    <p><strong>2.1. Zorunlu Çerezler</strong></p>
+                    <p>Web sitesinin temel işlevlerini yerine getirmek için gereklidir. Bu çerezler olmadan site düzgün çalışmaz.</p>
+                    <ul>
+                        <li>Oturum yönetimi</li>
+                        <li>Güvenlik doğrulaması</li>
+                        <li>Çerez tercihlerinin saklanması</li>
+                    </ul>
+                    
+                    <p><strong>2.2. Performans Çerezleri</strong></p>
+                    <p>Siteyi nasıl kullandığınız hakkında anonim bilgi toplar.</p>
+                    <ul>
+                        <li>Ziyaret edilen sayfalar</li>
+                        <li>Sitede geçirilen süre</li>
+                        <li>Hata mesajları</li>
+                    </ul>
+                    
+                    <p><strong>2.3. Reklam Çerezleri</strong></p>
+                    <p>Google AdSense reklamlarının gösterimi için kullanılır.</p>
+                    <ul>
+                        <li>İlgi alanlarınıza göre reklam gösterimi</li>
+                        <li>Reklam performans ölçümü</li>
+                    </ul>
+                    
+                    <p><strong>2.4. Çerezleri Yönetme</strong></p>
+                    <p>Tarayıcı ayarlarınızdan çerezleri yönetebilir, silebilir veya engelleyebilirsiniz. Ancak bazı çerezlerin engellenmesi site işlevselliğini etkileyebilir.</p>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">3. Üçüncü Taraf Hizmetler</h2>
+                    <p>Sitemizde aşağıdaki üçüncü taraf hizmetler kullanılmaktadır:</p>
+                    <ul>
+                        <li><strong>Google Analytics:</strong> Site trafiği analizi (anonim veriler)</li>
+                        <li><strong>Google AdSense:</strong> Reklam gösterimi</li>
+                        <li><strong>YouTube:</strong> Video içerik gösterimi</li>
+                    </ul>
+                    <p>Bu hizmetlerin kendi gizlilik politikaları geçerlidir. İlgili politikalara hizmet sağlayıcıların web sitelerinden ulaşabilirsiniz.</p>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">4. Veri Güvenliği</h2>
+                    <p>Verilerinizin güvenliği için aşağıdaki önlemler alınmaktadır:</p>
+                    
+                    <p><strong>Teknik Önlemler:</strong></p>
+                    <ul>
+                        <li>SSL/TLS şifreleme ile güvenli veri iletimi</li>
+                        <li>Güvenlik duvarı (firewall) koruması</li>
+                        <li>Düzenli güvenlik güncellemeleri</li>
+                        <li>Erişim loglarının tutulması</li>
+                    </ul>
+                    
+                    <p><strong>İdari Önlemler:</strong></p>
+                    <ul>
+                        <li>Erişim yetkilendirmesi</li>
+                        <li>Gizlilik politikalarına uyum denetimi</li>
+                    </ul>
+                    
+                    <p>Tüm önlemlere rağmen internet üzerinden veri iletiminin %100 güvenli olmadığını hatırlatırız.</p>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">5. Veri İhlali Bildirimi</h2>
+                    <p>Kişisel verilerin hukuka aykırı olarak ele geçirildiğinin tespit edilmesi halinde:</p>
+                    <ul>
+                        <li>Kişisel Verileri Koruma Kurulu'na en kısa sürede bildirim yapılacaktır</li>
+                        <li>Etkilenen kullanıcılara makul sürede bilgi verilecektir</li>
+                        <li>Gerekli teknik ve idari tedbirler alınacaktır</li>
+                    </ul>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">6. Üçüncü Taraf Bağlantılar</h2>
+                    <p>Sitemiz, üçüncü taraf web sitelerine bağlantılar içerebilir. Bu sitelerin gizlilik uygulamalarından sorumlu değiliz. Bağlantı verilen sitelerin gizlilik politikalarını incelemenizi öneririz.</p>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">7. Çocukların Gizliliği</h2>
+                    <p>Sitemiz ortaokul ve lise öğrencilerine yönelik eğitim hizmetleri sunmaktadır.</p>
+                    <ul>
+                        <li>13 yaş altı çocuklardan bilerek kişisel veri toplamıyoruz</li>
+                        <li>18 yaş altı kullanıcılar için veli/vasi bilgisi dahilinde üyelik yapılmalıdır</li>
+                        <li>Çocuk kullanıcıların verileri özel olarak korunmaktadır</li>
+                    </ul>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">8. Politika Değişiklikleri</h2>
+                    <p>Bu Gizlilik ve Çerez Politikası zaman zaman güncellenebilir. Önemli değişiklikler sitede duyurulacaktır. Güncel politika her zaman bu sayfada yayınlanacaktır.</p>
+                </section>
+
+                <section class="mb-4">
+                    <h2 class="h5 fw-bold">9. İletişim</h2>
+                    <p>Gizlilik ve çerez politikamız hakkında sorularınız için:</p>
+                    <ul>
+                        <li>E-posta: iletisim@sinifdijital.com</li>
+                        <li>Web: www.sinifdijital.com</li>
+                    </ul>
+                </section>
+
+                <footer class="border-top pt-4 mt-5">
+                    <p class="mb-1"><strong>Ömer Yıldız</strong></p>
+                    <p class="text-muted">www.sinifdijital.com</p>
+                </footer>
+            </article>
+        </div>
+    </div>
+</div>
+
+<style>
+.legal-document {
+    font-family: 'Times New Roman', Times, serif;
+    font-size: 1rem;
+    line-height: 1.8;
+    color: #333;
+}
+.legal-document h1 { font-size: 1.4rem; }
+.legal-document h2 { font-size: 1.1rem; margin-top: 1.5rem; }
+.legal-document ul { margin-bottom: 1rem; }
+.legal-document li { margin-bottom: 0.25rem; }
+</style>
+{% endblock %}

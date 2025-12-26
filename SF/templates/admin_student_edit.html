@@ -1,0 +1,198 @@
+{% extends "admin_layout.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Başlık -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2>
+                    <i class="bi bi-pencil-square me-2"></i>
+                    Öğrenci Düzenle
+                </h2>
+                <div class="btn-group">
+                    <a href="{{ url_for('admin_student_detail', student_id=student.id) }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Detaya Dön
+                    </a>
+                    <a href="{{ url_for('admin_students') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-list me-1"></i>Listeye Dön
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="bi bi-person-gear me-2"></i>
+                        {{ student.username }} - Bilgilerini Düzenle
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+                        
+                        <div class="row">
+                            <!-- Sol Kolon -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.username.label(class="form-label") }}
+                                    {{ form.username(class="form-control") }}
+                                    {% if form.username.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.username.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.email.label(class="form-label") }}
+                                    {{ form.email(class="form-control") }}
+                                    {% if form.email.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.email.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.first_name.label(class="form-label") }}
+                                    {{ form.first_name(class="form-control") }}
+                                    {% if form.first_name.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.first_name.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.last_name.label(class="form-label") }}
+                                    {{ form.last_name(class="form-control") }}
+                                    {% if form.last_name.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.last_name.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <!-- Sağ Kolon -->
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.class_no.label(class="form-label") }}
+                                    {{ form.class_no(class="form-select") }}
+                                    {% if form.class_no.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.class_no.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.class_name.label(class="form-label") }}
+                                    {{ form.class_name(class="form-control") }}
+                                    {% if form.class_name.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.class_name.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    {{ form.school_id.label(class="form-label") }}
+                                    {{ form.school_id(class="form-select") }}
+                                    {% if form.school_id.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.school_id.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-6">
+                                        <div class="form-check mb-3">
+                                            {{ form.profile_completed(class="form-check-input") }}
+                                            {{ form.profile_completed.label(class="form-check-label") }}
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="form-check mb-3">
+                                            {{ form.is_active(class="form-check-input") }}
+                                            {{ form.is_active.label(class="form-check-label") }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <!-- Şifre Değişikliği -->
+                        <div class="row">
+                            <div class="col-12">
+                                <h6 class="text-muted mb-3">Şifre Değişikliği (Opsiyonel)</h6>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.password.label(class="form-label") }}
+                                    {{ form.password(class="form-control") }}
+                                    <small class="form-text text-muted">Boş bırakılırsa şifre değişmez.</small>
+                                    {% if form.password.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.password.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.confirm_password.label(class="form-label") }}
+                                    {{ form.confirm_password(class="form-control") }}
+                                    {% if form.confirm_password.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.confirm_password.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <hr>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('admin_student_detail', student_id=student.id) }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-x-circle me-1"></i>İptal
+                            </a>
+                            {{ form.submit(class="btn btn-primary") }}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

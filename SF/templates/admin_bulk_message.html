@@ -1,0 +1,245 @@
+{% extends "admin_layout.html" %}
+
+{% block content %}
+<div class="container py-4">
+    <h3>
+        <i class="bi bi-broadcast me-2"></i>
+        Toplu Mesaj Gönder
+    </h3>
+    <hr>
+    
+    <form method="POST" action="{{ url_for('admin_send_bulk_message') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        
+        <!-- Mesaj Kategorisi (Tek başına) -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <label for="message_type" class="form-label">Mesaj Kategorisi</label>
+                <select class="form-select" id="message_type" name="message_type">
+                    <option value="info">📝 Bilgilendirme</option>
+                    <option value="warning">⚠️ Uyarı</option>
+                    <option value="success">🎉 Tebrik/Başarı</option>
+                    <option value="urgent">🚨 Acil/Önemli</option>
+                    <option value="reminder">🔔 Hatırlatma</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- SABİT FİLTRELER: İl, İlçe, Okul, Sınıf -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <label for="province_filter" class="form-label">İl</label>
+                <select class="form-select" id="province_filter" name="province_filter">
+                    <option value="">Tümü</option>
+                    {% for province in provinces %}
+                        <option value="{{ province.id }}">{{ province.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label for="district_filter" class="form-label">İlçe</label>
+                <select class="form-select" id="district_filter" name="district_filter">
+                    <option value="">Tümü</option>
+                    <!-- İl seçilince JS ile doldurulacak -->
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label for="school_filter" class="form-label">Okul</label>
+                <select class="form-select" id="school_filter" name="school_filter">
+                    <option value="">Tümü</option>
+                    <!-- İlçe seçilince JS ile doldurulacak -->
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label for="class_filter" class="form-label">Sınıf</label>
+                <select class="form-select" id="class_filter" name="class_filter">
+                    <option value="">Tümü</option>
+                    <option value="5">5. Sınıf</option>
+                    <option value="6">6. Sınıf</option>
+                    <option value="7">7. Sınıf</option>
+                    <option value="8">8. Sınıf</option>
+                    <option value="9">9. Sınıf</option>
+                    <option value="10">10. Sınıf</option>
+                    <option value="11">11. Sınıf</option>
+                    <option value="12">12. Sınıf</option>
+                    <option value="LGS">LGS</option>
+                    <option value="TYT">TYT</option>
+                    <option value="AYT">AYT</option>
+                </select>
+            </div>
+        </div>
+        
+        <!-- Hedef Öğrenci Sayısı (Dinamik) -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <span id="target-count" class="alert alert-info d-flex align-items-center" aria-live="polite">
+                  Seçilen filtrelere göre hedef öğrenci sayısı hesaplanacak...
+                </span>
+            </div>
+        </div>
+        
+        <!-- Mesaj Başlığı -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <label for="subject" class="form-label">Mesaj Başlığı</label>
+                <input type="text" class="form-control" id="subject" name="subject" maxlength="255" required
+                       placeholder="Mesaj başlığını yazınız">
+            </div>
+        </div>
+        
+        <!-- Mesaj İçeriği -->
+        <div class="mb-3">
+            <label for="content" class="form-label">Mesaj İçeriği</label>
+            <textarea class="form-control" id="content" name="content" rows="8"
+                      placeholder="Öğrencilere göndermek istediğiniz mesajı yazın..." maxlength="2000"></textarea>
+        </div>
+        
+        <div class="d-flex justify-content-between">
+            <a href="{{ url_for('admin_students') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Geri Dön
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-broadcast me-1"></i>Toplu Mesaj Gönder
+            </button>
+        </div>
+    </form>
+</div>
+
+<script src="{{ url_for('static', filename='main.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+
+    const el = {
+        province: document.getElementById('province_filter'),
+        district: document.getElementById('district_filter'),
+        school:   document.getElementById('school_filter'),
+        cls:      document.getElementById('class_filter'),
+        target:   document.getElementById('target-count')
+    };
+
+    let debounceTimer = null;
+    function debounce(fn, wait=300){
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(fn, wait);
+    }
+
+    function setTargetState(type, msg){
+        const map = {
+            info: 'alert alert-info d-flex align-items-center',
+            success: 'alert alert-success d-flex align-items-center',
+            warn: 'alert alert-warning d-flex align-items-center',
+            danger: 'alert alert-danger d-flex align-items-center'
+        };
+        el.target.className = map[type] || map.info;
+        el.target.textContent = msg;
+    }
+
+    // İl değişince ilçeleri al
+    el.province.addEventListener('change', () => {
+        const pid = el.province.value;
+        el.district.innerHTML = '<option value="">Tümü</option>';
+        el.school.innerHTML = '<option value="">Tümü</option>';
+        if (!pid) {
+            setTargetState('info','Lütfen en az bir filtre seçin...');
+            requestCountUpdate();
+            return;
+        }
+        fetch(`/get_districts/${pid}`)
+          .then(r=>r.json())
+          .then(data=>{
+            data.forEach(d=>{
+                el.district.insertAdjacentHTML('beforeend', `<option value="${d.id}">${d.name}</option>`);
+            });
+          })
+          .catch(()=> setTargetState('danger','İlçeler yüklenemedi'));
+        requestCountUpdate();
+    });
+
+    // İlçe değişince okullar (tek endpoint varsayımı: /get_schools_filtered_district/<district_id>)
+    el.district.addEventListener('change', () => {
+        const did = el.district.value;
+        el.school.innerHTML = '<option value="">Tümü</option>';
+        if (!did) {
+            requestCountUpdate();
+            return;
+        }
+        fetch(`/get_schools_filtered_district/${did}`)
+          .then(r=>r.json())
+          .then(data=>{
+            if (!data.length){
+                el.school.innerHTML = '<option value="">Bu ilçede okul bulunamadı</option>';
+            } else {
+                data.sort((a,b)=>a.name.localeCompare(b.name))
+                    .forEach(s=>{
+                        el.school.insertAdjacentHTML('beforeend', `<option value="${s.id}">${s.name}</option>`);
+                    });
+            }
+          })
+          .catch(()=> setTargetState('danger','Okullar yüklenemedi'));
+        requestCountUpdate();
+    });
+
+    [el.school, el.cls].forEach(sel=>{
+        sel.addEventListener('change', ()=> requestCountUpdate());
+    });
+
+    function requestCountUpdate(){
+        debounce(()=>{
+            const filters = {
+                province: el.province.value,
+                district: el.district.value,
+                school: el.school.value,
+                class: el.cls.value
+            };
+            if (!filters.province && !filters.district && !filters.school && !filters.class){
+                setTargetState('info','Lütfen en az bir filtre seçin...');
+                return;
+            }
+            setTargetState('info','Hesaplanıyor...');
+            fetch('/get_target_count', {
+                method:'POST',
+                headers:{
+                    'Content-Type':'application/json',
+                    'X-CSRFToken': document.querySelector('input[name="csrf_token"]').value
+                },
+                body: JSON.stringify(filters)
+            })
+            .then(r=>r.json())
+            .then(data=>{
+                if (data.success){
+                    setTargetState('success', data.message);
+                } else {
+                    setTargetState('warn', data.message);
+                }
+            })
+            .catch(()=>{
+                setTargetState('danger','Hesaplama sırasında hata oluştu');
+            });
+        }, 300);
+    }
+
+    // Form submit öncesi kısa validasyon (örn. mesaj içeriği minimum uzunluk)
+    const form = document.querySelector('form[action="{{ url_for("admin_send_bulk_message") }}"]');
+    if (form){
+        form.addEventListener('submit', (e)=>{
+            const subject = form.querySelector('#subject').value.trim();
+            const rawContent = document.querySelector('#content').value.trim();
+            if (subject.length < 3){
+                e.preventDefault();
+                alert('Başlık en az 3 karakter olmalı.');
+                return;
+            }
+            if (rawContent.length < 5){
+                e.preventDefault();
+                alert('Mesaj içeriği çok kısa.');
+                return;
+            }
+
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "admin_layout.html"%}
+
+
+{% block content %}
+
+<h1>Konu Güncelleme</h1>
+<form method="POST" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+        {{ form.ders.label }}
+        {% if form.ders.errors %}
+        {{ form.ders(class="form-control is-invalid") }} 
+            {% for error in form.ders.errors %}
+                <div class="text-danger">{{ error }}</div>
+            {% endfor %}
+        {% elif form.ders.data %}
+            {{ form.ders(class="form-control is-valid") }}
+        {% else %}
+            {{ form.ders(class="form-control") }}   
+        {% endif %}
+
+    {{ form.submit(class="btn btn-primary mt-3") }}
+    
+</form>
+
+{% endblock %}

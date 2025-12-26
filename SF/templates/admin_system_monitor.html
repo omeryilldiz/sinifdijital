@@ -1,0 +1,129 @@
+{% extends "admin_layout.html" %}
+{% block content %}
+<div class="container my-4">
+    <h2 class="mb-4">Sistem İzleme ve Sağlık</h2>
+    <div class="row">
+        <div class="col-md-4 mb-4" id="health-section"></div>
+        <div class="col-md-4 mb-4" id="performance-section"></div>
+        <div class="col-md-4 mb-4" id="query-section"></div>
+    </div>
+    <div class="row">
+        <div class="col-12">
+            <canvas id="performanceChart" height="80"></canvas>
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+let perfChart;
+
+async function fetchAndShow(url, sectionId, renderFunc, afterFunc) {
+    const section = document.getElementById(sectionId);
+    section.innerHTML = '<div>Yükleniyor...</div>';
+    try {
+        const resp = await fetch(url);
+        const data = await resp.json();
+        section.innerHTML = renderFunc(data);
+        if (afterFunc) afterFunc(data);
+    } catch (e) {
+        section.innerHTML = '<div class="alert alert-danger">Veri alınamadı.</div>';
+    }
+}
+
+function statusBadge(status) {
+    if (status === "healthy" || status === "OK") return '<span class="badge bg-success">Sağlıklı</span>';
+    if (status === "warning") return '<span class="badge bg-warning text-dark">Uyarı</span>';
+    return '<span class="badge bg-danger">Sorun</span>';
+}
+
+function renderHealth(data) {
+    return `
+        <div class="card shadow">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Veritabanı Sağlık</h5>
+                <ul class="list-group list-group-flush mb-3">
+                    <li class="list-group-item">Durum: ${statusBadge(data.health_status)}</li>
+                    <li class="list-group-item">Bağlantı: ${statusBadge(data.connection_status)}</li>
+                    <li class="list-group-item">Temel Sorgu Süresi: <b>${data.query_performance.basic_query_time}</b></li>
+                    <li class="list-group-item">Karmaşık Sorgu Süresi: <b>${data.query_performance.complex_query_time}</b></li>
+                </ul>
+                ${data.alerts && data.alerts.length > 0 ? 
+                    `<div class="alert alert-warning p-2"><b>Uyarılar:</b> ${data.alerts.join(', ')}</div>` : 
+                    `<div class="alert alert-success p-2">Uyarı yok.</div>`
+                }
+            </div>
+        </div>
+    `;
+}
+function renderPerformance(data) {
+    return `
+        <div class="card shadow">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Performans Testleri</h5>
+                <ul class="list-group list-group-flush mb-3">
+                    <li class="list-group-item">Toplam Test: <b>${data.summary.total_tests}</b></li>
+                    <li class="list-group-item">Hızlı Test: <b>${data.summary.fast_tests}</b></li>
+                    <li class="list-group-item">Yavaş Test: <b>${data.summary.slow_tests}</b></li>
+                    <li class="list-group-item">Hatalı Test: <b>${data.summary.error_tests}</b></li>
+                </ul>
+            </div>
+        </div>
+    `;
+}
+function renderQueryStats(data) {
+    return `
+        <div class="card shadow">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Sorgu İstatistikleri</h5>
+                <ul class="list-group list-group-flush mb-3">
+                    <li class="list-group-item">Yavaş Sorgu Sayısı: <b>${data.slow_query_report.length}</b></li>
+                </ul>
+                ${data.recommendations && data.recommendations.length > 0 ? 
+                    `<div class="alert alert-info p-2"><b>Öneriler:</b> ${data.recommendations.join('<br>')}</div>` : 
+                    `<div class="alert alert-success p-2">Öneri yok.</div>`
+                }
+            </div>
+        </div>
+    `;
+}
+
+// Chart.js ile örnek performans grafiği
+function renderPerformanceChart(data) {
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    const labels = ['Toplam', 'Hızlı', 'Yavaş', 'Hatalı'];
+    const values = [
+        data.summary.total_tests,
+        data.summary.fast_tests,
+        data.summary.slow_tests,
+        data.summary.error_tests
+    ];
+    if (perfChart) perfChart.destroy();
+    perfChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Performans Test Sonuçları',
+                data: values,
+                backgroundColor: [
+                    '#0d6efd', '#198754', '#ffc107', '#dc3545'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true }
+            }
+        }
+    });
+}
+
+fetchAndShow('/admin/system/database-health', 'health-section', renderHealth);
+fetchAndShow('/admin/system/performance-test', 'performance-section', renderPerformance, renderPerformanceChart);
+fetchAndShow('/admin/system/query-stats', 'query-section', renderQueryStats);
+</script>
+{% endblock %}

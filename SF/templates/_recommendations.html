@@ -1,0 +1,38 @@
+<div class="card mb-4">
+    <div class="card-header bg-transparent border-0 pb-0">
+        <h5 class="card-title mb-0"><i class="bi bi-lightbulb me-2"></i> Tavsiye Edilen Konular / Tekrarlar</h5>
+    </div>
+    <div class="card-body">
+        {% if stats.question_analytics.weak_topics %}
+            <ul class="list-group">
+                {% for topic in stats.question_analytics.weak_topics %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>
+                            <i class="bi bi-exclamation-circle text-danger me-2"></i>
+                            <b>{{ topic.subject }}</b> / {{ topic.unit }}
+                        </span>
+                        <span>
+                            <span class="badge bg-danger me-2">{{ topic.success_rate }}%</span>
+                            <span class="badge bg-secondary">{{ topic.total_questions }} soru</span>
+                            {% if topic.last_wrong %}
+                                <span class="badge bg-light text-dark">
+                                    {{ topic.last_wrong.strftime('%d.%m.%Y') if topic.last_wrong.strftime else topic.last_wrong }}
+                                </span>
+                            {% endif %}
+                        </span>
+                    </li>
+                {% endfor %}
+            </ul>
+            <div class="mt-3">
+                <small class="text-muted">
+                    Bu konularda başarı oranınız düşük. Tekrar etmeniz önerilir.
+                </small>
+            </div>
+        {% else %}
+            <div class="alert alert-success mb-0">
+                <i class="bi bi-emoji-smile me-2"></i>
+                Zayıf konunuz yok, harika gidiyorsunuz!
+            </div>
+        {% endif %}
+    </div>
+</div>

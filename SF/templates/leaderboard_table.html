@@ -1,0 +1,226 @@
+<!-- 🏆 SIRALAMA TABLOSU -->
+<div class="leaderboard-container">
+    
+    <!-- Veri kontrolü -->
+    {% if scope_data and scope_data.top_students %}
+        
+        <!-- 📊 Öğrencinin Kendi Durumu (Öne Çıkan Kart) -->
+        <div class="current-student-card mb-4">
+            <div class="card border-primary">
+                <div class="card-body bg-light">
+                    <div class="row align-items-center">
+                        <div class="col-md-2 text-center">
+                            <div class="rank-display">
+                                <h2 class="text-primary mb-0">#{{ scope_data.my_rank }}</h2>
+                                <small class="text-muted">Sıra</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-circle me-3 bg-primary text-white">
+                                    {{ current_user.username[0].upper() }}
+                                </div>
+                                <div>
+                                    <h5 class="mb-1">{{ current_user.username }}</h5>
+                                    <p class="mb-0 text-muted">
+                                        <i class="bi bi-{{ period_icon }} me-1"></i>
+                                        {{ period_title }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <div class="points-display">
+                                <h4 class="text-success mb-0">{{ scope_data.my_points }}</h4>
+                                <small class="text-muted">puan</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🥇 EN İYİ 10 SIRALAMA -->
+        <div class="top-rankings">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="mb-0">
+                    <i class="bi bi-trophy me-2 text-warning"></i>
+                    En İyi {{ scope_data.top_students|length }} Öğrenci
+                </h6>
+                <small class="text-muted">{{ period_title }}</small>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover leaderboard-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th width="60px" class="text-center">Sıra</th>
+                            <th>Öğrenci</th>
+                            <th width="100px">Sınıf</th>
+                            <th width="100px" class="text-end">Puan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for entry in scope_data.top_students %}
+                        <tr {% if entry.user_id == current_user.id %}class="table-success fw-bold"{% endif %}>
+                            <!-- Sıra -->
+                            <td class="text-center">
+                                <div class="rank-badge rank-{{ loop.index }}">
+                                    {% if loop.index == 1 %}
+                                        <i class="bi bi-trophy-fill text-warning"></i>
+                                    {% elif loop.index == 2 %}
+                                        <i class="bi bi-award-fill text-secondary"></i>
+                                    {% elif loop.index == 3 %}
+                                        <i class="bi bi-award-fill text-warning"></i>
+                                    {% else %}
+                                        {{ loop.index }}
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <!-- Öğrenci Bilgisi -->
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle me-2 {% if entry.user_id == current_user.id %}bg-primary text-white{% else %}bg-light text-dark{% endif %}">
+                                        {{ entry.username[0].upper() }}
+                                    </div>
+                                    <div>
+                                        <div class="student-name">
+                                            <strong>{{ entry.username }}</strong>
+                                            {% if entry.user_id == current_user.id %}
+                                                <span class="badge bg-success ms-1">SEN</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- Sınıf -->
+                            <td class="text-center">
+                                {% if entry.class_info and entry.class_info != 'Sınıf Bilgisi Yok' %}
+                                    <span class="badge bg-light text-dark">{{ entry.class_info }}</span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Puan -->
+                            <td class="text-end">
+                                <div class="points-display">
+                                    <strong class="text-primary">{{ entry.points }}</strong>
+                                    <small class="text-muted d-block">puan</small>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ℹ️ AÇIKLAMA BİLGİLERİ -->
+        <div class="info-section mt-4">
+            <div class="alert alert-info">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Puanlama Sistemi
+                        </h6>
+                        <ul class="mb-0 small">
+                            <li>Doğru cevap: +10 puan</li>
+                            <li>Yanlış cevap: -2 puan</li>
+                            <li>İçerik okuma: +5 puan</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="alert-heading">
+                            <i class="bi bi-clock me-1"></i>
+                            Güncelleme Bilgisi
+                        </h6>
+                        <small class="text-muted">
+                            {% if 'günlük' in period_title.lower() %}
+                                Sıralama her 5 dakikada bir güncellenir.
+                            {% elif 'haftalık' in period_title.lower() %}
+                                Haftalık sıralama her Pazartesi güncellenir.
+                            {% elif 'aylık' in period_title.lower() %}
+                                Aylık sıralama her ayın 1'inde güncellenir.
+                            {% else %}
+                                Genel sıralama anlık olarak güncellenir.
+                            {% endif %}
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- İl veya Okul Bilgisi -->
+        {% if period_title and 'İl' in period_title %}
+            <div class="mb-2">
+                <span class="badge bg-info text-dark">
+                    İl: {{ current_user.school.district.province.name if current_user.school and current_user.school.district and current_user.school.district.province else 'Bilinmiyor' }}
+                </span>
+            </div>
+        {% elif period_title and 'Okul' in period_title %}
+            <div class="mb-2">
+                <span class="badge bg-primary text-white">
+                    Okul: {{ current_user.school.name if current_user.school else 'Bilinmiyor' }}
+                </span>
+            </div>
+        {% endif %}
+
+    {% else %}
+        <!-- BOŞ DURUM -->
+        {% include 'leaderboard_empty.html' with context %}
+    {% endif %}
+
+</div>
+
+<!-- 🎨 Özel CSS Stilleri -->
+<style>
+.current-student-card {
+    box-shadow: 0 4px 8px rgba(13, 110, 253, 0.15);
+}
+
+.rank-display h2 {
+    font-weight: bold;
+    font-size: 2.5rem;
+}
+
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.rank-badge {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin: 0 auto;
+}
+
+.rank-1 { background: linear-gradient(135deg, #ffd700, #ffed4e); color: #333; }
+.rank-2 { background: linear-gradient(135deg, #c0c0c0, #e8e8e8); color: #333; }
+.rank-3 { background: linear-gradient(135deg, #cd7f32, #daa520); color: white; }
+
+.points-display strong {
+    font-size: 1.2rem;
+}
+
+.leaderboard-table {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+</style>

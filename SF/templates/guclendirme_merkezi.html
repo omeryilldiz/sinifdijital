@@ -1,0 +1,15 @@
+{% extends "dashboard_layout.html" %}
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4"><i class="bi bi-lightning-charge text-warning me-2"></i> Güçlendirme Merkezi</h2>
+    <div class="row g-4">
+        <div class="col-12">
+            {% include "_self_assessment.html" %}
+            {% include "_progress_chart.html" %}
+            {% include "_recommendations.html" %}
+            {% include "_repeat_plan.html" %}
+            {% include "_motivational_tips.html" %}
+        </div>
+    </div>
+</div>
+{% endblock %}

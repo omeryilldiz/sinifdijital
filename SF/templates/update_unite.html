@@ -1,0 +1,28 @@
+{% extends "admin_layout.html"%}
+
+
+{% block content %}
+
+<h2 class="my-2">{{ ders.konu_adi }} Konusuna Konusunu Güncelleyiniz</h2>
+<hr>
+
+    <form method="POST" novalidate>
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.unite.label }}
+            {% if form.unite.errors %}
+            {{ form.unite(class="form-control is-invalid") }} 
+                {% for error in form.unite.errors %}
+                    <div class="text-danger">{{ error }}</div>
+                {% endfor %}
+            {% elif form.unite.data %}
+                {{ form.unite(class="form-control is-valid") }}
+            {% else %}
+                {{ form.unite(class="form-control") }}   
+            {% endif %}
+        </div>
+
+        {{ form.submit(class="btn btn-primary") }}  
+    </form>
+
+{% endblock %}

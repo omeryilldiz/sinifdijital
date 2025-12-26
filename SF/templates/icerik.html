@@ -1,0 +1,1311 @@
+{% extends "layout.html" %}
+{% from 'includes/ads_macros.html' import render_ad %}
+
+{% block head %}
+{{ super() }}
+<meta name="csrf-token" content="{{ csrf_token() }}">
+{% endblock %}
+
+{% block content %}
+<div class="icerik-wrapper">
+  <!-- Ana İçerik Alanı -->
+  <div class="main-content-area">
+    <div class="content-section" data-icerik-id="{{ icerik.id }}">
+      <h2 class="content-title">{{ icerik.baslik }}</h2>
+
+      <!-- Pagination Üst -->
+      <div class="pagination-container my-5">
+        <div class="content-pagination">
+          <div class="nav-left">
+            {% if prev_content_data and prev_content_data.icerik %}
+            <a href="{{ url_for('icerik', sinif_slug=sinif.slug, ders_slug=ders.slug, unite_slug=prev_content_data.unite_slug, icerik_slug=prev_content_data.icerik.slug) }}"
+               class="btn btn-outline-secondary d-flex align-items-center">
+              <i class="bi bi-chevron-left me-2"></i>
+              <div class="text-start">
+                <small class="fw-medium">{{ prev_content_data.icerik.baslik }}</small>
+              </div>
+            </a>
+            {% endif %}
+          </div>
+          <span class="position-indicator">{{ current_position }} / {{ total_contents }}</span>
+          <div class="nav-right">
+            {% if next_content_data and next_content_data.icerik %}
+            <a href="{{ url_for('icerik', sinif_slug=sinif.slug, ders_slug=ders.slug, unite_slug=next_content_data.unite_slug, icerik_slug=next_content_data.icerik.slug) }}"
+               class="btn btn-outline-secondary d-flex align-items-center">
+              <div class="text-end">
+                <small class="fw-medium">{{ next_content_data.icerik.baslik }}</small>
+              </div>
+              <i class="bi bi-chevron-right ms-2"></i>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Ders Notları -->
+      {% if ders_notlari %}
+      <div class="pdf-section">
+        <h3>Ders Notları</h3>
+        <div class="pdf-grid">
+          {% for ders_notu in ders_notlari %}
+          <a href="{{ url_for('static', filename='pdf_uploads/' ~ ders_notu.dosya_adi) }}" target="_blank"
+             class="pdf-item text-decoration-none">
+            <div class="d-flex align-items-center">
+              <i class="bi bi-file-pdf text-danger fs-4 me-2"></i>
+              <div>
+                <div class="fw-medium text-dark">{{ ders_notu.baslik }}</div>
+                <small class="text-muted">{{ ders_notu.eklenme_tarihi.strftime('%d.%m.%Y') }}</small>
+              </div>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- İçerik Gövdesi -->
+      <div class="content-body mt-4" id="content-body">
+        {{ icerik.icerik | safe }}
+      </div>
+
+      <!-- VİDEO BÖLÜMÜ (İçerik gövdesinin ALTINDA) -->
+      {% if videolar and videolar|length > 0 %}
+      <div class="video-section">
+        <h4 class="video-section-title">
+          <i class="bi bi-play-circle-fill me-2"></i>İlgili Videolar
+        </h4>
+        <div class="video-scroll-container">
+          <div class="video-scroll-wrapper">
+            {% for video in videolar %}
+            <div class="video-item">
+              <div class="video-frame-wrapper">
+                <iframe class="video-frame"
+                        src="{{ video.embed_url }}"
+                        title="{{ video.video_title or ('Video ' ~ loop.index) }}"
+                        allowfullscreen
+                        loading="lazy">
+                </iframe>
+              </div>
+              <div class="video-info">
+                <h5 class="video-title">{{ video.video_title or ('Video ' ~ loop.index) }}</h5>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      <!-- VİDEO BÖLÜMÜ SONU -->
+
+      <!-- ALıŞTIRMA SORULARI BÖLÜMÜ -->
+      <div class="practice-section mt-4">
+        <div class="practice-card">
+          <div class="practice-icon">
+            <i class="bi bi-pencil-square"></i>
+          </div>
+          <div class="practice-content">
+            <h4 class="practice-title">Alıştırma Soruları</h4>
+            <p class="practice-description">Bu konuyu ne kadar öğrendiğini test et!</p>
+          </div>
+          <div class="practice-buttons">
+            <a href="{{ url_for('soru_coz', sinif_slug=sinif.slug, ders_slug=ders.slug, icerik_id=icerik.id, adet=5) }}" 
+               class="btn btn-practice btn-primary">
+              <i class="bi bi-play-circle me-2"></i>5 Soru Çöz
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination Alt -->
+      <div class="pagination-container mt-5">
+        <div class="content-pagination">
+          <div class="nav-left">
+            {% if prev_content_data and prev_content_data.icerik %}
+            <a href="{{ url_for('icerik', sinif_slug=sinif.slug, ders_slug=ders.slug, unite_slug=prev_content_data.unite_slug, icerik_slug=prev_content_data.icerik.slug) }}"
+               class="btn btn-outline-secondary d-flex align-items-center">
+              <i class="bi bi-chevron-left me-2"></i>
+              <div class="text-start">
+                <small class="fw-medium">{{ prev_content_data.icerik.baslik }}</small>
+              </div>
+            </a>
+            {% endif %}
+          </div>
+          <span class="position-indicator">{{ current_position }} / {{ total_contents }}</span>
+          <div class="nav-right">
+            {% if next_content_data and next_content_data.icerik %}
+            <a href="{{ url_for('icerik', sinif_slug=sinif.slug, ders_slug=ders.slug, unite_slug=next_content_data.unite_slug, icerik_slug=next_content_data.icerik.slug) }}"
+               class="btn btn-outline-secondary d-flex align-items-center">
+              <div class="text-end">
+                <small class="fw-medium">{{ next_content_data.icerik.baslik }}</small>
+              </div>
+              <i class="bi bi-chevron-right ms-2"></i>
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SAĞ REKLAM KOLONU - DİKEY REKLAMLAR (160x600) -->
+  <div class="ad-sidebar-column">
+    <!-- 1. Reklam: Normal (Scroll ile kayar) -->
+    <div class="ad-sidebar-item">
+      {{ render_ad('4030416361', 'Sidebar Dikey Reklam 1', 'vertical', 'display:block; width:160px; height:600px;') }}
+    </div>
+      <!-- 2. Reklam: Normal (Scroll ile kayar) -->
+    <div class="ad-sidebar-item">
+      {{ render_ad('9836017636', 'Sidebar Dikey Reklam 2', 'vertical', 'display:block; width:160px; height:600px;') }}
+    </div>
+    
+    <!-- 2. Reklam: Sticky (Yapışkan) -->
+    <div class="ad-sidebar-item ad-sticky">
+      <!-- Google AdSense Kodu -->
+      <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7728832097527782"
+           crossorigin="anonymous"></script>
+      <ins class="adsbygoogle"
+           style="display:block; width:160px; height:600px;"
+           data-ad-client="ca-pub-7728832097527782"
+           data-ad-slot="7730930173"
+           data-ad-format="vertical"
+           data-full-width-responsive="false"></ins>
+      <script>
+           (adsbygoogle = window.adsbygoogle || []).push({});
+      </script>
+    </div>
+  </div>
+</div>
+
+<!-- Mobil İçerik İçi Reklam Şablonları (728x90 Leaderboard) -->
+<template id="ad-template-1">
+  <div class="in-content-ad my-4">
+    {{ render_ad('4030416361', 'İçerik İçi Reklam 1', 'horizontal', 'display:block; width:100%; height:90px;') }}
+  </div>
+</template>
+<template id="ad-template-2">
+  <div class="in-content-ad my-4">
+    {{ render_ad('5104766834', 'İçerik İçi Reklam 2', 'horizontal', 'display:block; width:100%; height:90px;') }}
+  </div>
+</template>
+<template id="ad-template-3">
+  <div class="in-content-ad my-4">
+    {{ render_ad('7730930173', 'İçerik İçi Reklam 3', 'horizontal', 'display:block; width:100%; height:90px;') }}
+  </div>
+</template>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+// ========== REKLAM ENJEKSİYON SİSTEMİ (EŞİT DAĞILIMLI - TABLO SORUNU DÜZELTİLDİ) ==========
+(function() {
+  const AD_CONFIG = {
+    maxAds: 3,
+    minParagraphs: 4,
+    adPositions: [0.25, 0.50, 0.75],
+    isMobile: window.innerWidth < 992
+  };
+
+  function injectAdsIntoContent() {
+    const contentBody = document.getElementById('content-body');
+    if (!contentBody) return;
+
+    if (!AD_CONFIG.isMobile) return;
+
+    // Zaten eklenmişse tekrar ekleme
+    if (contentBody.querySelector('.in-content-ad')) return;
+
+    // ÖNEMLİ: Sadece content-body'nin DOĞRUDAN çocuklarını al
+    // Tablo içindeki p, td gibi elementleri dahil etme
+    const allChildren = Array.from(contentBody.children);
+    
+    // Sadece blok elementleri filtrele (tablo içindekiler hariç)
+    const blockElements = allChildren.filter(el => {
+      const tagName = el.tagName.toLowerCase();
+      const validTags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'table', 'blockquote', 'div', 'figure', 'pre'];
+      return validTags.includes(tagName);
+    });
+
+    const totalElements = blockElements.length;
+    
+    console.log(`[Ad System] Toplam blok element: ${totalElements}`);
+    
+    // Çok az içerik varsa sadece sona 1 reklam ekle
+    if (totalElements < AD_CONFIG.minParagraphs) {
+      const adTemplate = document.getElementById('ad-template-1');
+      if (adTemplate) {
+        const adClone = adTemplate.content.cloneNode(true);
+        contentBody.appendChild(adClone);
+        refreshAds();
+      }
+      return;
+    }
+
+    // Eşit dağılımlı reklam pozisyonlarını hesapla
+    const adTemplates = ['ad-template-1', 'ad-template-2', 'ad-template-3'];
+    const insertedPositions = [];
+
+    AD_CONFIG.adPositions.forEach((percentage, index) => {
+      if (index >= AD_CONFIG.maxAds) return;
+
+      // Hedef pozisyonu hesapla
+      let targetIndex = Math.floor(totalElements * percentage) - 1;
+      
+      // Sınırları kontrol et
+      targetIndex = Math.max(targetIndex, 1);
+      targetIndex = Math.min(targetIndex, totalElements - 2);
+
+      // Çakışma kontrolü (en az 2 element arayla)
+      const tooClose = insertedPositions.some(pos => Math.abs(pos - targetIndex) < 2);
+      if (tooClose) {
+        targetIndex = targetIndex + 2;
+        if (targetIndex >= totalElements - 1) return;
+      }
+
+      const element = blockElements[targetIndex];
+      const adTemplate = document.getElementById(adTemplates[index]);
+      
+      if (adTemplate && element) {
+        const adClone = adTemplate.content.cloneNode(true);
+        
+        // Elementin SONRASINA ekle (insertAfter mantığı)
+        // element.parentNode her zaman contentBody olacak
+        if (element.nextSibling) {
+          contentBody.insertBefore(adClone, element.nextSibling);
+        } else {
+          contentBody.appendChild(adClone);
+        }
+        
+        insertedPositions.push(targetIndex);
+        console.log(`[Ad System] Reklam ${index + 1} eklendi: pozisyon ${targetIndex} (${element.tagName})`);
+      }
+    });
+
+    refreshAds();
+  }
+
+  function refreshAds() {
+    if (typeof adsbygoogle !== 'undefined') {
+      try {
+        const ads = document.querySelectorAll('.in-content-ad .adsbygoogle');
+        ads.forEach(ad => {
+          if (!ad.getAttribute('data-ad-status')) {
+            (adsbygoogle = window.adsbygoogle || []).push({});
+          }
+        });
+      } catch (e) {
+        console.log('AdSense refresh error:', e);
+      }
+    }
+  }
+
+  // Sayfa yüklendiğinde çalıştır
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', injectAdsIntoContent);
+  } else {
+    injectAdsIntoContent();
+  }
+
+  // Resize event - sadece mod değişikliğinde
+  let resizeTimer;
+  window.addEventListener('resize', function() {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function() {
+      const wasMobile = AD_CONFIG.isMobile;
+      AD_CONFIG.isMobile = window.innerWidth < 992;
+      
+      if (wasMobile !== AD_CONFIG.isMobile) {
+        document.querySelectorAll('.in-content-ad').forEach(el => el.remove());
+        injectAdsIntoContent();
+      }
+    }, 250);
+  });
+})();
+
+// ========== MEVCUT TIMER SİSTEMİ ==========
+
+// ✅ CSRF Token'ı global scope'ta tanımla
+let csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+window.csrfToken = csrfToken;
+
+// ✅ CSRF Token'ı yenileme fonksiyonu
+function refreshCSRFToken() {
+  const newToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+  if (newToken && newToken !== csrfToken) {
+    csrfToken = newToken;
+    window.csrfToken = csrfToken;
+    console.log('[Timer] 🔄 CSRF Token yenilendi:', csrfToken.substring(0, 20) + '...');
+    return true;
+  }
+  return false;
+}
+
+// ✅ Sayfa yüklenmeden önce buffer temizle (F5 refresh)
+window.addEventListener('beforeunload', () => {
+  console.log('[Timer] ⚠️ beforeunload - buffer temizleniyor');
+  localStorage.removeItem('sureBuffer');
+});
+
+// Debugging
+if (!csrfToken) {
+  console.error('[Timer] ❌ CSRF Token bulunamadı! Meta tag kontrol edin.');
+} else {
+  console.log('[Timer] ✅ CSRF Token yüklendi:', csrfToken.substring(0, 20) + '...');
+}
+
+(function () {
+  if (window.timerInterval) {
+    clearInterval(window.timerInterval);
+    window.timerInterval = null;
+  }
+  let timerInterval = null;
+
+  const CONTENT_ID = parseInt('{{ icerik.id }}') || null;
+  const isAuthenticated = '{{ current_user.is_authenticated }}' === 'True';
+
+  if (!CONTENT_ID || !isAuthenticated) {
+    console.warn('[Timer] Content ID veya authentication eksik');
+    return;
+  }
+
+  console.log('[Timer] ✅ Timer başlatılıyor... Content ID:', CONTENT_ID);
+
+  let accumulatedSeconds = 0;
+  let lastTick = Date.now();
+  let isPageVisible = true;
+  let authLost = false;
+  let isMarkedAsRead = false;
+  const SEND_INTERVAL = 5 * 60000;
+  
+  // ✅ Sayfa yüklenince önceki buffer'ı kontrol et
+  let previousBuffer = JSON.parse(localStorage.getItem('sureBuffer') || '[]');
+  if (previousBuffer.length > 0) {
+    console.log('[Timer] ℹ️ Önceki buffer bulundu:', previousBuffer.length, 'items - retry yapılacak');
+  }
+
+  function bufferDelta(seconds) {
+    if (!CONTENT_ID || seconds <= 0) return;
+    let buffer = JSON.parse(localStorage.getItem('sureBuffer') || '[]');
+    buffer.push({
+      icerik_id: CONTENT_ID,
+      harcanan_sure: seconds,
+      ts: Date.now(),
+      activity_type: 'content_reading'
+    });
+    localStorage.setItem('sureBuffer', JSON.stringify(buffer));
+    console.log('[Timer] Buffer updated:', seconds + 's added, total:', buffer.length, 'items');
+  }
+
+  function flushBuffer() {
+    if (accumulatedSeconds > 0) {
+      bufferDelta(accumulatedSeconds);
+      accumulatedSeconds = 0;
+    }
+    let buffer = JSON.parse(localStorage.getItem('sureBuffer') || '[]');
+    if (!buffer.length) {
+      console.log('[Timer] Buffer boş, gönderme yapılmadı');
+      return;
+    }
+    
+    console.log('[Timer] Buffer flush başlıyor...', buffer.length, 'items');
+    
+    // ✅ Her flush'tan önce token'ı güncelle
+    refreshCSRFToken();
+    
+    fetch('/icerik-sure-kaydet', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken
+      },
+      body: JSON.stringify({ 
+        buffer: buffer,
+        csrf_token: csrfToken // ✅ Body'ye de ekle (yedek olarak)
+      })
+    })
+    .then(r => {
+      console.log('[Timer] Response status:', r.status);
+      
+      // ✅ 400 CSRF hatası - buffer temizle ve token yenile
+      if (r.status === 400) {
+        console.warn('[Timer] ⚠️ 400 CSRF Error - Buffer temizleniyor, token yenileniyor');
+        localStorage.removeItem('sureBuffer');
+        refreshCSRFToken();
+        return Promise.reject('CSRF validation failed - retrying...');
+      }
+      
+      // ✅ 401 Unauthorized - Session süresi doldu
+      if (r.status === 401) {
+        console.error('[Timer] ❌ 401 Unauthorized - Session süresi doldu');
+        localStorage.removeItem('sureBuffer');
+        handleUnauthorized();
+        return Promise.reject('Session expired');
+      }
+      
+      if (!r.ok) {
+        throw new Error(`HTTP ${r.status}`);
+      }
+      return r.json();
+    })
+    .then(d => {
+      console.log('[Timer] Response data:', d);
+      if (d?.status === 'success' || d?.success) {
+        console.log('[Timer] ✅ Buffer successfully flushed');
+        localStorage.removeItem('sureBuffer');
+      }
+    })
+    .catch(err => {
+      console.error('[Timer] ❌ Flush error:', err);
+    });
+  }
+
+  function stopTimer() {
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+      console.log('[Timer] Timer stopped');
+    }
+  }
+
+  function handleUnauthorized() {
+    if (authLost) return;
+    authLost = true;
+    console.error('[Timer] ⚠️ Unauthorized - timer stopped');
+    stopTimer();
+    window.removeEventListener('scroll', onScroll);
+  }
+
+  function tick() {
+    if (!isPageVisible) return;
+    const now = Date.now();
+    const elapsed = Math.floor((now - lastTick) / 1000);
+    lastTick = now;
+    const seconds = Math.max(1, Math.min(elapsed, 35));
+    accumulatedSeconds += seconds;
+    window.accumulatedSeconds = accumulatedSeconds;
+  }
+
+  function startTimer() {
+    stopTimer();
+    timerInterval = setInterval(tick, 1000);
+    console.log('[Timer] Timer started');
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      startTimer();
+      // ✅ Token yenilendikten sonra flush et (önceki buffer varsa retry)
+      setTimeout(() => {
+        refreshCSRFToken();
+        flushBuffer();
+      }, 1000);
+    }, { once: true });
+  } else {
+    startTimer();
+    // ✅ Token yenilendikten sonra flush et (önceki buffer varsa retry)
+    setTimeout(() => {
+      refreshCSRFToken();
+      flushBuffer();
+    }, 1000);
+  }
+
+  setInterval(flushBuffer, SEND_INTERVAL);
+
+  document.addEventListener('visibilitychange', () => {
+    if (authLost) return;
+    const now = Date.now();
+    if (document.visibilityState === 'hidden') {
+      isPageVisible = false;
+      const elapsed = Math.floor((now - lastTick) / 1000);
+      if (elapsed > 0) {
+        accumulatedSeconds += elapsed;
+      }
+      stopTimer();
+      flushBuffer();
+    } else if (document.visibilityState === 'visible') {
+      isPageVisible = true;
+      lastTick = now;
+      startTimer();
+    }
+  });
+
+  window.addEventListener('pagehide', function () {
+    if (accumulatedSeconds > 0) {
+      bufferDelta(accumulatedSeconds);
+      accumulatedSeconds = 0;
+    }
+    let buffer = JSON.parse(localStorage.getItem('sureBuffer') || '[]');
+    if (!buffer.length) return;
+
+    // ✅ CSRF Token'ı payload'a ekle (sendBeacon header gönderemez)
+    const payload = JSON.stringify({ 
+      buffer: buffer,
+      csrf_token: csrfToken 
+    });
+    const headers = { type: 'application/json' };
+
+    if (navigator.sendBeacon) {
+      const blob = new Blob([payload], headers);
+      // ✅ sendBeacon başarısını kontrol et
+      const success = navigator.sendBeacon('/icerik-sure-kaydet', blob);
+      
+      if (success) {
+        // ✅ Başarılı olmuşsa buffer'ı temizle
+        localStorage.removeItem('sureBuffer');
+        console.log('[Timer] ✅ sendBeacon başarılı - buffer temizlendi');
+      } else {
+        // ⚠️ Başarısız olmuşsa buffer'da kalıyor (retry için)
+        console.warn('[Timer] ⚠️ sendBeacon başarısız - buffer korunuyor');
+        // Buffer localStorage'da kalıyor, sonraki sayfa ziyaretinde retry edilecek
+      }
+    } else {
+      // Fallback: normal fetch kullan
+      console.log('[Timer] sendBeacon desteklenmiyor, flushBuffer kullanılıyor');
+      flushBuffer();
+    }
+  });
+
+  function markContentAsRead() {
+    if (authLost || isMarkedAsRead) return;
+    isMarkedAsRead = true;
+    console.log('[Timer] Marking content as read...');
+    
+    // ✅ Token'ı güncelle
+    refreshCSRFToken();
+    
+    fetch(`/mark_content_read/${CONTENT_ID}`, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': csrfToken }
+    })
+    .then(r => {
+      // ✅ 400 CSRF hatası
+      if (r.status === 400) {
+        console.warn('[Timer] ⚠️ 400 CSRF Error - Token yenileniyor');
+        refreshCSRFToken();
+        isMarkedAsRead = false; // Retry etmesine izin ver
+        return Promise.reject('CSRF validation failed');
+      }
+      
+      // ✅ 401 Unauthorized
+      if (r.status === 401) { 
+        console.error('[Timer] ❌ 401 Unauthorized');
+        handleUnauthorized(); 
+        throw new Error('Unauthorized'); 
+      }
+      return r.ok ? r.json() : Promise.reject(r);
+    })
+    .then(d => {
+      console.log('[Timer] Content marked as read');
+      if (!(d?.success || d?.status === 'success')) isMarkedAsRead = false;
+    })
+    .catch(err => { 
+      console.error('[Timer] Error marking as read:', err);
+      isMarkedAsRead = false; 
+    });
+  }
+
+  function onScroll() {
+    if (isMarkedAsRead || authLost) return;
+    const maxScroll = document.body.scrollHeight - window.innerHeight;
+    if (maxScroll <= 0) return;
+    const percent = (window.scrollY / maxScroll) * 100;
+    if (percent >= 80) markContentAsRead();
+  }
+
+  window.accumulatedSeconds = accumulatedSeconds;
+  window.flushBuffer = flushBuffer;
+  window.startTimer = startTimer;
+  window.addEventListener('scroll', onScroll);
+})();
+</script>
+{% endblock %}
+
+{% block styles %}
+{{ super() }}
+<style>
+/* ========== KRİTİK DÜZELTME: STICKY İÇİN OVERFLOW RESET ========== */
+/* layout.html'deki .content-main sınıfında bulunan overflow-y: auto; 
+   sticky elementin çalışmasını engelliyor. Bunu visible yaparak düzeltiyoruz. */
+.content-main {
+  overflow: visible !important;
+}
+
+/* ========== ANA WRAPPER ========== */
+.icerik-wrapper {
+  display: flex;
+  gap: 15px;
+  max-width: 100%;
+  /* Sticky'nin çalışması için sidebar'ın ana içerik kadar uzaması gerekir */
+  align-items: stretch; 
+}
+
+/* ========== ANA İÇERİK ALANI ========== */
+.main-content-area {
+  flex: 1;
+  min-width: 0;
+  padding: 20px;
+}
+
+/* ========== SAĞ REKLAM KOLONU (160px genişlik) ========== */
+.ad-sidebar-column {
+  flex: 0 0 160px;
+  width: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  /* İki reklam arasındaki boşluk */
+  gap: 40px; 
+  padding: 20px 0;
+  /* Sticky'nin çalışması için kolonun yüksekliği parent kadar olmalı */
+  height: 100%;
+}
+
+/* Tüm sidebar reklamları 160x600 */
+.ad-sidebar-item {
+  width: 160px;
+  height: 600px;
+  background: #f8f9fa;
+  border: 1px dashed #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
+/* İlk reklam - Normal (scroll ile kayar) */
+.ad-sidebar-item:first-child {
+  position: relative;
+  z-index: 1;
+}
+
+/* İkinci reklam - Sticky (yapışkan) */
+.ad-sidebar-item.ad-sticky {
+  position: -webkit-sticky;
+  position: sticky;
+  /* Navbar (60px) + Sınıf Bar (50px) + 10px boşluk = 120px */
+  top: 120px; 
+  z-index: 100;
+  margin-bottom: 20px;
+}
+
+/* ========== İÇERİK İÇİ REKLAMLAR (YATAY - 728x90) ========== */
+.in-content-ad {
+  background: #f8f9fa;
+  border: 1px dashed #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  text-align: center;
+  width: 100%;
+  max-width: 728px;
+  height: 90px;
+  margin: 1.5rem auto;
+}
+
+/* ========== MASAÜSTÜ (≥992px) ========== */
+@media (min-width: 992px) {
+  .ad-sidebar-column {
+    display: flex;
+  }
+  
+  .in-content-ad {
+    display: none !important;
+  }
+}
+
+/* ========== TABLET (768px - 991px) ========== */
+@media (min-width: 768px) and (max-width: 991.98px) {
+  .icerik-wrapper {
+    flex-direction: column;
+  }
+  
+  .ad-sidebar-column {
+    display: none !important;
+  }
+  
+  .in-content-ad {
+    display: block !important;
+    max-width: 728px;
+    height: 90px;
+  }
+}
+
+/* ========== MOBİL (<768px) ========== */
+@media (max-width: 767.98px) {
+  .icerik-wrapper {
+    flex-direction: column;
+  }
+  
+  .main-content-area {
+    padding: 15px;
+  }
+  
+  .ad-sidebar-column {
+    display: none !important;
+  }
+  
+  .in-content-ad {
+    display: block !important;
+    max-width: 320px;
+    height: 100px;
+    margin: 1rem auto;
+  }
+}
+
+/* ========== İÇERİK BÖLÜMÜ ========== */
+.content-section {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.content-title {
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+/* ========== PAGİNATION ========== */
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.content-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.content-pagination .btn {
+  max-width: 200px;
+  text-decoration: none;
+  border: 1px solid #dee2e6;
+  padding: 12px 16px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.content-pagination .btn:hover {
+  background-color: #f8f9fa;
+  border-color: #adb5bd;
+  transform: translateY(-1px);
+}
+
+.content-pagination .btn .fw-medium {
+  font-size: 0.9rem;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.position-indicator {
+  font-weight: bold;
+  color: #666;
+}
+
+@media (max-width: 768px) {
+  .content-pagination {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .content-pagination .btn {
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  .position-indicator {
+    order: -1;
+    margin-bottom: 10px;
+  }
+  
+  .content-section {
+    padding: 16px;
+  }
+}
+
+/* ========== VİDEO ALANI (Viewport tabanlı yükseklik) ========== */
+.video-container {
+  margin: 24px 0;
+  max-width: 1100px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 12px;
+}
+
+/* ========== VİDEO BÖLÜMÜ (Yatay Kaydırmalı) ========== */
+.video-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border-radius: 12px;
+  border-left: 4px solid var(--primary-color);
+}
+
+.video-section-title {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+}
+
+/* Yatay kaydırma container */
+.video-scroll-container {
+  width: 100%;
+  overflow: hidden;
+}
+
+.video-scroll-wrapper {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 12px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Scrollbar stilleri */
+.video-scroll-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.video-scroll-wrapper::-webkit-scrollbar-track {
+  background: #e9ecef;
+  border-radius: 4px;
+}
+
+.video-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: var(--primary-color);
+  border-radius: 4px;
+}
+
+.video-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+  background: #003a66;
+}
+
+/* Video kartları - min %20, max %40 genişlik */
+.video-item {
+  flex: 0 0 auto;
+  width: clamp(20vw, 30vw, 40vw);
+  min-width: 250px;
+  max-width: 500px;
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.video-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+}
+
+/* Video çerçevesi - 16:9 oranı */
+.video-frame-wrapper {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 aspect ratio */
+  height: 0;
+  overflow: hidden;
+  background: #000;
+}
+
+.video-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.video-info {
+  padding: 12px 14px;
+}
+
+.video-title {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #333;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ========== MASAÜSTÜ (≥1200px) - min %20 ========== */
+@media (min-width: 1200px) {
+  .video-item {
+    width: clamp(20vw, 25vw, 30vw);
+    min-width: 280px;
+    max-width: 450px;
+  }
+}
+
+/* ========== TABLET (768px - 1199px) - %30 ========== */
+@media (min-width: 768px) and (max-width: 1199.98px) {
+  .video-item {
+    width: clamp(25vw, 35vw, 40vw);
+    min-width: 260px;
+    max-width: 400px;
+  }
+}
+
+/* ========== MOBİL (<768px) - max %40 ========== */
+@media (max-width: 767.98px) {
+  .video-section {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border-radius: 8px;
+  }
+  
+  .video-section-title {
+    font-size: 1rem;
+  }
+  
+  .video-item {
+    width: clamp(35vw, 40vw, 45vw);
+    min-width: 220px;
+    max-width: 300px;
+  }
+  
+  .video-info {
+    padding: 10px 12px;
+  }
+  
+  .video-title {
+    font-size: 0.85rem;
+  }
+}
+
+/* ========== ÇOK DAR EKRAN (<480px) ========== */
+@media (max-width: 480px) {
+  .video-item {
+    width: 70vw;
+    min-width: 200px;
+    max-width: 280px;
+  }
+}
+
+/* ========== PDF BÖLÜMÜ ========== */
+.pdf-section {
+  margin: 20px 0;
+  padding: 15px;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.pdf-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.pdf-item {
+  padding: 10px;
+  background: white;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.pdf-item:hover {
+  background: #e9ecef;
+  transform: translateX(5px);
+}
+
+/* ========== İÇERİK GÖVDESİ ========== */
+.content-body {
+  line-height: 1.8;
+  font-size: 1.05rem;
+}
+
+.content-body p {
+  margin-bottom: 1rem;
+}
+
+.content-body h2, .content-body h3, .content-body h4 {
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+  color: var(--primary-color);
+}
+
+/* ========== CKEDITOR RESİM STİLLERİ ========== */
+.content-body img {
+    max-width: 60% !important;
+    height: auto !important;
+    display: block;
+    margin: 1rem auto;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* CKEditor'ün resim sınıfları */
+.content-body .image,
+.content-body figure.image {
+    max-width: 100% !important;
+    margin: 1.5rem auto;
+    text-align: center;
+}
+
+.content-body figure.image img {
+    max-width: 100% !important;
+    height: auto !important;
+}
+
+.content-body figure.image figcaption {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-top: 0.5rem;
+    font-style: italic;
+}
+
+/* Resim hizalama (CKEditor sınıfları) */
+.content-body .image-style-align-left,
+.content-body .image.image_resized[style*="float:left"] {
+    float: left;
+    margin: 0.5rem 1.5rem 1rem 0;
+    max-width: 50%;
+}
+
+.content-body .image-style-align-right,
+.content-body .image.image_resized[style*="float:right"] {
+    float: right;
+    margin: 0.5rem 0 1rem 1.5rem;
+    max-width: 50%;
+}
+
+.content-body .image-style-align-center {
+    margin: 1.5rem auto;
+    display: block;
+}
+
+/* Mobil: Float'ları kaldır, tam genişlik yap */
+@media (max-width: 768px) {
+    .content-body img {
+        max-width: 100% !important;
+        margin: 1rem 0;
+    }
+    
+    .content-body .image-style-align-left,
+    .content-body .image-style-align-right,
+    .content-body .image.image_resized {
+        float: none !important;
+        margin: 1rem 0 !important;
+        max-width: 100% !important;
+        width: 100% !important;
+    }
+}
+
+/* ========== SORU BÖLÜMÜ ========== */
+.question-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  border-radius: 12px;
+  border-left: 4px solid #ff9800;
+}
+
+.question-section .section-title {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #e65100;
+  display: flex;
+  align-items: center;
+}
+
+.question-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.question-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: white;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #333;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.question-item:hover {
+  transform: translateX(5px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  background: #fff8e1;
+}
+
+.question-number {
+  width: 28px;
+  height: 28px;
+  background: #ff9800;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.question-text {
+  flex: 1;
+  font-weight: 500;
+}
+
+.question-item .bi-chevron-right {
+  color: #999;
+  transition: transform 0.2s;
+}
+
+.question-item:hover .bi-chevron-right {
+  transform: translateX(3px);
+  color: #ff9800;
+}
+
+/* ========== ALIŞTIRMA SORULARI BÖLÜMÜ ========== */
+.practice-section {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+.practice-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem 2rem;
+  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+  border-radius: 16px;
+  border-left: 5px solid #1976d2;
+  box-shadow: 0 4px 15px rgba(25, 118, 210, 0.15);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.practice-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(25, 118, 210, 0.2);
+}
+
+.practice-icon {
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  box-shadow: 0 4px 10px rgba(25, 118, 210, 0.3);
+}
+
+.practice-content {
+  flex: 1;
+}
+
+.practice-title {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #1565c0;
+}
+
+.practice-description {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #546e7a;
+}
+
+.practice-buttons {
+  display: flex;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.btn-practice {
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  border-radius: 25px;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.btn-practice.btn-primary {
+  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+  border: none;
+  box-shadow: 0 4px 10px rgba(25, 118, 210, 0.3);
+}
+
+.btn-practice.btn-primary:hover {
+  background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 15px rgba(25, 118, 210, 0.4);
+}
+
+.btn-practice.btn-outline-primary {
+  border: 2px solid #1976d2;
+  color: #1976d2;
+  background: white;
+}
+
+.btn-practice.btn-outline-primary:hover {
+  background: #1976d2;
+  color: white;
+  transform: translateY(-2px);
+}
+
+/* ========== MOBİL UYUM ========== */
+@media (max-width: 768px) {
+  .practice-card {
+    flex-direction: column;
+    text-align: center;
+    padding: 1.25rem;
+    gap: 1rem;
+  }
+  
+  .practice-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
+  }
+  
+  .practice-title {
+    font-size: 1.1rem;
+  }
+  
+  .practice-description {
+    font-size: 0.9rem;
+  }
+  
+  .practice-buttons {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .btn-practice {
+    width: 100%;
+    padding: 0.875rem 1rem;
+  }
+}
+</style>
+{% endblock %}

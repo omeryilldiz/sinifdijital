@@ -1,0 +1,252 @@
+{% extends "dashboard_layout.html" %}
+{% block content %}
+
+<div class="container-fluid">
+  <h3 class="mb-4"><i class="bi bi-graph-up-arrow me-2"></i>İlerleme Patikası</h3>
+
+  {% if completion.subjects %}
+    <div class="accordion" id="progressAccordion">
+
+      <!-- KONU İLERLEME -->
+      <div class="accordion-item mb-3">
+        <h2 class="accordion-header" id="heading-content-progress">
+          <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                  data-bs-target="#collapse-content-progress" aria-expanded="true">
+            <i class="bi bi-journal-check me-2"></i>
+            <strong>Konu İlerleme</strong>
+          </button>
+        </h2>
+        <div id="collapse-content-progress" class="accordion-collapse collapse show" data-bs-parent="#progressAccordion">
+          <div class="accordion-body">
+            <div class="accordion" id="subjectContentAccordion">
+              {% for subject in completion.subjects %}
+              <div class="accordion-item mb-2">
+                <h2 class="accordion-header" id="heading-content-{{ subject.id }}">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                          data-bs-target="#collapse-content-{{ subject.id }}" aria-expanded="false">
+                    <span>
+                      <i class="bi bi-book-fill me-2"></i>
+                      <strong>{{ subject.name }}</strong>
+                      {% if subject.sinif_adi %}
+                        <span class="badge bg-secondary ms-2">{{ subject.sinif_adi }}</span>
+                      {% endif %}
+                    </span>
+                    <span class="badge bg-primary ms-2">
+                      {{ subject.completion_percent }}% Tamamlandı
+                    </span>
+                  </button>
+                </h2>
+                <div id="collapse-content-{{ subject.id }}" class="accordion-collapse collapse" data-bs-parent="#subjectContentAccordion">
+                  <div class="accordion-body">
+                    {% for unit in subject.units %}
+                    <div class="card mb-2">
+                      <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                          <h6 class="mb-0">
+                            <i class="bi bi-folder me-1"></i>
+                            {{ unit.name }}
+                          </h6>
+                          <span class="badge bg-info me-2">
+                            {{ unit.completion_percent }}% Tamamlandı
+                          </span>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                          <div class="progress-bar bg-info" style="width: {{ unit.completion_percent }}%"></div>
+                        </div>
+                        <small class="text-muted">
+                          {{ unit.completed_contents }}/{{ unit.total_contents }} içerik tamamlandı
+                        </small>
+                        {% if unit.contents %}
+                        <div class="mt-3">
+                          <button class="btn btn-sm btn-outline-primary w-100 mb-2" type="button" 
+                                  data-bs-toggle="collapse" data-bs-target="#contentList-content-{{ unit.id }}">
+                            İçerikleri Göster <i class="bi bi-chevron-down ms-1"></i>
+                          </button>
+                          <div class="collapse" id="contentList-content-{{ unit.id }}">
+                            <div class="list-group">
+                              {% for content in unit.contents %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                <div>
+                                    <span class="me-2">
+                                    {% if content.status == 'completed' %}
+                                    <i class="bi bi-check-circle-fill text-success"></i>
+                                    {% else %}
+                                    <i class="bi bi-hourglass-split text-secondary"></i>
+                                    {% endif %}
+                                    </span>
+                                    {{ content.name }}
+                                    {% if content.spent_time %}
+                                    <small class="text-muted ms-2">(Okuma Süresi: {{ content.spent_time }})</small>
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex align-items-center">
+                                    <!-- Son okuma zamanı -->
+                                    {% if content.last_viewed %}
+                                    <small class="text-muted me-2" title="{{ content.last_viewed }}">
+                                        <i class="bi bi-clock-history"></i>
+                                        {{ content.last_viewed_humanized or content.last_viewed }}
+                                    </small>
+                                    {% endif %}
+                                    <!-- İçeriğe Gir butonu -->
+                                    <a href="{{ url_for('icerik', sinif_slug=content.sinif_slug, ders_slug=content.ders_slug, unite_slug=content.unite_slug, icerik_slug=content.icerik_slug) }}"
+                                    class="btn btn-sm btn-outline-secondary ms-1" title="İçeriğe Gir">
+                                    <i class="bi bi-box-arrow-right"></i> İçeriğe Gir
+                                    </a>
+                                </div>
+                                </div>
+                              {% endfor %}
+                            </div>
+                          </div>
+                        </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SORU İLERLEME -->
+      <div class="accordion-item mb-3">
+        <h2 class="accordion-header" id="heading-question-progress">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                  data-bs-target="#collapse-question-progress" aria-expanded="false">
+            <i class="bi bi-bar-chart-line me-2"></i>
+            <strong>Soru İlerleme</strong>
+          </button>
+        </h2>
+        <div id="collapse-question-progress" class="accordion-collapse collapse" data-bs-parent="#progressAccordion">
+          <div class="accordion-body">
+            <div class="accordion" id="subjectQuestionAccordion">
+              {% for subject in completion.subjects %}
+              <div class="accordion-item mb-2">
+                <h2 class="accordion-header" id="heading-question-{{ subject.id }}">
+                  <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                          data-bs-target="#collapse-question-{{ subject.id }}" aria-expanded="false">
+                    <span>
+                      <i class="bi bi-book-fill me-2"></i>
+                      <strong>{{ subject.name }}</strong>
+                      {% if subject.sinif_adi %}
+                        <span class="badge bg-secondary ms-2">{{ subject.sinif_adi }}</span>
+                      {% endif %}
+                    </span>
+                    <span class="badge bg-success ms-2">
+                      Başarı: {{ subject.success_rate }}%
+                    </span>
+                    <span class="badge bg-secondary ms-2">
+                      Toplam Soru: {{ subject.total_questions }}
+                    </span>
+                  </button>
+                </h2>
+                <div id="collapse-question-{{ subject.id }}" class="accordion-collapse collapse" data-bs-parent="#subjectQuestionAccordion">
+                  <div class="accordion-body">
+                    {% for unit in subject.units %}
+                    <div class="card mb-2">
+                      <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                          <h6 class="mb-0">
+                            <i class="bi bi-folder me-1"></i>
+                            {{ unit.name }}
+                          </h6>
+                          <span class="badge bg-success me-2">
+                            Başarı: {{ unit.success_rate }}%
+                          </span>
+                          <span class="badge bg-secondary">
+                            Toplam Soru: {{ unit.total_questions }}
+                          </span>
+                        </div>
+                        <div class="row mb-2">
+                          <div class="col-md-3">
+                            <small class="text-success">Doğru:</small>
+                            <div class="fw-bold text-success">{{ unit.correct_answers }}</div>
+                          </div>
+                          <div class="col-md-3">
+                            <small class="text-danger">Yanlış:</small>
+                            <div class="fw-bold text-danger">{{ unit.wrong_answers }}</div>
+                          </div>
+                          <div class="col-md-3">
+                            <small class="text-secondary">Boş:</small>
+                            <div class="fw-bold text-secondary">{{ unit.empty_answers }}</div>
+                          </div>
+                          <div class="col-md-3">
+                            <small class="text-muted">Toplam:</small>
+                            <div class="fw-bold">{{ unit.total_questions }}</div>
+                          </div>
+                        </div>
+                        {% if unit.contents %}
+                        <div class="mt-3">
+                          <button class="btn btn-sm btn-outline-success w-100 mb-2" type="button" 
+                                  data-bs-toggle="collapse" data-bs-target="#questionList-{{ unit.id }}">
+                            İçerik Bazında Soru İstatistikleri <i class="bi bi-chevron-down ms-1"></i>
+                          </button>
+                          <div class="collapse" id="questionList-{{ unit.id }}">
+                            <div class="list-group">
+                              {% for content in unit.contents %}
+                              {% if content.total_questions > 0 %}
+                              <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                  <div>
+                                    <strong>{{ content.name }}</strong>
+                                  </div>
+                                  <span class="badge bg-success">Başarı: {{ content.success_rate }}%</span>
+                                </div>
+                                <div class="row text-center">
+                                  <div class="col-3">
+                                    <small class="text-muted d-block">Toplam</small>
+                                    <span class="badge bg-secondary">{{ content.total_questions }}</span>
+                                  </div>
+                                  <div class="col-3">
+                                    <small class="text-success d-block">Doğru</small>
+                                    <span class="badge bg-success">{{ content.correct_answers }}</span>
+                                  </div>
+                                  <div class="col-3">
+                                    <small class="text-danger d-block">Yanlış</small>
+                                    <span class="badge bg-danger">{{ content.wrong_answers }}</span>
+                                  </div>
+                                  <div class="col-3">
+                                    <small class="text-secondary d-block">Boş</small>
+                                    <span class="badge bg-secondary">{{ content.empty_answers }}</span>
+                                  </div>
+                                </div>
+                                {% if content.wrong_answers > 0 %}
+                                <a href="{{ url_for('soru_coz', sinif_slug=content.sinif_slug, ders_slug=content.ders_slug, icerik_id=content.id, yanlis_tekrar=1, adet=10) }}" 
+                                   class="btn btn-sm btn-warning mt-2">
+                                  <i class="bi bi-arrow-repeat"></i>
+                                  {{ content.wrong_answers }} Yanlış Soru Tekrarı
+                                </a>
+                                {% endif %}
+                              </div>
+                              {% endif %}
+                              {% endfor %}
+                            </div>
+                          </div>
+                        </div>
+                        {% endif %}
+                      </div>
+                    </div>
+                    {% endfor %}
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  {% else %}
+    <div class="text-center py-4">
+      <i class="bi bi-book display-4 text-muted"></i>
+      <h5 class="mt-3">Henüz Ders İçeriği Yok</h5>
+      <p class="text-muted">İçerikler yüklendiğinde ilerlemeler burada görünecek.</p>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,423 @@
+{% extends "layout.html" %}
+
+{% block styles %}
+{{ super() }}
+<style>
+.welcome-section {
+    background: #00457C;
+    color: white;
+    border-radius: 12px;
+    padding: 30px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.feature-card {
+    background: #FFFFFF;
+    border: 1px solid #00457C;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    transition: transform 0.2s;
+}
+
+.feature-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 69, 124, 0.2);
+}
+
+.competition-info {
+    background: #00A5AD;
+    color: white;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 25px;
+}
+
+.register-form {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.btn-register {
+    background: #00457C;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    color: #FFFFFF;
+}
+
+.btn-register:hover {
+    background: #00A5AD;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 15px rgba(0, 69, 124, 0.4);
+}
+
+/* ✅ YENİ: Yasal Onaylar Stili */
+.legal-consents {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 20px;
+    border: 1px solid #e9ecef;
+}
+
+.legal-consents .form-check {
+    padding-left: 1.75rem;
+}
+
+.legal-consents .form-check-input {
+    margin-top: 0.2rem;
+}
+
+.legal-consents .form-check-label {
+    line-height: 1.5;
+    color: #495057;
+}
+
+.legal-consents a {
+    color: #00457C;
+}
+
+.legal-consents a:hover {
+    color: #00A5AD;
+    text-decoration: underline !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+
+    <div class="row">
+        <!-- Sol Taraf - Bilgilendirme -->
+        <div class="col-lg-6">
+            <!-- Hoş Geldin Bölümü -->
+            <div class="welcome-section">
+                <h2 class="mb-3">
+                    <i class="bi bi-rocket-takeoff me-2"></i>
+                    Öğrenme Yolculuğuna Başla!
+                </h2>
+                <p class="mb-0 fs-5">
+                    Binlerce öğrenciyle yarış, hedeflerine ulaş ve başarı hikayeni yaz!
+                </p>
+            </div>
+
+            <!-- Yarışma Sistemi -->
+            <div class="competition-info">
+                <h5 class="mb-3">
+                    <i class="bi bi-trophy me-2"></i>
+                    Akıllı Yarışma Sistemi
+                </h5>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-white bg-opacity-20 rounded-circle p-2 me-3">
+                                <i class="bi bi-people fs-5"></i>
+                            </div>
+                            <div>
+                                <strong>Sınıf Bazlı Gruplar</strong>
+                                <br><small>Kendi seviyendeki arkadaşlarınla yarış</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-white bg-opacity-20 rounded-circle p-2 me-3">
+                                <i class="bi bi-award fs-5"></i>
+                            </div>
+                            <div>
+                                <strong>Adil Rekabet</strong>
+                                <br><small>LGS, TYT, AYT hazırlık grupları</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Özellikler -->
+            <div class="feature-card">
+                <div class="d-flex align-items-start">
+                    <div class="bg-primary bg-opacity-10 rounded-circle p-3 me-3">
+                        <i class="bi bi-graph-up text-primary fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-2">İlerlemeni Takip Et</h6>
+                        <p class="mb-0 text-muted">
+                            Günlük, haftalık ve aylık istatistiklerle gelişimini gör
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="d-flex align-items-start">
+                    <div class="bg-success bg-opacity-10 rounded-circle p-3 me-3">
+                        <i class="bi bi-book text-success fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-2">Zengin İçerik</h6>
+                        <p class="mb-0 text-muted">
+                            Video dersler, ders notları ve binlerce soru
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="feature-card">
+                <div class="d-flex align-items-start">
+                    <div class="bg-warning bg-opacity-10 rounded-circle p-3 me-3">
+                        <i class="bi bi-lightning text-warning fs-4"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-2">Anlık Sıralama</h6>
+                        <p class="mb-0 text-muted">
+                            Okul, ilçe, il ve genel sıralamanda yerini gör
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sağ Taraf - Kayıt Formu -->
+        <div class="col-lg-6">
+            <div class="register-form">
+                <div class="text-center mb-4">
+                    <h3 class="mb-2">
+                        <i class="bi bi-person-plus me-2"></i>
+                        Hesap Oluştur
+                    </h3>
+                    <p class="text-muted">Birkaç dakikada kayıt ol, hemen başla!</p>
+                </div>
+
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+
+                    <!-- Kullanıcı Adı -->
+                    <div class="form-group">
+                        {{ form.username.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-person"></i>
+                            </span>
+                            {% if form.username.errors %}
+                                {{ form.username(class="form-control is-invalid", autocomplete="username") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.username.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.username(class="form-control", autocomplete="username") }}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- E-posta -->
+                    <div class="form-group">
+                        {{ form.email.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-envelope"></i>
+                            </span>
+                            {% if form.email.errors %}
+                                {{ form.email(class="form-control is-invalid", autocomplete="email") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.email.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.email(class="form-control", autocomplete="email") }}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Şifre -->
+                    <div class="form-group">
+                        {{ form.password.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-lock"></i>
+                            </span>
+                            {% if form.password.errors %}
+                                {{ form.password(class="form-control is-invalid", autocomplete="new-password") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.password.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.password(class="form-control", autocomplete="new-password") }}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Şifre Tekrar -->
+                    <div class="form-group">
+                        {{ form.confirm_password.label(class="form-label fw-semibold") }}
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-lock-fill"></i>
+                            </span>
+                            {% if form.confirm_password.errors %}
+                                {{ form.confirm_password(class="form-control is-invalid", autocomplete="new-password") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.confirm_password.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.confirm_password(class="form-control", autocomplete="new-password") }}
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- ✅ YENİ: Yasal Onaylar Bölümü -->
+                    <div class="legal-consents mt-4 mb-4">
+                        <h6 class="text-muted mb-3">
+                            <i class="bi bi-shield-check me-2"></i>Yasal Onaylar
+                        </h6>
+
+                        <!-- Kullanım Koşulları (KVKK ve Gizlilik dahil) - ZORUNLU -->
+                        <div class="form-check mb-3">
+                            <input type="checkbox" class="form-check-input" id="terms_accepted" name="terms_accepted" required>
+                            <label class="form-check-label small" for="terms_accepted">
+                                <a href="{{ url_for('kullanim') }}" target="_blank" class="text-decoration-none fw-bold">Kullanım Koşulları</a>'nı, 
+                                <a href="{{ url_for('gizlilik') }}" target="_blank" class="text-decoration-none">Gizlilik Politikası</a>'nı ve 
+                                <a href="{{ url_for('kvkk') }}" target="_blank" class="text-decoration-none">KVKK Aydınlatma Metni</a>'ni 
+                                okudum ve kabul ediyorum. <span class="text-danger">*</span>
+                            </label>
+                        </div>
+
+                        <!-- Yaş/Veli Onayı - ZORUNLU -->
+                        <div class="form-check mb-3">
+                            <input type="checkbox" class="form-check-input" id="age_consent" name="age_consent" required>
+                            <label class="form-check-label small" for="age_consent">
+                                <strong>18 yaşından büyük olduğumu</strong> veya <strong>velimin/vasimin bilgisi ve izni dahilinde</strong> üye olduğumu beyan ederim. <span class="text-danger">*</span>
+                            </label>
+                        </div>
+
+                        <small class="text-muted d-block mt-2">
+                            <i class="bi bi-info-circle me-1"></i>
+                            <span class="text-danger">*</span> işaretli alanlar zorunludur.
+                        </small>
+                    </div>
+
+                    <!-- Bilgilendirme -->
+                    <div class="alert alert-info">
+                        <div class="d-flex align-items-start">
+                            <i class="bi bi-info-circle me-2 mt-1"></i>
+                            <div>
+                                <strong>Sonraki Adım:</strong> Kayıt olduktan sonra sınıf bilgilerini tamamlayarak hangi grupta yarışacağını belirleyeceğiz.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kayıt Butonu -->
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-register text-white btn-lg") }}
+                    </div>
+                </form>
+
+                <!-- Google ile Kayıt Butonu -->
+                <div class="mt-4 text-center">
+                    <a href="{{ url_for('google.login') }}" class="btn btn-outline-danger w-100">
+                        <i class="bi bi-google"></i> Google ile Kayıt Ol
+                    </a>
+                </div>
+
+                <!-- Giriş Linki -->
+                <div class="text-center mt-4">
+                    <p class="mb-0">
+                        Zaten bir hesabın var mı? 
+                        <a href="{{ url_for('login') }}" class="text-decoration-none fw-semibold">
+                            Giriş Yap
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔍 Register page JavaScript yüklendi');
+    
+    // Extension hatalarını yakala ve engelle
+    window.addEventListener('error', function(e) {
+        if (e.message && e.message.includes('message channel closed')) {
+            console.log('🔍 Extension hatası yakalandı, görmezden geliniyor');
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+    }, true);
+    
+    // Promise rejection hatalarını yakala
+    window.addEventListener('unhandledrejection', function(e) {
+        if (e.reason && e.reason.message && e.reason.message.includes('message channel closed')) {
+            console.log('🔍 Promise rejection hatası yakalandı, görmezden geliniyor');
+            e.preventDefault();
+            return false;
+        }
+    });
+    
+    const form = document.querySelector('form');
+    const submitBtn = document.querySelector('.btn-register');
+    
+    if (form) {
+        console.log('✅ Form bulundu');
+        
+        // Form submit event'i
+        form.addEventListener('submit', function(e) {
+            console.log('🔍 Form submit edildi');
+            
+            // Buton durumunu değiştir
+            if (submitBtn) {
+                submitBtn.innerHTML = '<i class="bi bi-arrow-repeat me-2"></i>Kayıt Oluşturuluyor...';
+                submitBtn.disabled = true;
+                
+                // 10 saniye sonra butonu eski haline getir (hata durumunda)
+                setTimeout(function() {
+                    if (submitBtn.disabled) {
+                        submitBtn.innerHTML = 'Kayıt Ol';
+                        submitBtn.disabled = false;
+                    }
+                }, 10000);
+            }
+            
+            // Form'un normal şekilde submit olmasına izin ver
+            return true;
+        });
+    } else {
+        console.log('❌ Form bulunamadı');
+    }
+    
+    // Input focus efektleri
+    const inputs = document.querySelectorAll('.form-control');
+    inputs.forEach(input => {
+        input.addEventListener('focus', function() {
+            this.parentElement.classList.add('shadow-sm');
+        });
+        
+        input.addEventListener('blur', function() {
+            this.parentElement.classList.remove('shadow-sm');
+        });
+    });
+    
+    console.log('✅ Register JavaScript hazır');
+});
+</script>
+{% endblock %}

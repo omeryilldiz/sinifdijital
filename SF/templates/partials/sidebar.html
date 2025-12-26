@@ -1,0 +1,76 @@
+<style>
+  .sidebar{
+    height:100vh;
+    background:#f5f5f5;
+    padding:6px 6px 30px;
+    border-right:1px solid #e1e1e1;
+    max-width:250px;
+    font-size:.8rem;
+  }
+  .sidebar h4{
+    font-size:.68rem;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+    margin:14px 0 6px;
+    color:#555;
+    padding:0 4px;
+  }
+  .content-list{list-style:none;margin:0 0 10px;padding:0}
+  .content-list li{margin:0 0 4px}
+  .icerik-link{
+    display:block;
+    padding:8px 10px 8px 14px;
+    background:#fff;
+    text-decoration:none;
+    color:#222;
+    line-height:1.2;
+    font-weight:400;
+    font-size:.78rem;
+    border-left:5px solid #c9c9c9; /* Sadece SOL kenar */
+    border-radius:4px;
+    transition:.18s background,.18s color,.18s border-color,.18s transform;
+  }
+  .icerik-link:hover{
+    background:#eef2f5;
+  }
+  .icerik-link.read{
+    border-left-color:#28a745;
+    background:#f5fff7;
+  }
+  .icerik-link.active{
+    border-left-color:#0d6efd;
+    background:#e6f1ff;
+    color:#0d6efd;
+    font-weight:600;
+  }
+  .icerik-link.active.read{
+    border-left-color:#0d6efd; /* Aktif mavi öncelik */
+  }
+</style>
+
+<div class="sidebar">
+  {% set read_ids = okundu_set if okundu_set is defined else [] %}
+  {% if uniteler %}
+    {% for unite in uniteler %}
+      <h4>{{ unite.unite }}</h4>
+      <ul class="content-list">
+        {% for icerik in unite.icerikler %}
+          {% set is_read = icerik.id in read_ids %}
+          <li>
+            <a
+              href="{{ url_for('icerik',
+                sinif_slug=sinif.slug,
+                ders_slug=ders.slug,
+                unite_slug=unite.unite_slug,
+                icerik_slug=icerik.slug) }}"
+              class="icerik-link{% if icerik.id == active_icerik_id %} active{% endif %}{% if is_read %} read{% endif %}">
+              {{ icerik.baslik }}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endfor %}
+  {% else %}
+    <p style="padding:8px;color:#888;font-size:.75rem;">Veri yok.</p>
+  {% endif %}
+</div>

@@ -1,0 +1,468 @@
+{% extends "dashboard_layout.html" %}
+
+{% block styles %}
+<style>
+    .bg-danger-subtle {
+        background-color: rgba(220, 53, 69, 0.1);
+    }
+
+    .bg-success-subtle {
+        background-color: rgba(25, 135, 84, 0.1);
+    }
+
+    .bg-light-danger {
+        background-color: rgba(220, 53, 69, 0.1);
+    }
+
+    .bg-light-warning {
+        background-color: rgba(255, 193, 7, 0.1);
+    }
+
+    .bg-light-success {
+        background-color: rgba(25, 135, 84, 0.1);
+    }
+
+    .bg-light-primary {
+        background-color: rgba(37, 99, 235, 0.1);
+    }
+
+    .bg-primary-subtle {
+        background-color: rgba(37, 99, 235, 0.1);
+    }
+
+    .list-group-item:hover {
+        background-color: rgba(0, 0, 0, 0.02);
+        transition: background-color 0.2s ease;
+    }
+
+    .list-group-item a:hover h6 {
+        color: #dc3545 !important;
+        transition: color 0.2s ease;
+    }
+
+    .course-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .course-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 .5rem 1rem rgba(0, 0, 0, .08);
+    }
+
+    .course-card .card {
+        transition: all 0.2s ease;
+    }
+
+    .course-card:hover .card {
+        border-color: #0d6efd;
+    }
+
+    .course-icon {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .progress {
+        background-color: #f1f5f9;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        transition: width 0.6s ease;
+        border-radius: 10px;
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Progress bar için daha güçlü seçici kullanarak ezilme sorununu çözme */
+    .course-card .progress {
+        background-color: #f1f5f9 !important;
+        border-radius: 10px !important;
+        overflow: hidden !important;
+        height: 6px !important;
+    }
+
+    .course-card .progress-bar {
+        transition: width 0.6s ease !important;
+        border-radius: 10px !important;
+        min-width: 5px !important;
+        /* En az 5px görünür olmasını sağlar */
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Hoşgeldin Kartı -->
+    <div class="welcome-card mb-4">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex align-items-center">
+                    <div>
+                        <h4 class="mb-1">Hoş Geldin, {{ current_user.first_name }}!</h4>
+                        <p class="text-muted mb-0">Öğrenmeye devam etmek için hazır mısın?</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ana İçerik Grid -->
+    <div class="row g-3">
+        <!-- Son İlerleme -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">Kaldığın Yerden Devam Et</h5>
+                </div>
+                <div class="card-body" style="max-height: 300px; overflow-y: auto;">
+                    {% if last_progress %}
+                    <div class="d-flex flex-column">
+                        <div class="mb-3">
+                            <small class="text-muted d-block">{{ last_progress.icerik.unite.ders.sinif.sinif }}.
+                                Sınıf</small>
+                            <small class="text-muted d-block">{{ last_progress.icerik.unite.ders.ders_adi }}</small>
+                            <small class="text-muted d-block">{{ last_progress.icerik.unite.unite }}</small>
+                            <h6 class="mb-3">{{ last_progress.icerik.baslik }}</h6>
+
+                            <a href="{{ url_for('icerik', 
+                                sinif_slug=last_progress.icerik.unite.ders.sinif.slug,
+                                ders_slug=last_progress.icerik.unite.ders.slug,
+                                unite_slug=last_progress.icerik.unite.slug,
+                                icerik_slug=last_progress.icerik.slug) }}" class="btn btn-primary btn-sm">
+                                <i class="bi bi-play-fill"></i> Devam Et
+                            </a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-journal-text text-muted" style="font-size: 2rem;"></i>
+                        <p class="text-muted mt-2">Henüz hiç ders başlatmadın.</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Aktivite Özeti -->
+
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-clock-history text-primary me-2"></i>
+                        Son Aktiviteler
+                    </h5>
+                </div>
+                <div class="card-body" style="max-height: 250px; overflow-y: auto;">
+                    {% if recent_contents %}
+                    <div class="list-group list-group-flush">
+                        {% for content in recent_contents %}
+                        <a href="{{ url_for('icerik',
+                        sinif_slug=content.icerik.unite.ders.sinif.slug,
+                        ders_slug=content.icerik.unite.ders.slug,
+                        unite_slug=content.icerik.unite.slug,
+                        icerik_slug=content.icerik.slug) }}"
+                            class="list-group-item list-group-item-action border-0 px-0">
+                            <div class="d-flex align-items-start">
+                                <div class="me-3">
+                                    <!-- ✅ DÜZELTİLDİ: Olumlu aktivite için mavi ikon -->
+                                    <div class="bg-primary-subtle rounded-circle p-2">
+                                        <i class="bi bi-eye text-primary"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">{{ content.icerik.baslik }}</h6>
+                                    <small class="text-muted">
+                                        {{ content.icerik.unite.ders.sinif.sinif }}. Sınıf -
+                                        {{ content.icerik.unite.ders.ders_adi }} /
+                                        {{ content.icerik.unite.unite }}
+                                    </small>
+                                    <!-- ✅ YENİ: Aktivite zamanını göster -->
+                                    <div class="mt-1">
+                                        <small class="text-muted">
+                                            <i class="bi bi-clock me-1"></i>
+                                            {{ content.tarih.strftime('%d.%m.%Y %H:%M') }}
+                                        </small>
+                                    </div>
+                                </div>
+                                <div class="ms-2">
+                                    <!-- ✅ DÜZELTİLDİ: Mavi ok -->
+                                    <i class="bi bi-chevron-right text-primary"></i>
+                                </div>
+                            </div>
+                        </a>
+                        {% if not loop.last %}
+                        <hr class="my-2">
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-clock-history text-muted" style="font-size: 2rem;"></i>
+                        <p class="text-muted mt-2">Henüz hiç aktiviten yok.</p>
+                        <a href="{{ url_for('home') }}" class="btn btn-primary btn-sm">
+                            <i class="bi bi-play-fill me-1"></i>
+                            Öğrenmeye Başla
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-graph-up text-primary me-2"></i>
+                        Bugünkü Performans
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+                        <!-- İlk Satır - Genel İstatistikler -->
+                        <div class="col-6">
+                            <div class="d-flex align-items-center">
+                                <div class="stat-icon bg-light-primary rounded-3 p-3 me-3">
+                                    <i class="bi bi-check2-all text-primary"></i>
+                                </div>
+                                <div>
+                                    <h3 class="fw-bold mb-0">{{ daily_stats.total_questions }}</h3>
+                                    <small class="text-muted">Çözülen Soru</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-6">
+                            <div class="d-flex align-items-center">
+                                <div class="stat-icon bg-light-success rounded-3 p-3 me-3">
+                                    <i class="bi bi-bullseye text-success"></i>
+                                </div>
+                                <div>
+                                    <h3 class="fw-bold mb-0">%{{ daily_stats.success_rate }}</h3>
+                                    <small class="text-muted">Başarı Oranı</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- İkinci Satır - Detaylı Cevap İstatistikleri -->
+                        <div class="col-4">
+                            <div class="d-flex align-items-center">
+                                <div class="stat-icon bg-light-success rounded-3 p-3 me-3">
+                                    <i class="bi bi-check-circle text-success"></i>
+                                </div>
+                                <div>
+                                    <h3 class="fw-bold mb-0">{{ daily_stats.total_correct }}</h3>
+                                    <small class="text-muted">Doğru</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-4">
+                            <div class="d-flex align-items-center">
+                                <div class="stat-icon bg-light-danger rounded-3 p-3 me-3">
+                                    <i class="bi bi-x-circle text-danger"></i>
+                                </div>
+                                <div>
+                                    <h3 class="fw-bold mb-0">{{ daily_stats.total_wrong }}</h3>
+                                    <small class="text-muted">Yanlış</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ✅ YENİ: Boş Cevap -->
+                        <div class="col-4">
+                            <div class="d-flex align-items-center">
+                                <div class="stat-icon bg-light-warning rounded-3 p-3 me-3">
+                                    <i class="bi bi-dash-circle text-warning"></i>
+                                </div>
+                                <div>
+                                    <h3 class="fw-bold mb-0">{{ daily_stats.total_empty }}</h3>
+                                    <small class="text-muted">Boş</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Yanlış Çözülen Sorular -->
+
+
+        <!-- dashboard.html - Yanlış Sorular bölümünü iyileştir -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                            Bugün Yanlış Çözülen Sorular
+                        </h5>
+                    </div>
+                    <span class="badge bg-warning-subtle text-warning">{{ today_wrong_questions|length }} Soru</span>
+                </div>
+                <div class="card-body" style="max-height: 250px; overflow-y: auto;">
+                    {% if today_wrong_questions %}
+                    <div class="list-group list-group-flush">
+                        {% for progress, soru, icerik, unite, ders, sinif in today_wrong_questions %}
+                        <div class="list-group-item border-0 px-0">
+                            <a href="{{ url_for('tekil_soru', 
+                        sinif_slug=sinif.slug,
+                        ders_slug=ders.slug,
+                        soru_id=soru.id) }}" class="text-decoration-none">
+                                <div class="d-flex align-items-start">
+                                    <div class="me-3">
+                                        <!-- ✅ İYİLEŞTİRİLDİ: Daha yumuşak kırmızı ton -->
+                                        <div class="bg-danger-subtle rounded-circle p-2">
+                                            <i class="bi bi-x-circle text-danger"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1 text-dark">{{ icerik.baslik }}</h6>
+                                        <div class="d-flex align-items-center">
+                                            <small class="text-muted me-2">
+                                                <i class="bi bi-book me-1"></i>
+                                                {{ ders.ders_adi }}
+                                            </small>
+                                            <small class="text-muted me-2">
+                                                <i class="bi bi-bookmark me-1"></i>
+                                                {{ unite.unite }}
+                                            </small>
+                                            <small class="text-muted">
+                                                <i class="bi bi-mortarboard me-1"></i>
+                                                {{ sinif.sinif }}. Sınıf
+                                            </small>
+                                        </div>
+                                        <small class="text-muted">
+                                            <i class="bi bi-clock me-1"></i>
+                                            {{ progress.tarih.strftime('%H:%M') }}
+                                        </small>
+                                    </div>
+                                    <div class="ms-2">
+                                        <i class="bi bi-chevron-right text-danger"></i>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        {% if not loop.last %}
+                        <hr class="my-2 opacity-25">
+                        {% endif %}
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <div class="bg-success-subtle rounded-circle p-3 d-inline-block mb-2">
+                            <i class="bi bi-emoji-smile text-success" style="font-size: 2rem;"></i>
+                        </div>
+                        <p class="text-muted mb-0">Bugün hiç yanlış soru çözmedin!</p>
+                        <small class="text-success">Harika gidiyorsun! 🎉</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Son 3 Ders İlerlemesi -->
+        <!-- dashboard.html - Son Görüntülenen Dersler bölümü -->
+
+        <div class="col-12 mt-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-book text-primary me-2"></i>
+                        Son Görüntülenen Dersler
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if course_progress %}
+                    <div class="row g-4">
+                        {% for course in course_progress %}
+                        <div class="col-lg-4 col-md-6">
+                            <div class="course-card">
+                                <a href="{{ url_for('ders', sinif_slug=course.sinif_slug, ders_slug=course.ders_slug) }}"
+                                    class="text-decoration-none">
+                                    <div class="card h-100 border-0 shadow-sm">
+                                        <div class="card-body d-flex flex-column">
+                                            <div class="d-flex align-items-center mb-3">
+                                                <div class="course-icon bg-primary-subtle rounded-3 p-2 me-3">
+                                                    <i class="bi bi-book text-primary"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <h6 class="card-title mb-0 text-dark">{{ course.ders_adi }}</h6>
+                                                    <small class="text-muted">{{ course.sinif }}. Sınıf</small>
+                                                </div>
+                                            </div>
+
+                                            <!-- Son Görüntülenme Tarihi -->
+                                            <div class="mb-3">
+                                                <small class="text-muted">
+                                                    <i class="bi bi-clock me-1"></i>
+                                                    {% if course.son_gorulme %}
+                                                    {{ course.son_gorulme.strftime('%d.%m.%Y %H:%M') }}
+                                                    {% else %}
+                                                    Tarih bilgisi yok
+                                                    {% endif %}
+                                                </small>
+                                            </div>
+
+                                            <!-- İlerleme Durumu -->
+                                            <div class="mt-auto">
+                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                    <small class="text-muted">İlerleme Durumu</small>
+                                                    <small class="text-muted">{{ course.progress }}%</small>
+                                                </div>
+                                                <div class="progress" style="height: 6px;">
+                                                    <div class="progress-bar bg-primary" role="progressbar"
+                                                        style="width: {{ course.progress }}%"
+                                                        aria-valuenow="{{ course.progress }}" aria-valuemin="0"
+                                                        aria-valuemax="100">
+                                                    </div>
+                                                </div>
+                                                {% if course.total_contents %}
+                                                <div class="d-flex justify-content-between mt-1">
+                                                    <small class="text-muted">{{ course.read_contents }}/{{
+                                                        course.total_contents }} içerik</small>
+                                                    <small class="text-primary">
+                                                        <i class="bi bi-arrow-right-circle"></i>
+                                                    </small>
+                                                </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-3">
+                            <i class="bi bi-book text-muted" style="font-size: 3rem;"></i>
+                        </div>
+                        <h6 class="text-muted mb-2">Henüz hiç ders görüntülemediniz</h6>
+                        <p class="text-muted mb-3">Öğrenmeye başlamak için bir ders seçin</p>
+                        <a href="{{ url_for('home') }}" class="btn btn-primary">
+                            <i class="bi bi-play-fill me-1"></i>
+                            Derslere Başla
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endblock %}

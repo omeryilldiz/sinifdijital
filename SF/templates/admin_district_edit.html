@@ -1,0 +1,22 @@
+{% extends "admin_layout.html" %}
+{% block content %}
+<h3>İlçe Düzenle</h3>
+<hr>
+<form method="POST" class="mb-4">
+    <div class="mb-3">
+        <label class="form-label">İlçe Adı</label>
+        <input type="text" name="name" class="form-control" value="{{ district.name }}" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">İl</label>
+        <select name="province_id" class="form-select" required>
+            <option value="">İl Seçiniz</option>
+            {% for province in provinces %}
+                <option value="{{ province.id }}" {% if province.id == district.province_id %}selected{% endif %}>{{ province.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <button type="submit" class="btn btn-primary">Kaydet</button>
+    <a href="{{ url_for('admin_districts', province_id=district.province_id) }}" class="btn btn-secondary">Geri Dön</a>
+</form>
+{% endblock %}

@@ -1,0 +1,159 @@
+{% extends "admin_layout.html" %}
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Video Düzenle</h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        {{ form.hidden_tag() }}
+
+                        <div class="row mb-4">
+                            <div class="col-md-3 mb-3">
+                                {{ form.sinif.label(class="form-label") }}
+                                {{ form.sinif(class="form-select") }}
+                                {% if form.sinif.errors %}
+                                    {% for error in form.sinif.errors %}
+                                        <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                {{ form.ders.label(class="form-label") }}
+                                {{ form.ders(class="form-select") }}
+                                {% if form.ders.errors %}
+                                    {% for error in form.ders.errors %}
+                                        <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                {{ form.unite.label(class="form-label") }}
+                                {{ form.unite(class="form-select") }}
+                                {% if form.unite.errors %}
+                                    {% for error in form.unite.errors %}
+                                        <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                {{ form.icerik.label(class="form-label") }}
+                                {{ form.icerik(class="form-select") }}
+                                {% if form.icerik.errors %}
+                                    {% for error in form.icerik.errors %}
+                                        <div class="invalid-feedback d-block">{{ error }}</div>
+                                    {% endfor %}
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.video_url.label(class="form-label") }}
+                            {{ form.video_url(class="form-control") }}
+                            {% if form.video_url.errors %}
+                                {% for error in form.video_url.errors %}
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                            <small class="text-muted">Örnek: https://www.youtube.com/watch?v=VIDEO_ID veya https://youtu.be/VIDEO_ID</small>
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.video_title.label(class="form-label") }}
+                            {{ form.video_title(class="form-control") }}
+                            {% if form.video_title.errors %}
+                                {% for error in form.video_title.errors %}
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-3">
+                            {{ form.sira.label(class="form-label") }}
+                            {{ form.sira(class="form-control", type="number") }}
+                            {% if form.sira.errors %}
+                                {% for error in form.sira.errors %}
+                                    <div class="invalid-feedback d-block">{{ error }}</div>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        <!-- Önizleme -->
+                        <div class="mb-4">
+                            <label class="form-label">Video Önizleme</label>
+                            <div class="ratio ratio-16x9">
+                                <iframe src="{{ video.embed_url }}" 
+                                        title="YouTube video" 
+                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                                        allowfullscreen>
+                                </iframe>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            {{ form.submit(class="btn btn-primary") }}
+                            <a href="{{ url_for('list_videolar') }}" class="btn btn-secondary">İptal</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.getElementById('sinif').addEventListener('change', function() {
+    fetch('/get_dersler/' + this.value)
+        .then(response => response.json())
+        .then(data => {
+            let dersSelect = document.getElementById('ders');
+            dersSelect.innerHTML = '<option value="0">Ders Seçiniz</option>';
+            data.forEach(ders => {
+                dersSelect.innerHTML += `<option value="${ders.id}">${ders.ders_adi}</option>`;
+            });
+            document.getElementById('unite').innerHTML = '<option value="0">Önce Ders Seçiniz</option>';
+            document.getElementById('icerik').innerHTML = '<option value="0">Önce Ünite Seçiniz</option>';
+        });
+});
+
+document.getElementById('ders').addEventListener('change', function() {
+    fetch('/get_uniteler/' + this.value)
+        .then(response => response.json())
+        .then(data => {
+            let uniteSelect = document.getElementById('unite');
+            uniteSelect.innerHTML = '<option value="0">Ünite Seçiniz</option>';
+            data.forEach(unite => {
+                uniteSelect.innerHTML += `<option value="${unite.id}">${unite.unite}</option>`;
+            });
+            document.getElementById('icerik').innerHTML = '<option value="0">Önce Ünite Seçiniz</option>';
+        });
+});
+
+document.getElementById('unite').addEventListener('change', function() {
+    fetch('/get_icerikler/' + this.value)
+        .then(response => response.json())
+        .then(data => {
+            let icerikSelect = document.getElementById('icerik');
+            icerikSelect.innerHTML = '<option value="0">İçerik Seçiniz</option>';
+            data.forEach(icerik => {
+                icerikSelect.innerHTML += `<option value="${icerik.id}">${icerik.baslik}</option>`;
+            });
+        });
+});
+
+// Video URL değiştiğinde önizlemeyi güncelle
+document.getElementById('video_url').addEventListener('change', function() {
+    const videoId = this.value.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i);
+    if (videoId) {
+        const iframe = document.querySelector('iframe');
+        iframe.src = `https://www.youtube.com/embed/${videoId[1]}`;
+    }
+});
+</script>
+{% endblock %}
