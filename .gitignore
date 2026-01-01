@@ -186,3 +186,29 @@ celerybeat.pid
 # Redis
 # ===============================
 dump.rdb
+sf-web.tar
+*.tar
+
+# ===============================
+# Docker & Deployment
+# ===============================
+*.tar
+*.tar.gz
+sf-web.tar
+
+# ===============================
+# Temporary & Test Files
+# ===============================
+*.md.bak
+CACHE_SMOKE_TEST_RESULTS.md
+DB_CONFIG_ANALYSIS.md
+DB_OPTIMIZATION_VERIFIED.md
+FLASH_MESSAGES_IMPROVED.md
+KALAN_ISLEMLER_TAMAMLANDI.md
+tamla.md
+
+# ===============================
+# Hostinger Specific
+# ===============================
+sf-app.service
+deploy/sf-app.service
