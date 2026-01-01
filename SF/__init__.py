@@ -42,15 +42,6 @@ app.logger.setLevel(log_level)
 # Mail nesnesi Config yüklendikten SONRA oluşturulmalı
 mail = Mail(app)  
 
-# Mail Ayarlarını .env'den Oku
-app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER', 'smtp.gmail.com')
-app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT', 587))
-app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS', 'True') == 'True'
-app.config['MAIL_USE_SSL'] = os.getenv('MAIL_USE_SSL', 'False') == 'True'
-app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
-app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
-app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
-
 # Diğer uzantılar
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
@@ -165,3 +156,8 @@ with app.app_context():
     _register_query_logger()
 
 from SF import routes
+# Import CLI commands
+try:
+    import show_admin_url
+except ImportError:
+    pass

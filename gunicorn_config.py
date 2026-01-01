@@ -2,7 +2,8 @@ import multiprocessing
 import os
 
 bind = "0.0.0.0:5000"
-workers = multiprocessing.cpu_count() * 2 + 1
+# Allow overriding worker count via env for low-memory containers
+workers = int(os.environ.get('GUNICORN_WORKERS', 2))  # Default 2, override via env
 worker_class = "gevent"  # Async worker for better concurrency
 worker_connections = 1000
 max_requests = 1000

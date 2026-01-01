@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        /* Mobile: Max 480px */
+        @media only screen and (max-width: 480px) {
+            body { width: 100% !important; margin: 0 !important; padding: 0 !important; }
+            table { width: 100% !important; }
+            td { padding: 10px !important; }
+            .header { padding: 20px 10px !important; }
+            .content { padding: 20px 10px !important; }
+            .button { display: block !important; padding: 14px 20px !important; width: 100% !important; box-sizing: border-box !important; }
+            h2 { font-size: 18px !important; }
+            p { font-size: 13px !important; }
+        }
+        /* Tablet: 481px to 768px */
+        @media only screen and (min-width: 481px) and (max-width: 768px) {
+            table { width: 100% !important; }
+            .header { padding: 30px 20px !important; }
+            .content { padding: 30px 20px !important; }
+            .button { padding: 14px 40px !important; }
+        }
+    </style>
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Montserrat', Arial, sans-serif; background-color: #f5f5f5;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5;">
+        <tr>
+            <td align="center">
+                <table width="600" cellpadding="0" cellspacing="0" style="background-color: white; max-width: 100%;">
+                    <!-- HEADER -->
+                    <tr>
+                        <td class="header" style="background: white; padding: 40px 30px; text-align: center;">
+                            <div style="font-family: Montserrat, sans-serif; font-size: 32px; font-weight: bold; letter-spacing: -0.5px;">
+                                <a href="{{ home_url }}" style="text-decoration: none;">
+                                    <span style="color: #00457C; font-weight: bold;">Sınıf</span>
+                                    <span style="color: #00A5AD; font-weight: 600;">Dijital</span>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    
+                    <!-- CONTENT -->
+                    <tr>
+                        <td class="content" style="padding: 40px 30px; background: #ffffff;">
+                            <h2 style="color: #00457C; margin-top: 0; font-size: 22px; font-weight: 600; font-family: 'Montserrat', sans-serif;">
+                                Merhaba {{ user_name }},
+                            </h2>
+                            
+                            <p style="color: #555; line-height: 1.8; margin: 20px 0; font-size: 15px;">
+                                <strong>Sınıf Dijital</strong> platformuna hoş geldiniz! 🎉
+                            </p>
+                            
+                            <p style="color: #666; line-height: 1.8; margin: 20px 0; font-size: 15px;">
+                                Hesabınızı aktifleştirmek için aşağıdaki butona tıklayarak email adresinizi doğrulayın. 
+                                Bu adım, hesabınızın güvenliğini sağlamak için önemlidir.
+                            </p>
+                            
+                            <!-- BUTTON -->
+                            <div style="text-align: center; margin: 35px 0;">
+                                <a href="{{ verification_url }}" class="button" 
+                                   style="background: linear-gradient(135deg, #00457C 0%, #00A5AD 100%); 
+                                          color: white; 
+                                          padding: 16px 45px; 
+                                          text-decoration: none; 
+                                          border-radius: 6px;
+                                          font-weight: 600;
+                                          display: inline-block;
+                                          font-size: 15px;
+                                          font-family: 'Montserrat', sans-serif;
+                                          letter-spacing: 0.3px;">
+                                    ✓ Email Adresimi Doğrula
+                                </a>
+                            </div>
+                            
+                            <!-- INFO BOX -->
+                            <div style="background-color: #f0f8fa; border-left: 4px solid #00A5AD; padding: 18px; margin: 25px 0; border-radius: 4px;">
+                                <p style="color: #00457C; margin: 0; font-size: 14px; font-weight: 500;">
+                                    <strong>⏰ Önemli:</strong> Bu bağlantı <strong>24 saat</strong> geçerlidir.
+                                </p>
+                            </div>
+                            
+                            <!-- ALTERNATIVE LINK -->
+                            <p style="color: #999; font-size: 13px; line-height: 1.6; margin: 25px 0;">
+                                <strong>Buton çalışmıyorsa:</strong><br>
+                                Aşağıdaki linki tarayıcınıza kopyalayıp yapıştırın:<br>
+                                <a href="{{ verification_url }}" style="color: #00A5AD; word-break: break-all; text-decoration: none; font-weight: 500;">
+                                    {{ verification_url }}
+                                </a>
+                            </p>
+                            
+                            <!-- SECURITY NOTICE -->
+                            <div style="background-color: #fff3cd; border-left: 4px solid #ffc107; padding: 18px; margin: 25px 0; border-radius: 4px;">
+                                <p style="color: #856404; margin: 0; font-size: 13px; line-height: 1.6;">
+                                    <strong>⚠️ Güvenlik Uyarısı:</strong> Eğer bu hesabı siz oluşturmadıysanız, lütfen bu emaili görmezden gelin veya 
+                                    <a href="{{ support_url }}" style="color: #00457C; font-weight: 600; text-decoration: none;">destek ekibine bildirin</a>.
+                                </p>
+                            </div>
+                            
+                            <!-- HELP TEXT -->
+                            <p style="color: #999; font-size: 13px; line-height: 1.6; margin: 25px 0;">
+                                Herhangi bir sorunuz varsa, lütfen <a href="{{ support_url }}" style="color: #00A5AD; font-weight: 600; text-decoration: none;">destek sayfamızı</a> ziyaret edin.
+                            </p>
+                        </td>
+                    </tr>
+                    
+                    <!-- FOOTER -->
+                    <tr>
+                        <td style="background-color: #f9f9f9; padding: 25px 30px; text-align: center; border-top: 1px solid #e8e8e8;">
+                            <div style="margin-bottom: 15px;">
+                                <a href="{{ home_url }}" style="color: #00457C; text-decoration: none; font-weight: 600; font-size: 14px; margin: 0 15px;">Ana Sayfa</a>
+                                <a href="{{ privacy_url }}" style="color: #00457C; text-decoration: none; font-weight: 600; font-size: 14px; margin: 0 15px;">Gizlilik Politikası</a>
+                                <a href="{{ terms_url }}" style="color: #00457C; text-decoration: none; font-weight: 600; font-size: 14px; margin: 0 15px;">Kullanım Şartları</a>
+                            </div>
+                            <p style="color: #999; font-size: 12px; margin: 10px 0 0 0;">
+                                © 2024 Sınıf Dijital | Tüm Hakları Saklıdır
+                            </p>
+                            <p style="color: #bbb; font-size: 11px; margin: 5px 0 0 0;">
+                                Bu email otomatik olarak gönderilmiştir. Lütfen yanıt vermeyiniz.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

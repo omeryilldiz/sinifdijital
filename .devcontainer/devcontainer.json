@@ -1,0 +1,29 @@
+{
+  "name": "SF Flask DevContainer",
+  "dockerComposeFile": [
+    "../docker-compose.yml"
+  ],
+  "service": "web",
+  "workspaceFolder": "/app",
+  "settings": {
+    "python.pythonPath": "/usr/local/bin/python",
+    "terminal.integrated.shell.linux": "/bin/bash"
+  },
+  "extensions": [
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-azuretools.vscode-docker"
+  ],
+  "postCreateCommand": "pip install --upgrade pip && pip install -r requirements.txt",
+  "remoteEnv": {
+    "FLASK_ENV": "development"
+  },
+  "forwardPorts": [5000, 8080],
+  "mounts": [
+    "source=${localWorkspaceFolder}/SF/static/uploads,target=/app/SF/static/uploads,type=bind",
+    "source=${localWorkspaceFolder}/SF/static/soru_uploads,target=/app/SF/static/soru_uploads,type=bind",
+    "source=${localWorkspaceFolder}/SF/static/video_uploads,target=/app/SF/static/video_uploads,type=bind",
+    "source=${localWorkspaceFolder}/SF/static/cozum_uploads,target=/app/SF/static/cozum_uploads,type=bind",
+    "source=${localWorkspaceFolder}/SF/static/pdf_uploads,target=/app/SF/static/pdf_uploads,type=bind"
+  ]
+}

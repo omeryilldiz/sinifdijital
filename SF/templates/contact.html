@@ -1,0 +1,295 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="container py-5" style="animation: fadeIn 1s ease-out;">
+    <!-- Sayfa Başlığı -->
+    <div class="row mb-5">
+        <div class="col-lg-10 mx-auto text-center">
+            <h1 class="display-4 fw-bold mb-3" style="animation: slideInDown 0.8s ease-out;">
+                <span style="color: #00457C;">İletişim</span>
+            </h1>
+            <p class="lead text-muted mb-3" style="animation: slideInUp 0.8s ease-out 0.2s both;">Sorularınız, önerileriniz ve geri bildirimleriniz için bize ulaşın.</p>
+            <div class="progress-bar-container" style="animation: slideInUp 0.8s ease-out 0.4s both;">
+                <div class="progress" style="height: 8px; background: #e9ecef; border-radius: 4px;">
+                    <div class="progress-bar" style="width: 100%; background: linear-gradient(90deg, #00457C 0%, #00A5AD 100%); border-radius: 4px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- İletişim Bilgileri -->
+        <div class="col-lg-5 mb-5">
+            <!-- İletişim Bilgileri Kartları -->
+            <div class="card border-0 shadow-sm mb-4 contact-card" style="transition: transform 0.3s ease, box-shadow 0.3s ease; animation: fadeInUp 0.8s ease-out 0.4s both;">
+                <div class="card-body p-4">
+                    <div class="contact-icon" style="width: 50px; height: 50px; background: linear-gradient(135deg, #00457C 0%, #00A5AD 100%); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 15px; transition: transform 0.3s ease;">
+                        <i class="fas fa-envelope" style="font-size: 20px; color: white;"></i>
+                    </div>
+                    <h5 class="card-title fw-bold mb-2">Email</h5>
+                    <p class="card-text text-muted mb-1">
+                        <a href="mailto:iletisim@sinifdigital.com" style="color: #00457C; text-decoration: none;">
+                            iletisim@sinifdigital.com
+                        </a>
+                    </p>
+                    <p class="card-text small text-muted">
+                        24 saat içinde cevap alınız
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- İletişim Formu -->
+        <div class="col-lg-7 mb-5">
+            <div class="card border-0 shadow-lg p-5 contact-form-card" style="transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                <h2 class="fw-bold mb-4">
+                    <span style="color: #00457C;">Bize Mesaj Gönder</span>
+                </h2>
+
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+
+                    <!-- Ad Alanı -->
+                    <div class="mb-3">
+                        <label for="name" class="form-label fw-bold">Adınız</label>
+                        {% if form.name.errors %}
+                            {{ form.name(class="form-control is-invalid") }}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.name.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.name(class="form-control", autofocus=true) }}
+                        {% endif %}
+                    </div>
+
+                    <!-- Email Alanı -->
+                    <div class="mb-3">
+                        <label for="email" class="form-label fw-bold">Email Adresiniz</label>
+                        {% if form.email.errors %}
+                            {{ form.email(class="form-control is-invalid") }}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.email.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.email(class="form-control") }}
+                        {% endif %}
+                    </div>
+
+                    <!-- Konu Alanı -->
+                    <div class="mb-3">
+                        <label for="subject" class="form-label fw-bold">Konu</label>
+                        {% if form.subject.errors %}
+                            {{ form.subject(class="form-control is-invalid") }}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.subject.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.subject(class="form-control") }}
+                        {% endif %}
+                    </div>
+
+                    <!-- Mesaj Alanı -->
+                    <div class="mb-3">
+                        <label for="message" class="form-label fw-bold">Mesajınız</label>
+                        {% if form.message.errors %}
+                            {{ form.message(class="form-control is-invalid", rows=5) }}
+                            <div class="invalid-feedback d-block">
+                                {% for error in form.message.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            {{ form.message(class="form-control", rows=5) }}
+                        {% endif %}
+                    </div>
+
+                    <!-- Gönder Butonu -->
+                    <div class="d-grid">
+                        {{ form.submit(class="btn btn-primary btn-lg contact-submit-btn", style="background: linear-gradient(135deg, #00457C 0%, #00A5AD 100%); border: none; padding: 12px 30px; border-radius: 25px; font-weight: bold; transition: transform 0.3s ease, box-shadow 0.3s ease;") }}
+                    </div>
+
+                    <!-- Bilgi Notu -->
+                    <p class="text-muted small mt-3 mb-0">
+                        <i class="fas fa-info-circle" style="color: #00457C;"></i>
+                        Formu gönderdikten sonra en kısa zamanda sizinle iletişime geçeceğiz.
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sıkça Sorulan Sorular -->
+    <div class="row mt-5">
+        <div class="col-lg-10 mx-auto">
+            <h2 class="fw-bold mb-4 text-center">
+                <span style="color: #00457C;">Sıkça Sorulan Sorular (SSS)</span>
+            </h2>
+
+            <div class="accordion" id="faqAccordion">
+                <div class="accordion-item border-0 mb-3 shadow-sm faq-item" style="transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                            Sınıf Dijital ne kadar para tutarsa?
+                        </button>
+                    </h2>
+                    <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-muted">
+                            Sınıf Dijital tamamen ücretsizdir! Tüm video dersleri, soruları ve özelliklerine erişim için hiçbir ücret gerekmemektedir.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item border-0 mb-3 shadow-sm faq-item" style="transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                            Hesabımı nasıl silebilirim?
+                        </button>
+                    </h2>
+                    <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-muted">
+                            Hesabınızı silmek için destek ekibimize email göndererek talepte bulunabilirsiniz. Gizlilik haklarınız korunmaktadır.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item border-0 mb-3 shadow-sm faq-item" style="transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                            Sertifika veriliyor mu?
+                        </button>
+                    </h2>
+                    <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-muted">
+                            Şu anda resmi sertifika verilmemektedir, ancak istatistikleriniz ve ilerleme raporlarınız kütüphanede kayıt altına alınır.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item border-0 mb-3 shadow-sm faq-item" style="transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                            Öğretmen olarak kullanabilir miyim?
+                        </button>
+                    </h2>
+                    <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-muted">
+                            Evet! Öğretmenler platform üzerinde öğrencileri takip edebilir ve sınıf içi kullanak için özel erişim talebinde bulunabilir. Bize yazın.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item border-0 shadow-sm faq-item" style="transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed fw-bold" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                            İçeriğin güncelleme sıklığı nedir?
+                        </button>
+                    </h2>
+                    <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body text-muted">
+                            İçerik düzenli olarak güncelleniyor ve yeni sorular ekleniyor. Sınav müfredatı değişikliklerine uyum sağlıyoruz.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Destek Bilgisi -->
+    <div class="row mt-5 mb-5">
+        <div class="col-lg-10 mx-auto support-section" style="background: linear-gradient(135deg, #E8F4F8 0%, #F0F8FA 100%); border-radius: 15px; padding: 40px; border-left: 5px solid #00457C; box-shadow: 0 15px 35px rgba(0,0,0,0.1); transition: transform 0.3s ease;">
+            <h3 class="fw-bold mb-3">
+                <span style="color: #00457C;">Yardıma İhtiyacın Var Mı?</span>
+            </h3>
+            <p class="text-muted mb-3">
+                Sorunlar yaşıyor veya daha fazla yardıma ihtiyacın var mı? Destek ekibimiz her zaman yardımına hazır.
+            </p>
+            <div class="d-flex gap-2">
+                <a href="mailto:iletisim@sinifdigital.com" class="btn btn-primary btn-sm support-btn" style="background: linear-gradient(135deg, #00457C 0%, #00A5AD 100%); border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                    <i class="fas fa-envelope me-2"></i> Email Gönder
+                </a>
+                <a href="https://wa.me/905551234567" target="_blank" class="btn btn-success btn-sm support-btn" style="background: linear-gradient(135deg, #25D366 0%, #128C7E 100%); border: none; padding: 8px 20px; border-radius: 20px; font-weight: bold; transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                    <i class="fab fa-whatsapp me-2"></i> WhatsApp'ta Yaz
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .accordion-button:not(.collapsed) {
+        background-color: #f0f8ff;
+        color: #00457C;
+    }
+
+    .accordion-button:focus {
+        border-color: #00A5AD;
+        box-shadow: 0 0 0 0.25rem rgba(0, 165, 173, 0.25);
+    }
+
+    .contact-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0, 69, 124, 0.15) !important;
+    }
+
+    .contact-card:hover .contact-icon {
+        transform: scale(1.1);
+    }
+
+    .contact-form-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 35px rgba(0, 69, 124, 0.2) !important;
+    }
+
+    .contact-submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,69,124,0.3) !important;
+    }
+
+    .faq-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0, 69, 124, 0.1) !important;
+    }
+
+    .support-section:hover {
+        transform: translateY(-3px);
+    }
+
+    .support-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(0,69,124,0.3) !important;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+{% endblock %}

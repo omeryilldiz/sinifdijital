@@ -6,7 +6,7 @@ from datetime import timedelta
 
 load_dotenv()  # .env dosyasını yükle
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'default-key')
+    SECRET_KEY = os.environ.get('SECRET_KEY') or os.urandom(32).hex()
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'postgresql://sfuser:1174@localhost/sfdb')
     DATABASE_URL = SQLALCHEMY_DATABASE_URI  # Alias ekle
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
@@ -24,6 +24,10 @@ class Config:
     WTF_CSRF_TIME_LIMIT = None  # CSRF token'ının hiç expire olmamsı (session bazlı)
     WTF_CSRF_CHECK_DEFAULT = True
     WTF_CSRF_SSL_STRICT = False  # Proxy arkasında çalışması için
+
+    # 🔐 Admin Panel Security
+    ADMIN_URL_PREFIX = os.environ.get('ADMIN_URL_PREFIX', '/yonetim-panel-x9k2m')
+    EMERGENCY_RECOVERY_PASSWORD = os.environ.get('EMERGENCY_RECOVERY_PASSWORD')
 
     UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'SF/static/uploads')
     SORU_UPLOAD_FOLDER = os.environ.get('SORU_UPLOAD_FOLDER', 'SF/static/soru_uploads')
@@ -52,13 +56,17 @@ class Config:
     }
     ALLOWED_PDF_MIMES = {'application/pdf'}
     
-    MAIL_SERVER = 'smtp.gmail.com'
-    MAIL_PORT = 587
-    MAIL_USE_TLS = True
-    MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
+    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.hostinger.com')
+    MAIL_PORT = int(os.environ.get('MAIL_PORT', 465))
+    MAIL_USE_TLS = os.environ.get('MAIL_USE_TLS', 'False') == 'True'
+    MAIL_USE_SSL = os.environ.get('MAIL_USE_SSL', 'True') == 'True'
+    MAIL_USERNAME = os.environ.get('MAIL_USERNAME', 'omeryildiz@sinifdijital.com')  # ✅ Ana mail (SMTP Auth)
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
-    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER')
+    MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER', 'noreply@sinifdijital.com')  # ✅ Sistem emailleri
     
+    # ✅ Email Aliasları (hepsi omeryildiz@sinifdijital.com'un takma adları)
+    MAIL_NOREPLY_SENDER = os.environ.get('MAIL_NOREPLY_SENDER', 'noreply@sinifdijital.com')
+    MAIL_CONTACT_SENDER = os.environ.get('MAIL_CONTACT_SENDER', 'iletisim@sinifdijital.com')
     
     # ✅ Dosya upload limitleri
     UPLOAD_RATE_LIMIT = os.environ.get('UPLOAD_RATE_LIMIT', "15 per minute")

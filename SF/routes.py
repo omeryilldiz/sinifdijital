@@ -1,7 +1,7 @@
 from flask import render_template, redirect, url_for, flash, request, abort, jsonify, session, g, current_app, send_from_directory
 from SF import app, db, bcrypt, ALLOWED_EXTENSIONS, ALLOWED_PDF_EXTENSIONS, limiter, csrf
 from flask_wtf.csrf import validate_csrf
-from SF.forms import LoginForm, RegistrationForm, AdminLoginForm, AdminRegisterForm, AdminEditForm, SinifForm, DersForm, UniteForm, IcerikForm, SoruEkleForm, SoruEditForm, DersNotuForm, VideoForm, VideoEditForm, DersNotuEditForm, CompleteProfileForm, ProfileUpdateForm, StudentSearchForm, BulkActionForm, AdminStudentEditForm, PasswordResetRequestForm, PasswordResetForm, HomepageSlideForm, ChangePasswordForm 
+from SF.forms import LoginForm, RegistrationForm, AdminLoginForm, AdminRegisterForm, AdminEditForm, SinifForm, DersForm, UniteForm, IcerikForm, SoruEkleForm, SoruEditForm, DersNotuForm, VideoForm, VideoEditForm, DersNotuEditForm, CompleteProfileForm, ProfileUpdateForm, StudentSearchForm, BulkActionForm, AdminStudentEditForm, PasswordResetRequestForm, PasswordResetForm, HomepageSlideForm, ChangePasswordForm, ContactForm 
 from SF.services.security_service import SecurityService
 from SF.models import User, Sinif, Ders, Unite, Icerik, Soru, DersNotu, VideoIcerik, Province, District, School, SchoolType, UserProgress, ActivityType, Settings, HomepageSlide, create_slug, UserLoginLog, LogActionType
 from SF.services.advanced_query_optimizer import AdvancedQueryOptimizer
@@ -15,7 +15,7 @@ from sqlalchemy.orm import joinedload
 import re, os, traceback, time, humanize, pytz
 from urllib.parse import urlparse
 from datetime import datetime, timedelta, timezone
-from werkzeug.utils import secure_filename, safe_join
+from werkzeug.utils import secure_filename
 from sqlalchemy import and_, distinct, func
 from SF.services.statistics_service import StatisticsService
 from SF.services.student_statistics_service import StudentStatisticsService
@@ -109,6 +109,43 @@ def liveness_check():
     return jsonify({'alive': True}), 200
 
 
+# ========================================
+# 🍯 HONEYPOT: Sahte Admin Paneli
+# ========================================
+@app.route('/admin')
+@app.route('/admin/')
+@limiter.limit("3 per minute")
+def fake_admin_panel():
+    """
+    Honeypot: Sahte admin paneli - saldırganları tuzağa düşürür
+    Gerçek admin paneli: app.config['ADMIN_URL_PREFIX']
+    """
+    log_honeypot_access()
+    
+    # Sahte login sayfası göster (gerçek gibi görünsün)
+    # Not: Gerçek admin_login template'ini kullanıyoruz ama hiçbir şey çalışmaz
+    flash('Güvenlik nedeniyle bu URL kullanımdan kaldırılmıştır.', 'warning')
+    return render_template('404.html'), 404
+
+@app.route('/admin/login', methods=['GET', 'POST'])
+@limiter.limit("3 per minute")
+def fake_admin_login():
+    """Honeypot: Sahte admin login"""
+    log_honeypot_access()
+    
+    if request.method == 'POST':
+        # Log credential attempt (but don't store actual passwords)
+        email = request.form.get('email', 'N/A')
+        app.logger.warning(f"🍯 HONEYPOT - Login attempt with email: {email} from IP: {get_client_ip()}")
+        
+        # Always show "invalid credentials"
+        time.sleep(2)  # Slow down brute force
+        flash('Geçersiz giriş bilgileri.', 'danger')
+        return redirect(url_for('fake_admin_login'))
+    
+    return render_template('404.html'), 404
+
+
 ## Dosya uzantılarını kontrol et
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -165,6 +202,32 @@ def send_protected_file(directory, filename):
     return send_from_directory(directory, secure_name)
 
 
+# 🔐 Admin Security Helpers
+def get_client_ip():
+    """Get client IP address (considering proxies)"""
+    if request.headers.get('X-Forwarded-For'):
+        return request.headers.get('X-Forwarded-For').split(',')[0].strip()
+    elif request.headers.get('X-Real-IP'):
+        return request.headers.get('X-Real-IP')
+    return request.remote_addr
+
+def log_honeypot_access():
+    """Log suspicious admin panel access attempts"""
+    ip = get_client_ip()
+    user_agent = request.headers.get('User-Agent', 'Unknown')
+    referrer = request.headers.get('Referer', 'Direct')
+    
+    app.logger.warning(
+        f"🍯 HONEYPOT TRIGGERED - Suspicious admin access attempt:\n"
+        f"  IP: {ip}\n"
+        f"  User-Agent: {user_agent}\n"
+        f"  Referrer: {referrer}\n"
+        f"  Path: {request.path}\n"
+        f"  Method: {request.method}\n"
+        f"  Timestamp: {datetime.utcnow()}"
+    )
+
+
 # Rate limit exceeded handler: log details and return JSON or template
 def admin_required(f):
     @wraps(f)
@@ -198,7 +261,7 @@ def ratelimit_handler(e):
     return render_template('429.html'), 429
 
 
-@app.route('/admin/rate-limit-stats')
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/rate-limit-stats')
 @admin_required
 def rate_limit_stats():
     """Admin endpoint: Redis üzerindeki rate-limit anahtarlarını tarayıp temel istatistik döner."""
@@ -235,7 +298,7 @@ def rate_limit_stats():
         return jsonify({'error': 'internal error'}), 500
 
 
-@app.route('/admin/test-smtp', methods=['GET', 'POST'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/test-smtp', methods=['GET', 'POST'])
 @admin_required
 def test_smtp_config():
     """
@@ -291,10 +354,10 @@ def test_smtp_config():
         }), 200
 
 @app.route('/api/test-smtp', methods=['GET', 'POST'])
-@csrf.exempt  # Test amaçlı genel endpoint
+@admin_required  # Sadece adminler erişebilir
 def test_smtp_api():
     """
-    SMTP Konfigürasyonunu test et (genel API).
+    SMTP Konfigürasyonunu test et (Admin API).
     GET: Konfigürasyon durumunu kontrol et
     POST: Tam test yap ve test maili gönder
     """
@@ -348,10 +411,10 @@ def test_smtp_api():
             }), 200
 
 @app.route('/api/query-performance', methods=['GET'])
-@csrf.exempt
+@admin_required  # Sadece adminler erişebilir
 def query_performance_stats():
     """
-    Sorgu performans istatistiklerini döndür.
+    Sorgu performans istatistiklerini döndür (Admin Only).
     Query: ?type=stats|slow|frequent|slowest
     """
     from SF.services.query_logger_service import query_logger
@@ -408,7 +471,7 @@ def query_performance_stats():
         return jsonify({'error': 'Internal error'}), 500
 
 
-@app.route('/admin/query-performance', methods=['GET'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/query-performance', methods=['GET'])
 @admin_required
 def admin_query_performance():
     """Admin paneli: Sorgu performans yönetim sayfası"""
@@ -587,6 +650,46 @@ def kullanim():
     return render_template('legal/kullanim.html')
 
 
+@app.route('/about')
+@app.route('/hakkimizda')
+def about():
+    return render_template('about.html')
+
+
+@app.route('/contact', methods=['GET', 'POST'])
+@app.route('/iletisim', methods=['GET', 'POST'])
+def contact():
+    form = ContactForm()
+    if form.validate_on_submit():
+        try:
+            # Admin email'ini .env'den al, fallback olarak contact adresini kullan
+            admin_email = current_app.config.get('MAIL_CONTACT_SENDER', 'iletisim@sinifdijital.com')
+            
+            msg = MailMessage(
+                subject=f"Sınıf Dijital İletişim: {form.subject.data}",
+                recipients=[admin_email],
+                sender=admin_email,
+                body=f"""Gönderici: {form.name.data} ({form.email.data})
+
+Konu: {form.subject.data}
+
+Mesaj:
+{form.message.data}"""
+            )
+            mail.send(msg)
+            flash('Mesajınız başarıyla gönderildi. En kısa zamanda sizinle iletişime geçeceğiz.', 'success')
+            return redirect(url_for('contact'))
+        except Exception as e:
+            app.logger.error(f"İletişim formu hatası: {str(e)}")
+            flash('Mesaj gönderilemedi. Lütfen daha sonra tekrar deneyiniz.', 'danger')
+    
+    return render_template('contact.html', form=form)
+
+
+@app.route('/how-it-works')
+@app.route('/nasil-calisir')
+def how_it_works():
+    return render_template('how_it_works.html')
 
 
 @_cache_memoize(timeout=300)
@@ -907,7 +1010,7 @@ def ders(sinif_slug, ders_slug):
     
     except Exception as e:
         app.logger.error(f"Ders sayfası hatası: {str(e)}")
-        flash('Bir hata oluştu. Lütfen daha sonra tekrar deneyin.', 'error')
+        flash('Ders yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 'danger')
         return redirect(url_for('home'))
     
        
@@ -1031,7 +1134,7 @@ def icerik(sinif_slug, ders_slug, unite_slug, icerik_slug):
     except Exception as e:
         app.logger.error(f"İçerik görüntüleme hatası: {str(e)}")
         app.logger.error(traceback.format_exc())
-        flash('İçerik yüklenirken bir hata oluştu.', 'danger')
+        flash('İçerik yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 'danger')
         return redirect(url_for('home'))
 
     
@@ -1470,7 +1573,7 @@ def soru_coz(sinif_slug, ders_slug):
     except Exception as e:
         app.logger.error(f"Soru çözüm hatası: {str(e)}")
         app.logger.error(traceback.format_exc())
-        flash('Bir hata oluştu. Lütfen tekrar deneyin.', 'error')
+        flash('Soru işlenirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 'danger')
         return redirect(url_for('soru_filtre', sinif_slug=sinif_slug, ders_slug=ders_slug))
     
     
@@ -1484,7 +1587,7 @@ def tekil_soru(sinif_slug, ders_slug, soru_id):
         
         # Soru ile ders/sınıf uyumluluğunu kontrol et
         if soru.icerik.unite.ders_id != ders.id or soru.icerik.unite.ders.sinif_id != sinif.id:
-            flash('Soru ile seçilen ders/sınıf uyumsuz.', 'error')
+            flash('Soru ile seçilen ders/sınıf uyumsuz.', 'danger')
             return redirect(url_for('home'))
         
         if request.method == 'POST':
@@ -1573,7 +1676,7 @@ def tekil_soru(sinif_slug, ders_slug, soru_id):
                             
     except Exception as e:
         app.logger.error(f"Tekil soru hatası: {str(e)}")
-        flash('Bir hata oluştu. Lütfen tekrar deneyin.', 'error')
+        flash('Soru yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 'danger')
         return redirect(url_for('home'))
     
     
@@ -1652,7 +1755,7 @@ def google_login_callback():
         except Exception as e:
             db.session.rollback()
             app.logger.error(f"Google ile kayıt hatası: {str(e)}")
-            flash("Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin.", "danger")
+            flash("Kayıt sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.", "danger")
             return redirect(url_for("register"))
     
     # Profil tamamlanmamışsa profil tamamlama sayfasına yönlendir
@@ -1766,7 +1869,7 @@ def register():
                     db.session.rollback()
                     app.logger.error(f"Registration error: {str(e)}")
                     app.logger.error(traceback.format_exc())
-                    flash('Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin.', 'danger')
+                    flash('Kayıt sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 'danger')
                     return redirect(url_for('register'))
             else:
                 for field, errors in form.errors.items():
@@ -1871,7 +1974,7 @@ def login():
                             flash('Profilinizi tamamlayarak sistemi kullanmaya başlayın!', 'info')
                             return redirect(url_for('complete_profile'))
                         
-                        flash('Giriş başarılı! Hoş geldiniz.', 'success')
+                        flash(f'Hoş geldiniz {user.first_name}! Giriş başarılı.', 'success')
                         
                         next_page = request.args.get('next')
                         if next_page:
@@ -1910,7 +2013,7 @@ def login():
                     
             except Exception as e:
                 app.logger.error(f"Login database error: {str(e)}")
-                flash('Giriş sırasında bir hata oluştu. Lütfen tekrar deneyin.', 'danger')
+                flash('Giriş sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 'danger')
                 return redirect(url_for('login'))
         else:
             for field, errors in form.errors.items():
@@ -2019,95 +2122,61 @@ def send_verification_email(user):
     verification_url = url_for('verify_email', token=token, _external=True)
     
     subject = "Email Adresinizi Doğrulayın - SF Eğitim"
-    html_body = f"""
-    <html>
-    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0;">SF Eğitim</h1>
-        </div>
-        <div style="padding: 30px; background: #f9f9f9;">
-            <h2 style="color: #333;">Merhaba {user.first_name or 'Değerli Kullanıcı'},</h2>
-            <p style="color: #666; line-height: 1.6;">
-                SF Eğitim platformuna hoş geldiniz! Hesabınızı aktifleştirmek için 
-                aşağıdaki butona tıklayarak email adresinizi doğrulayın.
-            </p>
-            <div style="text-align: center; margin: 30px 0;">
-                <a href="{verification_url}" 
-                   style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
-                          color: white; 
-                          padding: 15px 40px; 
-                          text-decoration: none; 
-                          border-radius: 25px;
-                          font-weight: bold;
-                          display: inline-block;">
-                    Email Adresimi Doğrula
-                </a>
-            </div>
-            <p style="color: #999; font-size: 12px;">
-                Bu link 24 saat geçerlidir. Eğer bu hesabı siz oluşturmadıysanız, 
-                bu emaili görmezden gelebilirsiniz.
-            </p>
-            <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
-            <p style="color: #999; font-size: 12px;">
-                Link çalışmıyorsa, aşağıdaki adresi tarayıcınıza kopyalayın:<br>
-                <a href="{verification_url}" style="color: #667eea;">{verification_url}</a>
-            </p>
-        </div>
-    </body>
-    </html>
-    """
+    
+    # Şablonu renderla
+    html_body = render_template('emails/verification_email.html',
+        user=user,
+        verification_url=verification_url,
+        contact_url=url_for('contact', _external=True),
+        privacy_url=url_for('gizlilik', _external=True),
+        kvkk_url=url_for('kvkk', _external=True)
+    )
     
     try:
         msg = MailMessage(
             subject=subject,
             recipients=[user.email],
-            html=html_body,
-            sender=app.config.get('MAIL_DEFAULT_SENDER', 'noreply@sf-egitim.com')
+            html=html_body
         )
         mail.send(msg)
         app.logger.info(f"Doğrulama emaili gönderildi: {user.email}")
         return True
     except Exception as e:
         app.logger.error(f"Email gönderme hatası: {str(e)}")
+        app.logger.warning(f"Doğrulama emaili gönderilemedi: {str(e)}")
         return False
     
     
 def send_password_changed_notification(user):
     """Şifre değişiklik bildirimi gönder"""
     subject = "Şifreniz Değiştirildi - SF Eğitim"
-    html_body = f"""
-    <html>
-    <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0;">SF Eğitim</h1>
-        </div>
-        <div style="padding: 30px; background: #f9f9f9;">
-            <h2 style="color: #333;">Şifreniz Değiştirildi</h2>
-            <p style="color: #666; line-height: 1.6;">
-                Merhaba {user.first_name or 'Değerli Kullanıcı'},<br><br>
-                Hesabınızın şifresi başarıyla değiştirildi.<br><br>
-                <strong>Tarih:</strong> {datetime.utcnow().strftime('%d.%m.%Y %H:%M')}<br>
-                <strong>IP Adresi:</strong> {request.remote_addr if request else 'Bilinmiyor'}
-            </p>
-            <p style="color: #dc3545; font-weight: bold;">
-                Eğer bu işlemi siz yapmadıysanız, lütfen hemen bizimle iletişime geçin!
-            </p>
-        </div>
-    </body>
-    </html>
-    """
+    
+    # Tarih ve IP bilgileri
+    change_date = datetime.utcnow().strftime('%d.%m.%Y %H:%M')
+    ip_address = request.remote_addr if request else 'Bilinmiyor'
+    
+    # Şablonu renderla
+    html_body = render_template('emails/password_changed_notification.html',
+        user=user,
+        change_date=change_date,
+        ip_address=ip_address,
+        profile_url=url_for('profile', _external=True),
+        contact_url=url_for('contact', _external=True),
+        privacy_url=url_for('gizlilik', _external=True),
+        terms_url=url_for('kullanim', _external=True)
+    )
     
     try:
         msg = MailMessage(
             subject=subject,
             recipients=[user.email],
-            html=html_body,
-            sender=app.config.get('MAIL_DEFAULT_SENDER', 'noreply@sf-egitim.com')
+            html=html_body
         )
         mail.send(msg)
         app.logger.info(f"Şifre değişiklik bildirimi gönderildi: {user.email}")
     except Exception as e:
         app.logger.error(f"Şifre değişiklik bildirimi gönderilemedi: {str(e)}")
+        app.logger.warning(f"Şifre değişiklik bildirimi başarısız: {user.email}")
 
 # Email doğrulama route
 @app.route('/verify-email/<token>')
@@ -2196,11 +2265,19 @@ def reset_password_request():
                     
                     reset_url = url_for('reset_password_token', token=token, _external=True)
                     
+                    # Şifre sıfırlama emailini HTML template ile gönder
+                    html_body = render_template('emails/reset_password_email.html',
+                        user=user,
+                        reset_url=reset_url,
+                        contact_url=url_for('contact', _external=True),
+                        privacy_url=url_for('gizlilik', _external=True),
+                        terms_url=url_for('kullanim', _external=True)
+                    )
+                    
                     msg = MailMessage(
                         subject="Şifre Sıfırlama Talebi",
-                        sender="sdsendermail@gmail.com",
                         recipients=[user.email],
-                        body=f"Şifrenizi sıfırlamak için aşağıdaki linke tıklayın:\n{reset_url}\n\nBu bağlantı 1 saat geçerlidir."
+                        html=html_body
                     )
                     
                     mail.send(msg)
@@ -2284,7 +2361,7 @@ def reset_password_token(token):
             except Exception as e:
                 db.session.rollback()
                 app.logger.error(f"Password reset error: {str(e)}")
-                flash('Şifre güncellenirken bir hata oluştu. Lütfen tekrar deneyin.', 'danger')
+                flash('Şifre güncellenirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 'danger')
         
         if form.errors:
             for field, errors in form.errors.items():
@@ -2298,7 +2375,7 @@ def reset_password_token(token):
         app.logger.error(f"Reset password token page error: {str(e)}")
         import traceback
         app.logger.error(traceback.format_exc())
-        flash('Bir hata oluştu. Lütfen tekrar deneyin.', 'danger')
+        flash('Şifre sıfırlama işlemi başarısız. Lütfen daha sonra tekrar deneyiniz.', 'danger')
         return redirect(url_for('reset_password_request'))
 
 
@@ -2460,7 +2537,7 @@ def complete_profile():
                 db.session.rollback()
                 app.logger.error(f"Profile completion error: {str(e)}")
                 app.logger.error(traceback.format_exc())
-                flash('Profil tamamlanırken bir hata oluştu. Lütfen tekrar deneyin.', 'danger')
+                flash('Profil tamamlanırken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 'danger')
                 return redirect(url_for('complete_profile'))
         else:
             # ✅ Form validation hataları
@@ -2932,7 +3009,7 @@ def dashboard():
     except Exception as e:
         app.logger.error(f"Dashboard hatası: {str(e)}")
         app.logger.error(traceback.format_exc())
-        flash('Dashboard yüklenirken bir hata oluştu.', 'error')
+        flash('Dashboard yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 'danger')
         return redirect(url_for('home'))
 
 
@@ -2985,7 +3062,7 @@ def istatistikler():
         )
     except Exception as e:
         app.logger.error(f"İstatistikler sayfası hatası: {str(e)}")
-        flash('İstatistikler yüklenirken bir hata oluştu.', 'error')
+        flash('İstatistikler yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 'danger')
         return render_template(
             'statistics.html',
             overview=None,
@@ -3030,7 +3107,7 @@ def guclendirme_merkezi():
     except Exception as e:
         app.logger.error(f"Güçlendirme merkezi hatası: {str(e)}")
         app.logger.error(traceback.format_exc())
-        flash('Güçlendirme merkezi yüklenirken bir hata oluştu.', 'error')
+        flash('Güçlendirme merkezi yüklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 'danger')
         return redirect(url_for('dashboard'))
     
     
@@ -3177,7 +3254,7 @@ def logout():
     return redirect(url_for('home'))
 
 
-@app.route('/admin/register', methods=['GET', 'POST'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/register', methods=['GET', 'POST'])
 @admin_required  # Sadece adminler yeni admin ekleyebilir
 def admin_register():
     if current_user.is_authenticated and current_user.role != 'admin':
@@ -3198,11 +3275,11 @@ def admin_register():
     return render_template('admin_register.html', form=form, admin_users=admin_users)
 
 
-@app.route('/admin')
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}')
 def admin():
     return render_template('admin.html', title='Admin Paneli')
 
-@app.route('/admin/login', methods=['GET', 'POST'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/login', methods=['GET', 'POST'])
 def admin_login():
     if current_user.is_authenticated:
         return redirect(url_for('admin'))
@@ -3253,7 +3330,7 @@ def admin_logout():
 
 
 
-@app.route('/admin/delete/<int:id>', methods=['POST'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/delete/<int:id>', methods=['POST'])
 @admin_required  # Sadece adminler yeni admin ekleyebilir
 def admin_delete(id):
     admin = User.query.get_or_404(id)
@@ -3268,7 +3345,7 @@ def admin_delete(id):
 
 
 
-@app.route('/admin/edit_admin/<int:id>', methods=['GET', 'POST'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/edit_admin/<int:id>', methods=['GET', 'POST'])
 @admin_required  # Sadece adminler yeni admin ekleyebilir
 def admin_edit(id):
     admin = User.query.get_or_404(id)
@@ -3316,7 +3393,7 @@ def add_konu():
             
     except Exception as e:
         db.session.rollback()
-        flash('Kayıt sırasında bir hata oluştu. Lütfen tekrar deneyin.', 'error')
+        flash('Sınıf eklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 'danger')
         app.logger.error(f'DB Hatası: {str(e)}')
     
     siniflar = Sinif.query.order_by(Sinif.id).all()
@@ -4019,7 +4096,7 @@ def add_soru():
 
                 app.logger.error(f"Question adding error: {str(e)}")
                 app.logger.error(traceback.format_exc())
-                flash('Soru eklenirken bir hata oluştu. Lütfen tekrar deneyin.', 'danger')
+                flash('Soru eklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 'danger')
                 return redirect(request.url)
 
         # ✅ Form validation hataları
@@ -4040,7 +4117,7 @@ def add_soru():
     
     
 
-@app.route('/admin/homepage-slide/add', methods=['GET', 'POST'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/homepage-slide/add', methods=['GET', 'POST'])
 @admin_required
 def add_homepage_slide():
     form = HomepageSlideForm()
@@ -4091,7 +4168,7 @@ def add_homepage_slide():
 
 
 
-@app.route('/admin/homepage-slides')
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/homepage-slides')
 @admin_required
 def list_homepage_slides():
     slides = HomepageSlide.query.order_by(HomepageSlide.order.asc()).all()
@@ -4100,7 +4177,7 @@ def list_homepage_slides():
 
 
 
-@app.route('/admin/homepage-slide/<int:slide_id>/edit', methods=['GET', 'POST'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/homepage-slide/<int:slide_id>/edit', methods=['GET', 'POST'])
 @admin_required
 def edit_homepage_slide(slide_id):
     slide = HomepageSlide.query.get_or_404(slide_id)
@@ -4163,7 +4240,7 @@ def edit_homepage_slide(slide_id):
     return render_template('admin/edit_homepage_slide.html', form=form, slide=slide)
 
 
-@app.route('/admin/homepage-slide/<int:slide_id>/delete', methods=['POST'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/homepage-slide/<int:slide_id>/delete', methods=['POST'])
 @admin_required
 def delete_homepage_slide(slide_id):
     slide = HomepageSlide.query.get_or_404(slide_id)
@@ -4179,7 +4256,7 @@ def delete_homepage_slide(slide_id):
 
 
 
-@app.route('/admin/student/<int:student_id>')
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/student/<int:student_id>')
 @admin_required
 def admin_student_detail(student_id):
     """Admin - Öğrenci Detay Sayfası"""
@@ -4318,7 +4395,7 @@ def admin_student_detail(student_id):
     
 
 
-@app.route('/admin/students/bulk-action', methods=['POST'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/students/bulk-action', methods=['POST'])
 @admin_required
 def admin_students_bulk_action():
     """Admin - Öğrenciler Toplu İşlem"""
@@ -4430,7 +4507,7 @@ def admin_students_bulk_action():
     
 
 
-@app.route('/admin/student/<int:student_id>/edit', methods=['GET', 'POST'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/student/<int:student_id>/edit', methods=['GET', 'POST'])
 @admin_required
 def admin_student_edit(student_id):
     """Admin - Öğrenci Düzenleme"""
@@ -4588,7 +4665,7 @@ def admin_student_edit(student_id):
     
     
 
-@app.route('/admin/student/<int:student_id>/delete', methods=['POST'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/student/<int:student_id>/delete', methods=['POST'])
 @admin_required
 def admin_student_delete(student_id):
     """Admin - Öğrenci Silme"""
@@ -4614,7 +4691,7 @@ def admin_student_delete(student_id):
     
 
     
-@app.route('/admin/provinces', methods=['GET', 'POST'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/provinces', methods=['GET', 'POST'])
 @admin_required
 def admin_provinces():
     """Admin - İl Yönetimi - Güvenli"""
@@ -4684,7 +4761,7 @@ def admin_provinces():
         flash('Sayfa yüklenirken hata oluştu.', 'danger')
         return redirect(url_for('admin'))
 
-@app.route('/admin/province/<int:province_id>/edit', methods=['GET', 'POST'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/province/<int:province_id>/edit', methods=['GET', 'POST'])
 @admin_required
 def admin_province_edit(province_id):
     """Admin - İl Düzenleme - Güvenli"""
@@ -4769,7 +4846,7 @@ def admin_province_edit(province_id):
         flash('Sayfa yüklenirken hata oluştu.', 'danger')
         return redirect(url_for('admin_provinces'))
 
-@app.route('/admin/province/<int:province_id>/delete', methods=['POST'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/province/<int:province_id>/delete', methods=['POST'])
 @admin_required
 def admin_province_delete(province_id):
     """Admin - İl Silme - Güvenli"""
@@ -4824,7 +4901,7 @@ def admin_province_delete(province_id):
 
 
 
-@app.route('/admin/districts', methods=['GET', 'POST'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/districts', methods=['GET', 'POST'])
 @admin_required
 def admin_districts():
     provinces = Province.query.order_by(Province.name).all()
@@ -4850,7 +4927,7 @@ def admin_districts():
         return redirect(url_for('admin_districts', province_id=province_id_form or province_id))
     return render_template('admin_districts.html', districts=districts, provinces=provinces, province_id=province_id, title='İlçe Yönetimi')
 
-@app.route('/admin/district/<int:district_id>/edit', methods=['GET', 'POST'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/district/<int:district_id>/edit', methods=['GET', 'POST'])
 @admin_required
 def admin_district_edit(district_id):
     district = District.query.get_or_404(district_id)
@@ -4877,7 +4954,7 @@ def admin_district_edit(district_id):
                 return redirect(url_for('admin_districts', province_id=province_id_form))
     return render_template('admin_district_edit.html', district=district, provinces=provinces, title='İlçe Düzenle')
 
-@app.route('/admin/district/<int:district_id>/delete', methods=['POST'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/district/<int:district_id>/delete', methods=['POST'])
 @admin_required
 def admin_district_delete(district_id):
     district = District.query.get_or_404(district_id)
@@ -4894,7 +4971,7 @@ def admin_district_delete(district_id):
 
 
 
-@app.route('/admin/schools', methods=['GET', 'POST'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/schools', methods=['GET', 'POST'])
 @admin_required
 def admin_schools():
     provinces = Province.query.order_by(Province.name).all()
@@ -4955,7 +5032,7 @@ def admin_schools():
 
 
 
-@app.route('/admin/school/<int:school_id>/edit', methods=['GET', 'POST'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/school/<int:school_id>/edit', methods=['GET', 'POST'])
 @admin_required
 def admin_school_edit(school_id):
     school = School.query.get_or_404(school_id)
@@ -4985,7 +5062,7 @@ def admin_school_edit(school_id):
                 return redirect(url_for('admin_schools', province_id=school.district.province_id, district_id=school.district_id, school_type_id=school.school_type_id))
     return render_template('admin_school_edit.html', school=school, provinces=provinces, districts=districts, school_types=school_types, title='Okul Düzenle')
 
-@app.route('/admin/school/<int:school_id>/delete', methods=['POST'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/school/<int:school_id>/delete', methods=['POST'])
 @admin_required
 def admin_school_delete(school_id):
     school = School.query.get_or_404(school_id)
@@ -5002,7 +5079,7 @@ def admin_school_delete(school_id):
     return redirect(url_for('admin_schools', province_id=province_id, district_id=district_id, school_type_id=school_type_id)) 
 
   
-@app.route('/admin/students')
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/students')
 @admin_required
 def admin_students():
     """Admin - Öğrenci Listesi"""
@@ -5097,7 +5174,7 @@ def get_icerikler(unite_id):
 
 
 
-@app.route('/admin/sorular', methods=['GET'])
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/sorular', methods=['GET'])
 @login_required
 @admin_required
 def list_sorular():
@@ -5478,7 +5555,7 @@ def edit_soru(id):
                 
                 app.logger.error(f"Question update error: {str(e)}")
                 app.logger.error(traceback.format_exc())
-                flash('Soru güncellenirken bir hata oluştu. Lütfen tekrar deneyin.', 'danger')
+                flash('Soru güncellenirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 'danger')
                 return redirect(url_for('edit_soru', id=id))
 
         # ✅ Form validation hataları
@@ -5746,7 +5823,7 @@ def add_ders_notu():
                 
                 app.logger.error(f"PDF upload error: {str(e)}")
                 app.logger.error(traceback.format_exc())
-                flash('Ders notu eklenirken bir hata oluştu. Lütfen tekrar deneyin.', 'danger')
+                flash('Ders notu eklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 'danger')
                 return redirect(request.url)
 
         # ✅ Form validation hataları
@@ -6034,7 +6111,7 @@ def edit_ders_notu(id):
                 
                 app.logger.error(f"PDF note update error: {str(e)}")
                 app.logger.error(traceback.format_exc())
-                flash('Ders notu güncellenirken bir hata oluştu. Lütfen tekrar deneyin.', 'danger')
+                flash('Ders notu güncellenirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 'danger')
                 return redirect(url_for('edit_ders_notu', id=id))
 
         # ✅ Form validation hataları
@@ -6193,7 +6270,7 @@ def video_ekle():
                 db.session.rollback()
                 app.logger.error(f"Video adding error: {str(e)}")
                 app.logger.error(traceback.format_exc())
-                flash('Video eklenirken bir hata oluştu. Lütfen tekrar deneyin.', 'danger')
+                flash('Video eklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 'danger')
                 return redirect(request.url)
 
         # ✅ Form validation hataları
@@ -6472,7 +6549,7 @@ def edit_video(id):
                 db.session.rollback()
                 app.logger.error(f"Video update error: {str(e)}")
                 app.logger.error(traceback.format_exc())
-                flash('Video güncellenirken bir hata oluştu. Lütfen tekrar deneyin.', 'danger')
+                flash('Video güncellenirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 'danger')
                 return redirect(url_for('edit_video', id=id))
 
         # ✅ Form validation hataları
@@ -6576,7 +6653,7 @@ def delete_ders_notu(id):
 
 # Admin routes bölümünün sonuna ekle:
 
-@app.route('/admin/system/database-health')
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/system/database-health')
 @admin_required  
 def database_health_check():
     """Admin - Database sağlık kontrolü"""
@@ -6642,8 +6719,9 @@ def database_health_check():
         return jsonify({'error': str(e), 'timestamp': datetime.utcnow().isoformat()})
     
     
-@app.route('/admin/settings', methods=['GET', 'POST'])
-@login_required  # Sadece admin erişebilsin
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/settings', methods=['GET', 'POST'])
+@login_required
+@admin_required  # Sadece admin erişebilsin
 def admin_settings():
     # Ayarları veritabanından çek
     mail_sender = Settings.get('MAIL_DEFAULT_SENDER')
@@ -6674,7 +6752,7 @@ def admin_settings():
                            google_client_secret=google_client_secret)  
 
 
-@app.route('/admin/system/performance-test')
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/system/performance-test')
 @admin_required
 def performance_test():
     """Admin - Performance benchmark test"""
@@ -6761,7 +6839,7 @@ def performance_test():
         app.logger.error(f"Performance test error: {str(e)}")
         return jsonify({'error': str(e), 'timestamp': datetime.utcnow().isoformat()})
 
-@app.route('/admin/system/query-stats')
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/system/query-stats')
 @admin_required
 def query_statistics():
     """Admin - Query istatistikleri"""
@@ -6797,7 +6875,7 @@ def query_statistics():
     
     
     
-@app.route('/admin/system/monitor')
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/system/monitor')
 @admin_required
 def admin_system_monitor():
     return render_template('admin_system_monitor.html', title='Sistem İzleme')
@@ -6922,7 +7000,7 @@ def page_not_found(e):
 
 #Internal Server Error
 @app.errorhandler(500)
-def page_not_found(e):
+def internal_server_error(e):
     return render_template("500.html"), 500
 
 @app.errorhandler(403)

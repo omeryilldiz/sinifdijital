@@ -286,21 +286,56 @@
                             <i class="bi bi-shield-check me-2"></i>Yasal Onaylar
                         </h6>
 
-                        <!-- Kullanım Koşulları (KVKK ve Gizlilik dahil) - ZORUNLU -->
+                        <!-- Kullanım Koşulları - ZORUNLU -->
                         <div class="form-check mb-3">
-                            <input type="checkbox" class="form-check-input" id="terms_accepted" name="terms_accepted" required>
+                            {% if form.terms_accepted.errors %}
+                                <input type="checkbox" class="form-check-input is-invalid" id="terms_accepted" name="terms_accepted" required>
+                                <div class="invalid-feedback d-block small">
+                                    {% for error in form.terms_accepted.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <input type="checkbox" class="form-check-input" id="terms_accepted" name="terms_accepted" required>
+                            {% endif %}
                             <label class="form-check-label small" for="terms_accepted">
-                                <a href="{{ url_for('kullanim') }}" target="_blank" class="text-decoration-none fw-bold">Kullanım Koşulları</a>'nı, 
-                                <a href="{{ url_for('gizlilik') }}" target="_blank" class="text-decoration-none">Gizlilik Politikası</a>'nı ve 
-                                <a href="{{ url_for('kvkk') }}" target="_blank" class="text-decoration-none">KVKK Aydınlatma Metni</a>'ni 
+                                <a href="{{ url_for('kullanim') }}" target="_blank" class="text-decoration-none fw-bold">Kullanım Koşulları</a>'nı 
                                 okudum ve kabul ediyorum. <span class="text-danger">*</span>
+                            </label>
+                        </div>
+
+                        <!-- Gizlilik Politikası - ZORUNLU -->
+                        <div class="form-check mb-3">
+                            {% if form.privacy_accepted.errors %}
+                                <input type="checkbox" class="form-check-input is-invalid" id="privacy_accepted" name="privacy_accepted" required>
+                                <div class="invalid-feedback d-block small">
+                                    {% for error in form.privacy_accepted.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <input type="checkbox" class="form-check-input" id="privacy_accepted" name="privacy_accepted" required>
+                            {% endif %}
+                            <label class="form-check-label small" for="privacy_accepted">
+                                <a href="{{ url_for('gizlilik') }}" target="_blank" class="text-decoration-none fw-bold">Gizlilik Politikası</a>'nı ve 
+                                <a href="{{ url_for('kvkk') }}" target="_blank" class="text-decoration-none">KVKK Aydınlatma Metni</a>'ni 
+                                okudum ve kişisel verilerimin işlenmesini kabul ediyorum. <span class="text-danger">*</span>
                             </label>
                         </div>
 
                         <!-- Yaş/Veli Onayı - ZORUNLU -->
                         <div class="form-check mb-3">
-                            <input type="checkbox" class="form-check-input" id="age_consent" name="age_consent" required>
-                            <label class="form-check-label small" for="age_consent">
+                            {% if form.parental_consent.errors %}
+                                <input type="checkbox" class="form-check-input is-invalid" id="parental_consent" name="parental_consent" required>
+                                <div class="invalid-feedback d-block small">
+                                    {% for error in form.parental_consent.errors %}
+                                        {{ error }}
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <input type="checkbox" class="form-check-input" id="parental_consent" name="parental_consent" required>
+                            {% endif %}
+                            <label class="form-check-label small" for="parental_consent">
                                 <strong>18 yaşından büyük olduğumu</strong> veya <strong>velimin/vasimin bilgisi ve izni dahilinde</strong> üye olduğumu beyan ederim. <span class="text-danger">*</span>
                             </label>
                         </div>

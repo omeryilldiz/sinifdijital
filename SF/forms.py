@@ -505,8 +505,25 @@ class ChangePasswordForm(FlaskForm):
     submit = SubmitField('Şifreyi Değiştir')
 
 
-
-
+class ContactForm(FlaskForm):
+    """İletişim formu"""
+    name = StringField('Adınız', validators=[
+        DataRequired(message="Ad gereklidir"),
+        Length(min=2, max=50, message="Ad 2-50 karakter arasında olmalıdır")
+    ])
+    email = StringField('Email Adresiniz', validators=[
+        DataRequired(message="Email gereklidir"),
+        Email(message="Geçerli bir email adresi giriniz")
+    ])
+    subject = StringField('Konu', validators=[
+        DataRequired(message="Konu gereklidir"),
+        Length(min=5, max=100, message="Konu 5-100 karakter arasında olmalıdır")
+    ])
+    message = TextAreaField('Mesajınız', validators=[
+        DataRequired(message="Mesaj gereklidir"),
+        Length(min=10, max=1000, message="Mesaj 10-1000 karakter arasında olmalıdır")
+    ])
+    submit = SubmitField('Gönder')
 
 
 

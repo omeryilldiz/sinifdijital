@@ -1,0 +1,405 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="container py-5" style="animation: fadeIn 1s ease-out;">
+    <!-- Sayfa Başlığı -->
+    <div class="row mb-5">
+        <div class="col-lg-10 mx-auto text-center">
+            <h1 class="display-4 fw-bold mb-3" style="animation: slideInDown 0.8s ease-out;">
+                <span style="color: #00457C;">Nasıl Çalışır?</span>
+            </h1>
+            <p class="lead text-muted mb-3" style="animation: slideInUp 0.8s ease-out 0.2s both;">Sınıf Dijital platformunu nasıl kullanacağını adım adım öğren.</p>
+            <div class="progress-bar-container" style="animation: slideInUp 0.8s ease-out 0.4s both;">
+                <div class="progress" style="height: 8px; background: #e9ecef; border-radius: 4px;">
+                    <div class="progress-bar" style="width: 100%; background: linear-gradient(90deg, #00457C 0%, #00A5AD 100%); border-radius: 4px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Adım 1 -->
+    <div class="row mb-5 align-items-center step-card" data-step="1">
+        <div class="col-lg-5 mb-4 mb-lg-0">
+            <div class="step-number" style="background: linear-gradient(135deg, #00457C 0%, #00A5AD 100%); border-radius: 15px; padding: 60px 30px; text-align: center; color: white; box-shadow: 0 10px 30px rgba(0,69,124,0.3); transition: transform 0.3s ease;">
+                <h1 style="font-size: 48px; margin: 0; font-weight: bold;">1</h1>
+                <p style="margin: 10px 0; font-size: 18px;">Kayıt Ol</p>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <h3 class="fw-bold mb-3">
+                <span style="color: #00457C;">Hesap Oluştur</span>
+            </h3>
+            <p class="text-muted mb-3">
+                Sınıf Dijital'e hoş geldin! İlk olarak <strong>Kayıt Ol</strong> butonuna tıklayarak 
+                basit bir form doldur. Email adresini doğrula ve hesabın hazır olacak.
+            </p>
+            <ul class="text-muted feature-list">
+                <li>Hızlı ve kolay kayıt süreci</li>
+                <li>Email ile güvenli onay</li>
+                <li>Tamamen ücretsiz</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Adım 2 -->
+    <div class="row mb-5 align-items-center step-card" data-step="2">
+        <div class="col-lg-5 mb-4 mb-lg-0">
+            <div class="step-number" style="background: linear-gradient(135deg, #00A5AD 0%, #00457C 100%); border-radius: 15px; padding: 60px 30px; text-align: center; color: white; box-shadow: 0 10px 30px rgba(0,165,173,0.3); transition: transform 0.3s ease;">
+                <h1 style="font-size: 48px; margin: 0; font-weight: bold;">2</h1>
+                <p style="margin: 10px 0; font-size: 18px;">Profili Tamamla</p>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <h3 class="fw-bold mb-3">
+                <span style="color: #00A5AD;">Profilini Tamamla</span>
+            </h3>
+            <p class="text-muted mb-3">
+                Giriş yaptıktan sonra profilini tamamla. Adın, soyadın, sınıfın ve okulunu seçerek 
+                sisteme katıl. Bu bilgiler senin ilerleme raporlarını kişiselleştirmek için kullanılacak.
+            </p>
+            <ul class="text-muted feature-list">
+                <li>Sınıf seçimi (5-12. Sınıf, LGS, TYT, AYT)</li>
+                <li>Okul seçimi</li>
+                <li>Kişisel bilgiler</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Adım 3 -->
+    <div class="row mb-5 align-items-center step-card" data-step="3">
+        <div class="col-lg-5 mb-4 mb-lg-0">
+            <div class="step-number" style="background: linear-gradient(135deg, #00457C 0%, #00A5AD 100%); border-radius: 15px; padding: 60px 30px; text-align: center; color: white; box-shadow: 0 10px 30px rgba(0,69,124,0.3); transition: transform 0.3s ease;">
+                <h1 style="font-size: 48px; margin: 0; font-weight: bold;">3</h1>
+                <p style="margin: 10px 0; font-size: 18px;">Dersler Seç</p>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <h3 class="fw-bold mb-3">
+                <span style="color: #00457C;">İçerik Keşfet</span>
+            </h3>
+            <p class="text-muted mb-3">
+                Sınıfına uygun dersleri ve konuları seç. Tüm dersler, üniteler ve içerikler 
+                yapılandırılmış bir şekilde sıralanmıştır. İstediğin herhangi bir dersten başlayabilirsin.
+            </p>
+            <ul class="text-muted feature-list">
+                <li>Tüm dersleri ve konuları görüntüle</li>
+                <li>Kendi hızında ilerle</li>
+                <li>İstediğin zaman başla, durakla, devam et</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Adım 4 -->
+    <div class="row mb-5 align-items-center step-card" data-step="4">
+        <div class="col-lg-5 mb-4 mb-lg-0">
+            <div class="step-number" style="background: linear-gradient(135deg, #00A5AD 0%, #00457C 100%); border-radius: 15px; padding: 60px 30px; text-align: center; color: white; box-shadow: 0 10px 30px rgba(0,165,173,0.3); transition: transform 0.3s ease;">
+                <h1 style="font-size: 48px; margin: 0; font-weight: bold;">4</h1>
+                <p style="margin: 10px 0; font-size: 18px;">Video İzle</p>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <h3 class="fw-bold mb-3">
+                <span style="color: #00A5AD;">Video Dersleri İzle</span>
+            </h3>
+            <p class="text-muted mb-3">
+                Her konuya ait ayrıntılı video dersleri izle. Videolar anlaşılması kolay şekilde hazırlanmıştır 
+                ve gerekirse birden fazla kez izleyebilirsin. Notlar alabilir ve ders notlarını kaydedebilirsin.
+            </p>
+            <ul class="text-muted feature-list">
+                <li>HD kalitede video dersler</li>
+                <li>Ders notlarını indir</li>
+                <li>İllüstrasyonlar ve grafikler</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Adım 5 -->
+    <div class="row mb-5 align-items-center step-card" data-step="5">
+        <div class="col-lg-5 mb-4 mb-lg-0">
+            <div class="step-number" style="background: linear-gradient(135deg, #00457C 0%, #00A5AD 100%); border-radius: 15px; padding: 60px 30px; text-align: center; color: white; box-shadow: 0 10px 30px rgba(0,69,124,0.3); transition: transform 0.3s ease;">
+                <h1 style="font-size: 48px; margin: 0; font-weight: bold;">5</h1>
+                <p style="margin: 10px 0; font-size: 18px;">Sorular Çöz</p>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <h3 class="fw-bold mb-3">
+                <span style="color: #00457C;">Pratik Yap</span>
+            </h3>
+            <p class="text-muted mb-3">
+                Her konu sonrasında sorular çözerek öğrendiklerini pekiştir. Çeşitli zorluk seviyelerinde 
+                sorular var. Yanılışlarını tekrar çöz ve başarı oranını artır.
+            </p>
+            <ul class="text-muted feature-list">
+                <li>Yüzlerce soru ve alıştırma</li>
+                <li>Anlık doğru/yanlış kontrol</li>
+                <li>Çözüm videolarını izle</li>
+                <li>Yanlış soruları tekrar pratik yap</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Adım 6 -->
+    <div class="row mb-5 align-items-center step-card" data-step="6">
+        <div class="col-lg-5 mb-4 mb-lg-0">
+            <div class="step-number" style="background: linear-gradient(135deg, #00A5AD 0%, #00457C 100%); border-radius: 15px; padding: 60px 30px; text-align: center; color: white; box-shadow: 0 10px 30px rgba(0,165,173,0.3); transition: transform 0.3s ease;">
+                <h1 style="font-size: 48px; margin: 0; font-weight: bold;">6</h1>
+                <p style="margin: 10px 0; font-size: 18px;">Takip Et</p>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <h3 class="fw-bold mb-3">
+                <span style="color: #00A5AD;">İstatistikleri Takip Et</span>
+            </h3>
+            <p class="text-muted mb-3">
+                Detaylı ilerleme raporlarında senin başarı oranını, harcadığın zamanı ve öğrenme patikanı görebilirsin. 
+                Grafikleri inceleyerek zayıf olduğun alanları belirle ve o alanlara daha fazla zaman ayır.
+            </p>
+            <ul class="text-muted feature-list">
+                <li>Başarı oranları ve grafikler</li>
+                <li>Harcanan zaman raporları</li>
+                <li>Ders bazında ilerleme</li>
+                <li>Zayıf alanlar raporu</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Adım 7 -->
+    <div class="row mb-5 align-items-center step-card" data-step="7">
+        <div class="col-lg-5 mb-4 mb-lg-0">
+            <div class="step-number" style="background: linear-gradient(135deg, #00457C 0%, #00A5AD 100%); border-radius: 15px; padding: 60px 30px; text-align: center; color: white; box-shadow: 0 10px 30px rgba(0,69,124,0.3); transition: transform 0.3s ease;">
+                <h1 style="font-size: 48px; margin: 0; font-weight: bold;">7</h1>
+                <p style="margin: 10px 0; font-size: 18px;">Yarış ve Başarı</p>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <h3 class="fw-bold mb-3">
+                <span style="color: #00457C;">Leaderboard'da Yerini Al</span>
+            </h3>
+            <p class="text-muted mb-3">
+                Sınıf ve okul bazındaki yarışmalara katıl! Başarıya göre puan kazanarak sıralamada yükselişini takip et. 
+                Haftalık ve aylık leaderboardlarda yer alan en başarılı öğrencileri görebilirsin.
+            </p>
+            <ul class="text-muted feature-list">
+                <li>Sınıf bazında yarışma</li>
+                <li>Okul bazında yarışma</li>
+                <li>Haftasonu ve aylık ödüller</li>
+                <li>Başarı rozetleri</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Başlıca Özellikler -->
+    <div class="row my-5">
+        <div class="col-lg-10 mx-auto">
+            <h2 class="fw-bold mb-4 text-center">
+                <span style="color: #00457C;">Başlıca Özellikler</span>
+            </h2>
+            
+            <div class="row g-4">
+                <div class="col-md-6 mb-3">
+                    <div class="feature-card d-flex p-3 rounded-3 shadow-sm" style="transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                        <div style="flex-shrink: 0;">
+                            <div class="feature-icon" style="display: flex; align-items: center; justify-content: center; width: 60px; height: 60px; background: linear-gradient(135deg, #00457C 0%, #00A5AD 100%); border-radius: 50%; color: white; transition: transform 0.3s ease;">
+                                <i class="fas fa-play-circle" style="font-size: 24px;"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="fw-bold mb-1">Video Dersler</h5>
+                            <p class="text-muted small">Kapsamlı ve anlaşılması kolay video dersleri</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <div class="feature-card d-flex p-3 rounded-3 shadow-sm" style="transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                        <div style="flex-shrink: 0;">
+                            <div class="feature-icon" style="display: flex; align-items: center; justify-content: center; width: 60px; height: 60px; background: linear-gradient(135deg, #00457C 0%, #00A5AD 100%); border-radius: 50%; color: white; transition: transform 0.3s ease;">
+                                <i class="fas fa-question-circle" style="font-size: 24px;"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="fw-bold mb-1">1000+ Soru</h5>
+                            <p class="text-muted small">Farklı zorluk seviyelerinde sorular</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <div class="feature-card d-flex p-3 rounded-3 shadow-sm" style="transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                        <div style="flex-shrink: 0;">
+                            <div class="feature-icon" style="display: flex; align-items: center; justify-content: center; width: 60px; height: 60px; background: linear-gradient(135deg, #00457C 0%, #00A5AD 100%); border-radius: 50%; color: white; transition: transform 0.3s ease;">
+                                <i class="fas fa-chart-bar" style="font-size: 24px;"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="fw-bold mb-1">Detaylı Raporlar</h5>
+                            <p class="text-muted small">İstatistikler ve ilerleme takibi</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <div class="feature-card d-flex p-3 rounded-3 shadow-sm" style="transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                        <div style="flex-shrink: 0;">
+                            <div class="feature-icon" style="display: flex; align-items: center; justify-content: center; width: 60px; height: 60px; background: linear-gradient(135deg, #00457C 0%, #00A5AD 100%); border-radius: 50%; color: white; transition: transform 0.3s ease;">
+                                <i class="fas fa-trophy" style="font-size: 24px;"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="fw-bold mb-1">Leaderboards</h5>
+                            <p class="text-muted small">Sınıf ve okul bazında sıralamalar</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <div class="feature-card d-flex p-3 rounded-3 shadow-sm" style="transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                        <div style="flex-shrink: 0;">
+                            <div class="feature-icon" style="display: flex; align-items: center; justify-content: center; width: 60px; height: 60px; background: linear-gradient(135deg, #00457C 0%, #00A5AD 100%); border-radius: 50%; color: white; transition: transform 0.3s ease;">
+                                <i class="fas fa-mobile-alt" style="font-size: 24px;"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="fw-bold mb-1">Mobil Uyumlu</h5>
+                            <p class="text-muted small">Herhangi bir cihazdan erişebilirsin</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 mb-3">
+                    <div class="feature-card d-flex p-3 rounded-3 shadow-sm" style="transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                        <div style="flex-shrink: 0;">
+                            <div class="feature-icon" style="display: flex; align-items: center; justify-content: center; width: 60px; height: 60px; background: linear-gradient(135deg, #00457C 0%, #00A5AD 100%); border-radius: 50%; color: white; transition: transform 0.3s ease;">
+                                <i class="fas fa-lock" style="font-size: 24px;"></i>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <h5 class="fw-bold mb-1">100% Güvenli</h5>
+                            <p class="text-muted small">Bilgilerinin gizliliği korunur</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CTA Bölümü -->
+    <div class="row mt-5">
+        <div class="col-lg-10 mx-auto text-center py-5 cta-section" style="background: linear-gradient(135deg, #E8F4F8 0%, #F0F8FA 100%); border-radius: 15px; box-shadow: 0 15px 35px rgba(0,0,0,0.1); transition: transform 0.3s ease;">
+            <h2 class="fw-bold mb-3">
+                <span style="color: #00457C;">Başlamaya Hazır Mısın?</span>
+            </h2>
+            <p class="lead text-muted mb-4">
+                Şimdi kaydol ve öğrenmeye başla! Sınıf Dijital ile hızlı bir şekilde ilerleme görürsün.
+            </p>
+            {% if not current_user.is_authenticated %}
+                <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg me-2 cta-btn" style="background: linear-gradient(135deg, #00457C 0%, #00A5AD 100%); border: none; padding: 12px 30px; border-radius: 25px; font-weight: bold; transition: transform 0.3s ease, box-shadow 0.3s ease;">Kayıt Ol</a>
+                <a href="{{ url_for('login') }}" class="btn btn-outline-primary btn-lg cta-btn" style="border-color: #00457C; color: #00457C; padding: 12px 30px; border-radius: 25px; font-weight: bold; transition: all 0.3s ease;">Giriş Yap</a>
+            {% else %}
+                <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg cta-btn" style="background: linear-gradient(135deg, #00457C 0%, #00A5AD 100%); border: none; padding: 12px 30px; border-radius: 25px; font-weight: bold; transition: transform 0.3s ease, box-shadow 0.3s ease;">Paneline Git</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .text-muted ul {
+        list-style: none;
+        padding: 0;
+    }
+    .text-muted ul li {
+        padding-left: 25px;
+        position: relative;
+        margin-bottom: 8px;
+    }
+    .text-muted ul li:before {
+        content: "✓";
+        position: absolute;
+        left: 0;
+        color: #00A5AD;
+        font-weight: bold;
+        font-size: 16px;
+    }
+
+    .step-card:hover .step-number {
+        transform: scale(1.05);
+        box-shadow: 0 15px 40px rgba(0,69,124,0.4) !important;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important;
+    }
+
+    .feature-card:hover .feature-icon {
+        transform: scale(1.1);
+    }
+
+    .cta-section:hover {
+        transform: translateY(-3px);
+    }
+
+    .cta-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,69,124,0.3) !important;
+    }
+
+    .step-number {
+        animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+        100% { transform: scale(1); }
+    }
+
+    .feature-list li {
+        animation: fadeInUp 0.6s ease-out forwards;
+        opacity: 0;
+    }
+
+    .feature-list li:nth-child(1) { animation-delay: 0.1s; }
+    .feature-list li:nth-child(2) { animation-delay: 0.2s; }
+    .feature-list li:nth-child(3) { animation-delay: 0.3s; }
+    .feature-list li:nth-child(4) { animation-delay: 0.4s; }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    @keyframes slideInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
+{% endblock %}

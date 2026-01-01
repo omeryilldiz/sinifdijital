@@ -42,27 +42,6 @@
         </div>
       </div>
 
-      <!-- Ders Notları -->
-      {% if ders_notlari %}
-      <div class="pdf-section">
-        <h3>Ders Notları</h3>
-        <div class="pdf-grid">
-          {% for ders_notu in ders_notlari %}
-          <a href="{{ url_for('static', filename='pdf_uploads/' ~ ders_notu.dosya_adi) }}" target="_blank"
-             class="pdf-item text-decoration-none">
-            <div class="d-flex align-items-center">
-              <i class="bi bi-file-pdf text-danger fs-4 me-2"></i>
-              <div>
-                <div class="fw-medium text-dark">{{ ders_notu.baslik }}</div>
-                <small class="text-muted">{{ ders_notu.eklenme_tarihi.strftime('%d.%m.%Y') }}</small>
-              </div>
-            </div>
-          </a>
-          {% endfor %}
-        </div>
-      </div>
-      {% endif %}
-
       <!-- İçerik Gövdesi -->
       <div class="content-body mt-4" id="content-body">
         {{ icerik.icerik | safe }}
@@ -115,6 +94,27 @@
           </div>
         </div>
       </div>
+
+      <!-- Ders Notları (EN ALTA) -->
+      {% if ders_notlari %}
+      <div class="pdf-section mt-4">
+        <h3>Ders Notları</h3>
+        <div class="pdf-grid">
+          {% for ders_notu in ders_notlari %}
+          <a href="{{ url_for('static', filename='pdf_uploads/' ~ ders_notu.dosya_adi) }}" target="_blank"
+             class="pdf-item text-decoration-none">
+            <div class="d-flex align-items-center">
+              <i class="bi bi-file-pdf text-danger fs-4 me-2"></i>
+              <div>
+                <div class="fw-medium text-dark">{{ ders_notu.baslik }}</div>
+                <small class="text-muted">{{ ders_notu.eklenme_tarihi.strftime('%d.%m.%Y') }}</small>
+              </div>
+            </div>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
 
       <!-- Pagination Alt -->
       <div class="pagination-container mt-5">
