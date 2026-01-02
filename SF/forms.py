@@ -22,14 +22,25 @@ def validate_password_strength(form, field):
         raise ValidationError("Bu şifre çok yaygın. Lütfen daha güçlü bir şifre seçin.")
 
 class LoginForm(FlaskForm):
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('Şifre', validators=[DataRequired()])
+    email = StringField('Email', validators=[
+        DataRequired(message='Email gereklidir'),
+        Email(message='Geçerli bir email adresi girin')
+    ])
+    password = PasswordField('Şifre', validators=[
+        DataRequired(message='Şifre gereklidir')
+    ])
     remember_me = BooleanField('Beni Hatırla')
     submit = SubmitField('Giriş Yap')
 
 class RegistrationForm(FlaskForm):
-    username = StringField('Kullanıcı Adı', validators=[DataRequired(), Length(min=2, max=20)])
-    email = StringField('Email', validators=[DataRequired(), Email()])
+    username = StringField('Kullanıcı Adı', validators=[
+        DataRequired(message='Kullanıcı adı gereklidir'),
+        Length(min=2, max=20, message='Kullanıcı adı 2-20 karakter arasında olmalıdır')
+    ])
+    email = StringField('Email', validators=[
+        DataRequired(message='Email gereklidir'),
+        Email(message='Geçerli bir email adresi girin')
+    ])
     password = PasswordField('Şifre', validators=[
         DataRequired(message="Şifre gereklidir"),
         # Şifre gücü kontrolü için yardımcı fonksiyon
@@ -62,13 +73,15 @@ class RegistrationForm(FlaskForm):
 
 
 class PasswordResetRequestForm(FlaskForm):
-    email = StringField('E-posta', validators=[DataRequired(), Email()])
+    email = StringField('E-posta', validators=[
+        DataRequired(message='Email gereklidir'),
+        Email(message='Geçerli bir email adresi girin')
+    ])
     submit = SubmitField('Sıfırlama Linki Gönder')
 
-    def validate_email(self, email):
-        user = User.query.filter_by(email=email.data).first()
-        if not user:  # Kullanıcı YOKSA hata ver
-            raise ValidationError('Bu e-posta adresiyle kayıtlı bir hesap bulunamadı.')
+    # ✅ GÜVENLİK: Email enumeration saldırılarını önlemek için
+    # validate_email metodu kaldırıldı. Kullanıcı var olup olmadığı
+    # kontrol edilmez. Her durumda aynı mesaj gösterilir.
         
 class PasswordResetForm(FlaskForm):
     password = PasswordField('Yeni Şifre', validators=[
@@ -83,16 +96,32 @@ class PasswordResetForm(FlaskForm):
     submit = SubmitField('Şifreyi Güncelle')
 
 class AdminLoginForm(FlaskForm):
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('Şifre', validators=[DataRequired()])
+    email = StringField('Email', validators=[
+        DataRequired(message='Email gereklidir'),
+        Email(message='Geçerli bir email adresi girin')
+    ])
+    password = PasswordField('Şifre', validators=[
+        DataRequired(message='Şifre gereklidir')
+    ])
     remember_me = BooleanField('Beni Hatırla')
     submit = SubmitField('Giriş Yap')
 
 class AdminRegisterForm(FlaskForm):
-    username = StringField('Kullanıcı Adı', validators=[DataRequired(), Length(min=2, max=20)])
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('Şifre', validators=[DataRequired()])
-    confirm_password = PasswordField('Şifre Tekrar', validators=[DataRequired(), EqualTo('password')])
+    username = StringField('Kullanıcı Adı', validators=[
+        DataRequired(message='Kullanıcı adı gereklidir'),
+        Length(min=2, max=20, message='Kullanıcı adı 2-20 karakter arasında olmalıdır')
+    ])
+    email = StringField('Email', validators=[
+        DataRequired(message='Email gereklidir'),
+        Email(message='Geçerli bir email adresi girin')
+    ])
+    password = PasswordField('Şifre', validators=[
+        DataRequired(message='Şifre gereklidir')
+    ])
+    confirm_password = PasswordField('Şifre Tekrar', validators=[
+        DataRequired(message='Şifre tekrarı gereklidir'),
+        EqualTo('password', message='Şifreler eşleşmiyor')
+    ])
     submit = SubmitField('Kayıt Ol')
 
     def validate_username(self, username):
@@ -106,97 +135,204 @@ class AdminRegisterForm(FlaskForm):
             raise ValidationError('Bu email adresi zaten kullanılıyor. Lütfen farklı bir email adresi girin.')
 
 class AdminEditForm(FlaskForm):
-    username = StringField('Kullanıcı Adı', validators=[DataRequired(), Length(min=2, max=20)])
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('Şifre', validators=[DataRequired()])
-    confirm_password = PasswordField('Şifre Tekrar', validators=[DataRequired(), EqualTo('password')])
+    username = StringField('Kullanıcı Adı', validators=[
+        DataRequired(message='Kullanıcı adı gereklidir'),
+        Length(min=2, max=20, message='Kullanıcı adı 2-20 karakter arasında olmalıdır')
+    ])
+    email = StringField('Email', validators=[
+        DataRequired(message='Email gereklidir'),
+        Email(message='Geçerli bir email adresi girin')
+    ])
+    password = PasswordField('Şifre', validators=[
+        DataRequired(message='Şifre gereklidir')
+    ])
+    confirm_password = PasswordField('Şifre Tekrar', validators=[
+        DataRequired(message='Şifre tekrarı gereklidir'),
+        EqualTo('password', message='Şifreler eşleşmiyor')
+    ])
     submit = SubmitField('Güncelle')
 
 class SinifForm(FlaskForm):
-    sinif = StringField('Sınıf Adı', validators=[DataRequired()])
+    sinif = StringField('Sınıf Adı', validators=[
+        DataRequired(message='Sınıf adı gereklidir')
+    ])
     submit = SubmitField('Kaydet')
 
 class DersForm(FlaskForm):
-    ders = StringField('Ders Adı', validators=[DataRequired()])
+    ders = StringField('Ders Adı', validators=[
+        DataRequired(message='Ders adı gereklidir')
+    ])
     submit = SubmitField('Kaydet')
 
 class UniteForm(FlaskForm):
-    unite = StringField('Ünite Adı', validators=[DataRequired()])
+    unite = StringField('Ünite Adı', validators=[
+        DataRequired(message='Ünite adı gereklidir')
+    ])
     submit = SubmitField('Kaydet')
 
 class IcerikForm(FlaskForm):
-    baslik = StringField('Başlık', validators=[DataRequired()])
-    icerik = TextAreaField('İçerik', validators=[DataRequired()])
+    baslik = StringField('Başlık', validators=[
+        DataRequired(message='Başlık gereklidir')
+    ])
+    icerik = TextAreaField('İçerik', validators=[
+        DataRequired(message='İçerik gereklidir')
+    ])
     submit = SubmitField('Kaydet')
 
 class SoruEkleForm(FlaskForm):
-    sinif = SelectField('Sınıf', coerce=int, validators=[DataRequired()])
-    ders = SelectField('Ders', coerce=int, validators=[DataRequired()])
-    unite = SelectField('Ünite', coerce=int, validators=[DataRequired()])
-    icerik = SelectField('İçerik', coerce=int, validators=[DataRequired()])
-    soru = FileField('Soru Resmi', validators=[DataRequired()])
-    cevap = SelectField('Doğru Cevap', choices=[('A', 'A'), ('B', 'B'), ('C', 'C'), ('D', 'D'), ('E', 'E')], validators=[DataRequired()])
+    sinif = SelectField('Sınıf', coerce=int, validators=[
+        DataRequired(message='Sınıf seçimi gereklidir')
+    ])
+    ders = SelectField('Ders', coerce=int, validators=[
+        DataRequired(message='Ders seçimi gereklidir')
+    ])
+    unite = SelectField('Ünite', coerce=int, validators=[
+        DataRequired(message='Ünite seçimi gereklidir')
+    ])
+    icerik = SelectField('İçerik', coerce=int, validators=[
+        DataRequired(message='İçerik seçimi gereklidir')
+    ])
+    soru = FileField('Soru Resmi', validators=[
+        DataRequired(message='Soru resmi gereklidir')
+    ])
+    cevap = SelectField('Doğru Cevap', choices=[('A', 'A'), ('B', 'B'), ('C', 'C'), ('D', 'D'), ('E', 'E')], validators=[
+        DataRequired(message='Doğru cevap seçimi gereklidir')
+    ])
     video = FileField('Çözüm Videosu (MP4)', validators=[Optional()])
     cozum_resim = FileField('Çözüm Görseli (WebP)', validators=[Optional()])
     submit = SubmitField('Kaydet')
 
 class SoruEditForm(FlaskForm):
-    sinif = SelectField('Sınıf', coerce=int, validators=[DataRequired()])
-    ders = SelectField('Ders', coerce=int, validators=[DataRequired()])
-    unite = SelectField('Ünite', coerce=int, validators=[DataRequired()])
-    icerik = SelectField('İçerik', coerce=int, validators=[DataRequired()])
+    sinif = SelectField('Sınıf', coerce=int, validators=[
+        DataRequired(message='Sınıf seçimi gereklidir')
+    ])
+    ders = SelectField('Ders', coerce=int, validators=[
+        DataRequired(message='Ders seçimi gereklidir')
+    ])
+    unite = SelectField('Ünite', coerce=int, validators=[
+        DataRequired(message='Ünite seçimi gereklidir')
+    ])
+    icerik = SelectField('İçerik', coerce=int, validators=[
+        DataRequired(message='İçerik seçimi gereklidir')
+    ])
     soru = FileField('Soru Resmi (Değiştirmek istiyorsanız)')
-    cevap = SelectField('Doğru Cevap', choices=[('A', 'A'), ('B', 'B'), ('C', 'C'), ('D', 'D'), ('E', 'E')], validators=[DataRequired()])
+    cevap = SelectField('Doğru Cevap', choices=[('A', 'A'), ('B', 'B'), ('C', 'C'), ('D', 'D'), ('E', 'E')], validators=[
+        DataRequired(message='Doğru cevap seçimi gereklidir')
+    ])
     video = FileField('Çözüm Videosu (Değiştirmek istiyorsanız)')
     cozum_resim = FileField('Çözüm Görseli (Değiştirmek istiyorsanız)')
     submit = SubmitField('Güncelle')
 
 class DersNotuForm(FlaskForm):
-    sinif = SelectField('Sınıf', coerce=int, validators=[DataRequired()])
-    ders = SelectField('Ders', coerce=int, validators=[DataRequired()])
-    unite = SelectField('Ünite', coerce=int, validators=[DataRequired()])
-    icerik = SelectField('İçerik', coerce=int, validators=[DataRequired()])
-    baslik = StringField('Başlık', validators=[DataRequired()])
-    pdf = FileField('PDF Dosyası', validators=[DataRequired()])
+    sinif = SelectField('Sınıf', coerce=int, validators=[
+        DataRequired(message='Sınıf seçimi gereklidir')
+    ])
+    ders = SelectField('Ders', coerce=int, validators=[
+        DataRequired(message='Ders seçimi gereklidir')
+    ])
+    unite = SelectField('Ünite', coerce=int, validators=[
+        DataRequired(message='Ünite seçimi gereklidir')
+    ])
+    icerik = SelectField('İçerik', coerce=int, validators=[
+        DataRequired(message='İçerik seçimi gereklidir')
+    ])
+    baslik = StringField('Başlık', validators=[
+        DataRequired(message='Başlık gereklidir')
+    ])
+    pdf = FileField('PDF Dosyası', validators=[
+        DataRequired(message='PDF dosyası gereklidir')
+    ])
     submit = SubmitField('Yükle')
 
 class DersNotuEditForm(FlaskForm):
-    sinif = SelectField('Sınıf', coerce=int, validators=[DataRequired()])
-    ders = SelectField('Ders', coerce=int, validators=[DataRequired()])
-    unite = SelectField('Ünite', coerce=int, validators=[DataRequired()])
-    icerik = SelectField('İçerik', coerce=int, validators=[DataRequired()])
-    baslik = StringField('Başlık', validators=[DataRequired()])
+    sinif = SelectField('Sınıf', coerce=int, validators=[
+        DataRequired(message='Sınıf seçimi gereklidir')
+    ])
+    ders = SelectField('Ders', coerce=int, validators=[
+        DataRequired(message='Ders seçimi gereklidir')
+    ])
+    unite = SelectField('Ünite', coerce=int, validators=[
+        DataRequired(message='Ünite seçimi gereklidir')
+    ])
+    icerik = SelectField('İçerik', coerce=int, validators=[
+        DataRequired(message='İçerik seçimi gereklidir')
+    ])
+    baslik = StringField('Başlık', validators=[
+        DataRequired(message='Başlık gereklidir')
+    ])
     pdf = FileField('PDF Dosyası (Değiştirmek istiyorsanız)')
     submit = SubmitField('Güncelle')
 
 class VideoForm(FlaskForm):
-    sinif = SelectField('Sınıf', coerce=int, validators=[DataRequired()])
-    ders = SelectField('Ders', coerce=int, validators=[DataRequired()])
-    unite = SelectField('Ünite', coerce=int, validators=[DataRequired()])
-    icerik = SelectField('İçerik', coerce=int, validators=[DataRequired()])
-    video_url = StringField('Video URL', validators=[DataRequired()])
-    video_title = StringField('Video Başlığı', validators=[DataRequired()])
-    sira = IntegerField('Sıra', validators=[DataRequired()], default=1)
+    sinif = SelectField('Sınıf', coerce=int, validators=[
+        DataRequired(message='Sınıf seçimi gereklidir')
+    ])
+    ders = SelectField('Ders', coerce=int, validators=[
+        DataRequired(message='Ders seçimi gereklidir')
+    ])
+    unite = SelectField('Ünite', coerce=int, validators=[
+        DataRequired(message='Ünite seçimi gereklidir')
+    ])
+    icerik = SelectField('İçerik', coerce=int, validators=[
+        DataRequired(message='İçerik seçimi gereklidir')
+    ])
+    video_url = StringField('Video URL', validators=[
+        DataRequired(message='Video URL gereklidir')
+    ])
+    video_title = StringField('Video Başlığı', validators=[
+        DataRequired(message='Video başlığı gereklidir')
+    ])
+    sira = IntegerField('Sıra', validators=[
+        DataRequired(message='Sıra numarası gereklidir')
+    ], default=1)
     submit = SubmitField('Kaydet')
 
 class VideoEditForm(FlaskForm):
-    sinif = SelectField('Sınıf', coerce=int, validators=[DataRequired()])
-    ders = SelectField('Ders', coerce=int, validators=[DataRequired()])
-    unite = SelectField('Ünite', coerce=int, validators=[DataRequired()])
-    icerik = SelectField('İçerik', coerce=int, validators=[DataRequired()])
-    video_url = StringField('Video URL', validators=[DataRequired()])
-    video_title = StringField('Video Başlığı', validators=[DataRequired()])
-    sira = IntegerField('Sıra', validators=[DataRequired()])
+    sinif = SelectField('Sınıf', coerce=int, validators=[
+        DataRequired(message='Sınıf seçimi gereklidir')
+    ])
+    ders = SelectField('Ders', coerce=int, validators=[
+        DataRequired(message='Ders seçimi gereklidir')
+    ])
+    unite = SelectField('Ünite', coerce=int, validators=[
+        DataRequired(message='Ünite seçimi gereklidir')
+    ])
+    icerik = SelectField('İçerik', coerce=int, validators=[
+        DataRequired(message='İçerik seçimi gereklidir')
+    ])
+    video_url = StringField('Video URL', validators=[
+        DataRequired(message='Video URL gereklidir')
+    ])
+    video_title = StringField('Video Başlığı', validators=[
+        DataRequired(message='Video başlığı gereklidir')
+    ])
+    sira = IntegerField('Sıra', validators=[
+        DataRequired(message='Sıra numarası gereklidir')
+    ])
     submit = SubmitField('Güncelle')
 
 
 class CompleteProfileForm(FlaskForm):
-    first_name = StringField('Ad', validators=[DataRequired(), Length(min=2, max=50)])
-    last_name = StringField('Soyad', validators=[DataRequired(), Length(min=2, max=50)])
-    province = SelectField('İl', coerce=int, validators=[DataRequired()])
-    district = SelectField('İlçe', coerce=int, validators=[DataRequired()])
-    school_type = SelectField('Okul Türü', coerce=int, validators=[DataRequired()])
-    school = SelectField('Okul', coerce=int, validators=[DataRequired()])
+    first_name = StringField('Ad', validators=[
+        DataRequired(message='Ad gereklidir'),
+        Length(min=2, max=50, message='Ad 2-50 karakter arasında olmalıdır')
+    ])
+    last_name = StringField('Soyad', validators=[
+        DataRequired(message='Soyad gereklidir'),
+        Length(min=2, max=50, message='Soyad 2-50 karakter arasında olmalıdır')
+    ])
+    province = SelectField('İl', coerce=int, validators=[
+        DataRequired(message='İl seçimi gereklidir')
+    ])
+    district = SelectField('İlçe', coerce=int, validators=[
+        DataRequired(message='İlçe seçimi gereklidir')
+    ])
+    school_type = SelectField('Okul Türü', coerce=int, validators=[
+        DataRequired(message='Okul türü seçimi gereklidir')
+    ])
+    school = SelectField('Okul', coerce=int, validators=[
+        DataRequired(message='Okul seçimi gereklidir')
+    ])
     
     # ✅ YENİ SINIF SEÇENEKLERİ
     class_no = SelectField('Sınıf', choices=[
@@ -216,7 +352,7 @@ class CompleteProfileForm(FlaskForm):
         
         # MEZUN
         ('Mezun', 'Üniversite Hazırlık (TYT + AYT)')
-    ], validators=[DataRequired(message='Sınıf seçimi zorunludur')])
+    ], validators=[DataRequired(message='Sınıf seçimi gereklidir')])
     
     class_name = SelectField('Şube', choices=[
         ('', 'Şube Seçiniz (İsteğe Bağlı)'),
@@ -231,14 +367,34 @@ class CompleteProfileForm(FlaskForm):
     submit = SubmitField('Profili Tamamla')
 
 class ProfileUpdateForm(FlaskForm):
-    first_name = StringField('Ad', validators=[DataRequired(), Length(min=2, max=50)])
-    last_name = StringField('Soyad', validators=[DataRequired(), Length(min=2, max=50)])
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    phone = StringField('Telefon', validators=[Optional(), Length(max=15)])
-    province = SelectField('İl', coerce=int, validators=[DataRequired()])
-    district = SelectField('İlçe', coerce=int, validators=[DataRequired()])
-    school_type = SelectField('Okul Türü', coerce=int, validators=[DataRequired()])
-    school = SelectField('Okul', coerce=int, validators=[DataRequired()])
+    first_name = StringField('Ad', validators=[
+        DataRequired(message='Ad gereklidir'),
+        Length(min=2, max=50, message='Ad 2-50 karakter arasında olmalıdır')
+    ])
+    last_name = StringField('Soyad', validators=[
+        DataRequired(message='Soyad gereklidir'),
+        Length(min=2, max=50, message='Soyad 2-50 karakter arasında olmalıdır')
+    ])
+    email = StringField('Email', validators=[
+        DataRequired(message='Email gereklidir'),
+        Email(message='Geçerli bir email adresi girin')
+    ])
+    phone = StringField('Telefon', validators=[
+        Optional(),
+        Length(max=15, message='Telefon en fazla 15 karakter olabilir')
+    ])
+    province = SelectField('İl', coerce=int, validators=[
+        DataRequired(message='İl seçimi gereklidir')
+    ])
+    district = SelectField('İlçe', coerce=int, validators=[
+        DataRequired(message='İlçe seçimi gereklidir')
+    ])
+    school_type = SelectField('Okul Türü', coerce=int, validators=[
+        DataRequired(message='Okul türü seçimi gereklidir')
+    ])
+    school = SelectField('Okul', coerce=int, validators=[
+        DataRequired(message='Okul seçimi gereklidir')
+    ])
     
     # ✅ YENİ SINIF SEÇENEKLERİ
     class_no = SelectField('Sınıf', choices=[
@@ -258,7 +414,7 @@ class ProfileUpdateForm(FlaskForm):
         
         # MEZUN
         ('Mezun', 'Üniversite Hazırlık (TYT + AYT)')
-    ], validators=[DataRequired(message='Sınıf seçimi zorunludur')])
+    ], validators=[DataRequired(message='Sınıf seçimi gereklidir')])
     
     class_name = SelectField('Şube', choices=[
         ('', 'Şube Seçiniz (İsteğe Bağlı)'),
@@ -349,7 +505,9 @@ def validate_class_selection(class_no, class_name=None):
     return True, "Geçerli seçim"
 
 class HomepageSlideForm(FlaskForm):
-    title = StringField('Başlık', validators=[DataRequired()])
+    title = StringField('Başlık', validators=[
+        DataRequired(message='Başlık gereklidir')
+    ])
     description = TextAreaField('Açıklama', validators=[Optional()])
     image = FileField('Görsel', validators=[Optional()])
     button_text = StringField('Buton Metni', validators=[Optional()])
@@ -379,7 +537,6 @@ class HomepageSlideForm(FlaskForm):
 class StudentSearchForm(FlaskForm):
     search = StringField('Arama', render_kw={'placeholder': 'Ad, soyad, kullanıcı adı veya email ara...'})
     class_filter = SelectField('Sınıf', choices=[('', 'Tüm Sınıflar')], default='')
-    school_filter = SelectField('Okul', choices=[('', 'Tüm Okullar')], validators=[Optional()])
     status_filter = SelectField('Profil Durumu', choices=[
         ('', 'Tümü'),
         ('completed', 'Tamamlanmış'),
@@ -400,7 +557,9 @@ class BulkActionForm(FlaskForm):
         ('reset_password', 'Şifre Sıfırla'),
         ('complete_profile', 'Profil Tamamlanmış İşaretle'),
         ('change_class', 'Sınıf Değiştir')
-    ], validators=[DataRequired()])
+    ], validators=[
+        DataRequired(message='İşlem seçimi gereklidir')
+    ])
     
     new_class = SelectField('Yeni Sınıf', choices=[
         ('', 'Sınıf Seçiniz'),
@@ -422,35 +581,35 @@ class BulkActionForm(FlaskForm):
 
 class AdminStudentEditForm(FlaskForm):
     username = StringField('Kullanıcı Adı', validators=[
-        DataRequired(message='Kullanıcı adı gereklidir.'),
-        Length(min=3, max=20, message='Kullanıcı adı 3-20 karakter olmalıdır.')
+        DataRequired(message='Kullanıcı adı gereklidir'),
+        Length(min=3, max=20, message='Kullanıcı adı 3-20 karakter olmalıdır')
     ])
     
     email = StringField('Email', validators=[
-        DataRequired(message='Email gereklidir.'),
-        Email(message='Geçerli bir email adresi giriniz.')
+        DataRequired(message='Email gereklidir'),
+        Email(message='Geçerli bir email adresi girin')
     ])
     
     first_name = StringField('Ad', validators=[
-        Length(max=50, message='Ad en fazla 50 karakter olabilir.')
+        Length(max=50, message='Ad en fazla 50 karakter olabilir')
     ])
     
     last_name = StringField('Soyad', validators=[
-        Length(max=50, message='Soyad en fazla 50 karakter olabilir.')
+        Length(max=50, message='Soyad en fazla 50 karakter olabilir')
     ])
     
     password = PasswordField('Yeni Şifre (Opsiyonel)', validators=[
         Optional(),
-        Length(min=6, max=100, message='Şifre en az 6 karakter olmalıdır.')
+        Length(min=6, max=100, message='Şifre en az 6 karakter olmalıdır')
     ])
     
     confirm_password = PasswordField('Şifre Tekrar', validators=[
-        EqualTo('password', message='Şifreler uyuşmuyor.')
+        EqualTo('password', message='Şifreler eşleşmiyor')
     ])
     
     class_no = SelectField('Sınıf', choices=[], default='')
     class_name = StringField('Sınıf Adı/Şube', validators=[
-        Length(max=50, message='Sınıf adı en fazla 50 karakter olabilir.')
+        Length(max=50, message='Sınıf adı en fazla 50 karakter olabilir')
     ])
     
     school_id = SelectField('Okul', choices=[], default='')
@@ -513,7 +672,7 @@ class ContactForm(FlaskForm):
     ])
     email = StringField('Email Adresiniz', validators=[
         DataRequired(message="Email gereklidir"),
-        Email(message="Geçerli bir email adresi giriniz")
+        Email(message="Geçerli bir email adresi girin")
     ])
     subject = StringField('Konu', validators=[
         DataRequired(message="Konu gereklidir"),

@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   web:
     image: sf-web:latest
@@ -6,10 +8,16 @@ services:
       # Docker container'lar için host isimleri override et
       DB_HOST: db
       REDIS_HOST: redis
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: sfuser
+      POSTGRES_DB: sfdb
+      REDIS_PORT: 6379
+      REDIS_DB: 0
       SERVER_NAME: www.sinifdijital.com
       PREFERRED_URL_SCHEME: https
       GUNICORN_WORKERS: '1'
-      # 🔐 Admin Panel Security
+      # Admin Panel Security
       ADMIN_URL_PREFIX: '/yonetim-panel-x9k2m'
       EMERGENCY_RECOVERY_PASSWORD: 'ultra-secret-recovery-key-2026-sf'
     # Secrets (e.g. SECRET_KEY) should be provided via Docker Secrets in production.
@@ -26,6 +34,8 @@ services:
     ports:
       - "5000:5000"
     volumes:
+      - ./SF/templates:/app/SF/templates
+      - ./SF/static:/app/SF/static
       - ./SF/static/uploads:/app/SF/static/uploads
       - ./SF/static/soru_uploads:/app/SF/static/soru_uploads
       - ./SF/static/video_uploads:/app/SF/static/video_uploads
@@ -58,6 +68,7 @@ services:
       - "80:80"
       - "443:443"
     volumes:
+      # upstreams.conf removed - upstream already defined in nginx-sf.conf
       - ./deploy/nginx-sf.conf:/etc/nginx/conf.d/default.conf:ro
       - ./SF/static:/app/SF/static:ro
       - /var/www/letsencrypt:/var/www/letsencrypt:ro

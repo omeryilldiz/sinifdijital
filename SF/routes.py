@@ -3,7 +3,7 @@ from SF import app, db, bcrypt, ALLOWED_EXTENSIONS, ALLOWED_PDF_EXTENSIONS, limi
 from flask_wtf.csrf import validate_csrf
 from SF.forms import LoginForm, RegistrationForm, AdminLoginForm, AdminRegisterForm, AdminEditForm, SinifForm, DersForm, UniteForm, IcerikForm, SoruEkleForm, SoruEditForm, DersNotuForm, VideoForm, VideoEditForm, DersNotuEditForm, CompleteProfileForm, ProfileUpdateForm, StudentSearchForm, BulkActionForm, AdminStudentEditForm, PasswordResetRequestForm, PasswordResetForm, HomepageSlideForm, ChangePasswordForm, ContactForm 
 from SF.services.security_service import SecurityService
-from SF.models import User, Sinif, Ders, Unite, Icerik, Soru, DersNotu, VideoIcerik, Province, District, School, SchoolType, UserProgress, ActivityType, Settings, HomepageSlide, create_slug, UserLoginLog, LogActionType
+from SF.models import User, Sinif, Ders, Unite, Icerik, Soru, DersNotu, VideoIcerik, Province, District, School, SchoolType, UserProgress, ActivityType, Settings, HomepageSlide, create_slug, UserLoginLog, LogActionType, UserConsent, ConsentType
 from SF.services.advanced_query_optimizer import AdvancedQueryOptimizer
 from SF.services.performance_monitor import performance_monitor
 from SF.services.query_optimizer import QueryOptimizer
@@ -375,7 +375,7 @@ def test_smtp_api():
                     'message': 'Geçerli bir email adresi gerekli (örn: user@example.com)'
                 }), 400
             
-            app.logger.info(f"SMTP test başlatılıyor: {request.remote_addr} -> {recipient_email}")
+            app.logger.info(f"SMTP test başlatılıyor: {get_client_ip()} -> {recipient_email}")
             
             # Tam SMTP test akışını çalıştır
             result = EmailService.test_email_full_flow(recipient_email)
@@ -1689,23 +1689,64 @@ google_bp = make_google_blueprint(
         "https://www.googleapis.com/auth/userinfo.email",
         "https://www.googleapis.com/auth/userinfo.profile"
     ],
-    redirect_url="/google_login_callback"
+    redirect_to="google_login_callback",
+    redirect_url=None  # Flask-Dance otomatik belirleyecek
 )
 app.register_blueprint(google_bp, url_prefix="/login")
 
 
+# ✅ Google OAuth Test Endpoint
+@app.route("/test-google-config")
+@admin_required
+def test_google_config():
+    """Google OAuth yapılandırmasını test et"""
+    import json
+    config_info = {
+        'GOOGLE_CLIENT_ID': app.config.get('GOOGLE_CLIENT_ID', 'NOT SET')[:20] + '...',
+        'GOOGLE_CLIENT_SECRET': 'SET' if app.config.get('GOOGLE_CLIENT_SECRET') else 'NOT SET',
+        'SERVER_NAME': app.config.get('SERVER_NAME', 'NOT SET'),
+        'PREFERRED_URL_SCHEME': app.config.get('PREFERRED_URL_SCHEME', 'NOT SET'),
+        'FLASK_ENV': os.environ.get('FLASK_ENV', 'NOT SET'),
+        'BASE_URL': app.config.get('BASE_URL', 'NOT SET'),
+        'Google Authorized': google.authorized,
+        'Expected Redirect URL': url_for('google.authorized', _external=True),
+    }
+    return f"<pre>{json.dumps(config_info, indent=2)}</pre>"
+
+
 @app.route("/google_login_callback")
 def google_login_callback():
+    """Google OAuth Callback - Detaylı hata ayıklama ile"""
+    app.logger.info(f"Google callback triggered - authorized: {google.authorized}")
+    
     if not google.authorized:
-        return redirect(url_for("google.login"))
+        app.logger.error("Google authorization failed")
+        flash("Google ile giriş yapılamadı. Lütfen tekrar deneyin.", "danger")
+        return redirect(url_for("register"))
     
-    # Google'dan kullanıcı bilgilerini al
-    resp = google.get("/oauth2/v2/userinfo")
-    user_info = resp.json()
-    email = user_info.get("email")
-    
-    if not email:
-        flash("Google'dan e-posta bilgisi alınamadı.", "danger")
+    try:
+        # Google'dan kullanıcı bilgilerini al
+        app.logger.info("Fetching user info from Google...")
+        resp = google.get("/oauth2/v2/userinfo")
+        
+        if not resp.ok:
+            app.logger.error(f"Google API error: {resp.status_code} - {resp.text}")
+            flash("Google'dan bilgi alınırken hata oluştu.", "danger")
+            return redirect(url_for("register"))
+        
+        user_info = resp.json()
+        app.logger.info(f"Google user info received: {user_info.get('email', 'NO EMAIL')}")
+        
+        email = user_info.get("email")
+        
+        if not email:
+            app.logger.error("No email in Google response")
+            flash("Google'dan e-posta bilgisi alınamadı.", "danger")
+            return redirect(url_for("register"))
+    except Exception as e:
+        app.logger.error(f"Google OAuth error: {str(e)}")
+        app.logger.error(traceback.format_exc())
+        flash("Google ile giriş sırasında bir hata oluştu.", "danger")
         return redirect(url_for("register"))
     
     # Kullanıcı daha önce kayıt olmuş mu?
@@ -1714,9 +1755,19 @@ def google_login_callback():
     if user:
         # Kullanıcı zaten kayıtlı, giriş yap
         login_user(user)
-        flash(f"Hoş geldiniz {user.first_name}! Google hesabınızla giriş yaptınız.", "success")
+        
+        # ✅ Giriş logla
+        log_user_action(
+            user_id=user.id,
+            action_type=LogActionType.LOGIN,
+            success=True,
+            details=f"Google OAuth ile giriş - IP: {get_client_ip()}"
+        )
+        
+        flash(f"Hoş geldiniz {user.first_name or user.username}! Google hesabınızla giriş yaptınız.", "success")
     else:
-        # Yeni kullanıcı oluştur
+        # ✅ YENİ KULLANICI - Yasal onaylar alındı varsayımı
+        # (Frontend'de checkbox kontrolü yapıldı)
         first_name = user_info.get("given_name", "")
         last_name = user_info.get("family_name", "")
         
@@ -1744,14 +1795,24 @@ def google_login_callback():
             role="user",
             is_active=True,
             profile_completed=False,
+            email_verified=True,  # Google email'i zaten doğrulanmış
             date_created=datetime.utcnow()
         )
         
         try:
             db.session.add(user)
             db.session.commit()
+            
+            # ✅ Kayıt logla
+            log_user_action(
+                user_id=user.id,
+                action_type=LogActionType.REGISTER,
+                success=True,
+                details=f"Google OAuth ile kayıt - IP: {get_client_ip()}"
+            )
+            
             login_user(user)
-            flash("Google hesabınızla başarıyla kayıt oldunuz! Lütfen profilinizi tamamlayın.", "success")
+            flash("Google hesabınızla başarıyla kayıt oldunuz! Kullanım koşullarını ve gizlilik politikasını kabul etmiş sayılırsınız. Lütfen profilinizi tamamlayın.", "success")
         except Exception as e:
             db.session.rollback()
             app.logger.error(f"Google ile kayıt hatası: {str(e)}")
@@ -1813,10 +1874,18 @@ def register():
                     
                     # ✅ YENİ: IP ve User Agent bilgilerini al
                     registration_ip = get_client_ip()
+                    user_agent = get_user_agent()
                     
                     # ✅ YENİ: Veli onayı kontrolü (form'da varsa)
                     parental_consent = getattr(form, 'parental_consent', None)
                     parental_consent_value = parental_consent.data if parental_consent else False
+                    
+                    # ✅ Sözleşme onaylarını kontrol et
+                    terms_accepted = getattr(form, 'terms_accepted', None)
+                    privacy_accepted = getattr(form, 'privacy_accepted', None)
+                    
+                    terms_accepted_value = terms_accepted.data if terms_accepted else False
+                    privacy_accepted_value = privacy_accepted.data if privacy_accepted else False
                     
                     # ✅ Güvenli şifre hash'leme
                     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
@@ -1849,6 +1918,52 @@ def register():
                         success=True,
                         details=f"Email: {email[:20]}..."
                     )
+                    
+                    # ✅ YENİ: Sözleşme onaylarını kaydet (KVKK Uyumu)
+                    consent_version = "1.0"  # Şu anki sözleşme versiyonu
+                    
+                    # Kullanım Şartları onayı
+                    if terms_accepted_value:
+                        UserConsent.log_consent(
+                            user_id=user.id,
+                            consent_type=ConsentType.TERMS_OF_USE,
+                            consent_version=consent_version,
+                            ip_address=registration_ip,
+                            user_agent=user_agent,
+                            accepted=True
+                        )
+                    
+                    # Gizlilik Politikası/KVKK onayı
+                    if privacy_accepted_value:
+                        UserConsent.log_consent(
+                            user_id=user.id,
+                            consent_type=ConsentType.PRIVACY_POLICY,
+                            consent_version=consent_version,
+                            ip_address=registration_ip,
+                            user_agent=user_agent,
+                            accepted=True
+                        )
+                        
+                        # KVKK Aydınlatma Metni onayı da kaydet
+                        UserConsent.log_consent(
+                            user_id=user.id,
+                            consent_type=ConsentType.KVKK,
+                            consent_version=consent_version,
+                            ip_address=registration_ip,
+                            user_agent=user_agent,
+                            accepted=True
+                        )
+                    
+                    # Veli onayı ayrı kaydet
+                    if parental_consent_value:
+                        UserConsent.log_consent(
+                            user_id=user.id,
+                            consent_type=ConsentType.PARENTAL_CONSENT,
+                            consent_version=consent_version,
+                            ip_address=registration_ip,
+                            user_agent=user_agent,
+                            accepted=True
+                        )
                     
                     db.session.commit()
                     
@@ -2153,7 +2268,7 @@ def send_password_changed_notification(user):
     
     # Tarih ve IP bilgileri
     change_date = datetime.utcnow().strftime('%d.%m.%Y %H:%M')
-    ip_address = request.remote_addr if request else 'Bilinmiyor'
+    ip_address = get_client_ip() if request else 'Bilinmiyor'
     
     # Şablonu renderla
     html_body = render_template('emails/password_changed_notification.html',
@@ -2245,7 +2360,10 @@ def reset_password_request():
         app.logger.debug(f"POST request to reset_password - data: {request.form}")
         
         if form.validate_on_submit():
-            user = User.query.filter_by(email=form.email.data).first()
+            email = form.email.data
+            user = User.query.filter_by(email=email).first()
+            
+            # ✅ GÜVENLİK: Email enumeration'ı önlemek için her durumda aynı mesaj
             if user:
                 try:
                     token = generate_password_reset_token(user.email)
@@ -2282,13 +2400,12 @@ def reset_password_request():
                     
                     mail.send(msg)
                     app.logger.info(f"Şifre sıfırlama maili gönderildi: {user.email}, IP: {get_client_ip()}")
-                    flash('Şifre sıfırlama linki e-posta adresinize gönderildi.', 'info')
                 except Exception as e:
                     db.session.rollback()
                     app.logger.error(f"Mail gönderme hatası: {str(e)}")
-                    flash('Mail gönderimi başarısız. Lütfen daha sonra tekrar deneyin.', 'danger')
-            else:
-                flash('Eğer bu email adresi kayıtlıysa, şifre sıfırlama linki gönderildi.', 'info')
+            
+            # ✅ Her durumda aynı mesaj (güvenlik için)
+            flash('E-posta adresiniz kayıtlıysa, şifre sıfırlama linki gönderilecektir.', 'info')
             return redirect(url_for('login'))
         else:
             app.logger.error(f"Form doğrulama hatası: {form.errors}")
@@ -3299,17 +3416,17 @@ def admin_login():
             if bcrypt.check_password_hash(user.password, form.password.data):
                 login_user(user, remember=form.remember_me.data)
                 flash('Admin olarak giriş yaptınız!', 'success')
-                app.logger.info(f"Admin login successful - User ID: {user.id}, IP: {request.remote_addr}")
+                app.logger.info(f"Admin login successful - User ID: {user.id}, IP: {get_client_ip()}")
                 
                 # 'next' parametresi varsa oraya, yoksa admin paneline yönlendir
                 next_page = request.args.get('next')
                 return redirect(next_page) if next_page else redirect(url_for('admin'))
             else:
                 flash('Şifre yanlış!', 'danger')
-                app.logger.warning(f"Admin login failed - wrong password, Email: {form.email.data}, IP: {request.remote_addr}")
+                app.logger.warning(f"Admin login failed - wrong password, Email: {form.email.data}, IP: {get_client_ip()}")
         else:
             flash('Bu email adresi ile kayıtlı admin bulunamadı!', 'danger')
-            app.logger.warning(f"Admin login failed - user not found or not admin, Email: {form.email.data}, IP: {request.remote_addr}")
+            app.logger.warning(f"Admin login failed - user not found or not admin, Email: {form.email.data}, IP: {get_client_ip()}")
     elif request.method == 'POST' and form.errors:
         # CSRF token hatası veya diğer form hataları
         app.logger.error(f"Admin login form validation error: {form.errors}")
@@ -4322,6 +4439,16 @@ def admin_student_detail(student_id):
             app.logger.error(f"Login logs error for student {student_id}: {str(e)}")
             login_logs = []
         
+        # ✅ YENİ: Sözleşme Onaylarını Al (KVKK Uyumu)
+        user_consents = []
+        try:
+            user_consents = UserConsent.query.filter_by(user_id=student_id)\
+                .order_by(UserConsent.accepted_at.desc())\
+                .all()
+        except Exception as e:
+            app.logger.error(f"User consents error for student {student_id}: {str(e)}")
+            user_consents = []
+        
         # ✅ YENİ: Log istatistikleri
         log_stats = {
             'total_logs': len(login_logs),
@@ -4329,7 +4456,9 @@ def admin_student_detail(student_id):
             'failed_logins': len([l for l in login_logs if l.action_type == LogActionType.FAILED_LOGIN]),
             'unique_ips': len(set([l.ip_address for l in login_logs if l.ip_address])),
             'last_login': None,
-            'last_login_ip': None
+            'last_login_ip': None,
+            'total_consents': len(user_consents),  # ✅ Sözleşme sayısı
+            'withdrawn_consents': len([c for c in user_consents if c.withdrawn_at])  # ✅ Geri çekilen sözleşmeler
         }
         
         # Son başarılı giriş bilgisi
@@ -4384,6 +4513,8 @@ def admin_student_detail(student_id):
                             leaderboard=student_leaderboard,
                             login_logs=login_logs,  # ✅ YENİ
                             log_stats=log_stats,    # ✅ YENİ
+                            user_consents=user_consents,  # ✅ YENİ: Sözleşme onayları
+                            ConsentType=ConsentType,  # ✅ YENİ: Template'de kullanmak için
                             LogActionType=LogActionType,  # ✅ YENİ: Template'de kullanmak için
                             title=f'Öğrenci Detayı - {student.username}')
                              
@@ -6723,26 +6854,15 @@ def database_health_check():
 @login_required
 @admin_required  # Sadece admin erişebilsin
 def admin_settings():
-    # Ayarları veritabanından çek
-    mail_sender = Settings.get('MAIL_DEFAULT_SENDER')
-    mail_password = Settings.get('MAIL_PASSWORD')
-    google_client_id = Settings.get('GOOGLE_CLIENT_ID')
-    google_client_secret = Settings.get('GOOGLE_CLIENT_SECRET')
+    # Ayarları .env dosyasından çek
+    mail_sender = current_app.config.get('MAIL_DEFAULT_SENDER', '')
+    mail_password = current_app.config.get('MAIL_PASSWORD', '')
+    google_client_id = current_app.config.get('GOOGLE_CLIENT_ID', '')
+    google_client_secret = current_app.config.get('GOOGLE_CLIENT_SECRET', '')
 
     if request.method == 'POST':
-        # Formdan gelen verileri al
-        mail_sender = request.form.get('mail_sender')
-        mail_password = request.form.get('mail_password')
-        google_client_id = request.form.get('google_client_id')
-        google_client_secret = request.form.get('google_client_secret')
-
-        # Ayarları güncelle
-        Settings.set('MAIL_DEFAULT_SENDER', mail_sender)
-        Settings.set('MAIL_PASSWORD', mail_password)
-        Settings.set('GOOGLE_CLIENT_ID', google_client_id)
-        Settings.set('GOOGLE_CLIENT_SECRET', google_client_secret)
-        db.session.commit()
-        flash('Ayarlar başarıyla güncellendi.', 'success')
+        # .env dosyasından okuduğu değerler değiştirilmez - sadece bilgilendirme amaçlı gösterilir
+        flash('Ayarlar .env dosyasından yüklenmiştir. Değişiklikleri yapmak için .env dosyasını düzenleyiniz.', 'info')
         return redirect(url_for('admin_settings'))
 
     return render_template('admin_settings.html',

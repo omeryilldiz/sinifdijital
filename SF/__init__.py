@@ -29,11 +29,21 @@ from flask_caching import Cache
 import redis
 import time
 
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 
 app = Flask(__name__)
 app.config.from_object(Config)  
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=60)
+
+# ✅ ProxyFix: Nginx proxy arkasında gerçek IP adresleri için
+app.wsgi_app = ProxyFix(
+    app.wsgi_app,
+    x_for=1,  # X-Forwarded-For header sayısı
+    x_proto=1,  # X-Forwarded-Proto header sayısı
+    x_host=1,  # X-Forwarded-Host header sayısı
+    x_prefix=0
+)
 
 # Set log level from environment (default to WARNING in production)
 log_level = os.getenv('LOG_LEVEL', 'WARNING')

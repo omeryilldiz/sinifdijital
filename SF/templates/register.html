@@ -364,9 +364,9 @@
 
                 <!-- Google ile Kayıt Butonu -->
                 <div class="mt-4 text-center">
-                    <a href="{{ url_for('google.login') }}" class="btn btn-outline-danger w-100">
+                    <button type="button" id="googleLoginBtn" class="btn btn-outline-danger w-100">
                         <i class="bi bi-google"></i> Google ile Kayıt Ol
-                    </a>
+                    </button>
                 </div>
 
                 <!-- Giriş Linki -->
@@ -451,6 +451,60 @@ document.addEventListener('DOMContentLoaded', function() {
             this.parentElement.classList.remove('shadow-sm');
         });
     });
+    
+    // ✅ Google ile Kayıt Ol - Checkbox Kontrolü
+    const googleLoginBtn = document.getElementById('googleLoginBtn');
+    if (googleLoginBtn) {
+        googleLoginBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Checkbox'ları kontrol et
+            const termsAccepted = document.getElementById('terms_accepted');
+            const privacyAccepted = document.getElementById('privacy_accepted');
+            const parentalConsent = document.getElementById('parental_consent');
+            
+            // Tüm checkbox'ların işaretli olup olmadığını kontrol et
+            if (!termsAccepted.checked) {
+                alert('❌ Lütfen Kullanım Koşulları\'nı kabul ediniz.');
+                termsAccepted.focus();
+                termsAccepted.parentElement.classList.add('border', 'border-danger', 'rounded', 'p-2');
+                setTimeout(() => {
+                    termsAccepted.parentElement.classList.remove('border', 'border-danger', 'rounded', 'p-2');
+                }, 3000);
+                return false;
+            }
+            
+            if (!privacyAccepted.checked) {
+                alert('❌ Lütfen Gizlilik Politikası ve KVKK Aydınlatma Metni\'ni kabul ediniz.');
+                privacyAccepted.focus();
+                privacyAccepted.parentElement.classList.add('border', 'border-danger', 'rounded', 'p-2');
+                setTimeout(() => {
+                    privacyAccepted.parentElement.classList.remove('border', 'border-danger', 'rounded', 'p-2');
+                }, 3000);
+                return false;
+            }
+            
+            if (!parentalConsent.checked) {
+                alert('❌ Lütfen yaş/veli onayını kabul ediniz.');
+                parentalConsent.focus();
+                parentalConsent.parentElement.classList.add('border', 'border-danger', 'rounded', 'p-2');
+                setTimeout(() => {
+                    parentalConsent.parentElement.classList.remove('border', 'border-danger', 'rounded', 'p-2');
+                }, 3000);
+                return false;
+            }
+            
+            // Tüm onaylar verilmişse Google OAuth'a yönlendir
+            console.log('✅ Tüm onaylar verildi, Google\'a yönlendiriliyor...');
+            
+            // Session/Cookie'ye onayları kaydet (backend'de kontrol için)
+            sessionStorage.setItem('legal_consents_accepted', 'true');
+            sessionStorage.setItem('consent_timestamp', new Date().toISOString());
+            
+            // Google OAuth'a yönlendir
+            window.location.href = "{{ url_for('google.login') }}";
+        });
+    }
     
     console.log('✅ Register JavaScript hazır');
 });

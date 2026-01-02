@@ -265,6 +265,83 @@ class LogActionType:
     PASSWORD_CHANGE = 'password_change'
     EMAIL_VERIFY = 'email_verify'
     PROFILE_UPDATE = 'profile_update'
+    CONSENT_GIVEN = 'consent_given'
+    CONSENT_WITHDRAWN = 'consent_withdrawn'
+
+
+class ConsentType:
+    """Sözleşme türleri için sabitler"""
+    KVKK = 'kvkk'
+    PRIVACY_POLICY = 'privacy_policy'
+    TERMS_OF_USE = 'terms_of_use'
+    EXPLICIT_CONSENT = 'explicit_consent'
+    CLARIFICATION_TEXT = 'clarification_text'
+    PARENTAL_CONSENT = 'parental_consent'
+    COMMERCIAL_ELECTRONIC_MESSAGE = 'commercial_electronic_message'
+
+
+class UserConsent(db.Model):
+    """
+    Kullanıcı sözleşme onayları - KVKK/GDPR Uyumu
+    2 yıl boyunca saklanacak, sonra otomatik silinecek
+    """
+    __tablename__ = 'user_consent'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'), nullable=False)
+    
+    # Sözleşme bilgileri
+    consent_type = db.Column(db.String(50), nullable=False)  # ConsentType sabitlerinden
+    consent_version = db.Column(db.String(20), nullable=False)  # '1.0', '2.1', vb
+    consent_text_hash = db.Column(db.String(64), nullable=True)  # SHA-256 hash (opsiyonel)
+    
+    # Onay durumu
+    accepted = db.Column(db.Boolean, nullable=False, default=True)
+    accepted_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    ip_address = db.Column(db.String(45), nullable=False)
+    user_agent = db.Column(db.String(500), nullable=True)
+    
+    # Geri çekilme (isteğe bağlı)
+    withdrawn_at = db.Column(db.DateTime, nullable=True)
+    withdrawn_ip = db.Column(db.String(45), nullable=True)
+    
+    # Kayıt oluşturma zamanı (log temizliği için)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    
+    # İlişki
+    user = db.relationship('User', backref=db.backref('consents', lazy='dynamic', cascade='all, delete-orphan'))
+    
+    # Indexler
+    __table_args__ = (
+        Index('idx_consent_user_type', 'user_id', 'consent_type'),
+        Index('idx_consent_user_date', 'user_id', 'accepted_at'),
+        Index('idx_consent_type', 'consent_type'),
+        Index('idx_consent_created_at', 'created_at'),
+        Index('idx_consent_withdrawn', 'withdrawn_at'),
+    )
+    
+    def __repr__(self):
+        return f"<UserConsent {self.user_id} - {self.consent_type} - {self.accepted_at}>"
+    
+    @staticmethod
+    def log_consent(user_id, consent_type, consent_version, ip_address, user_agent=None, accepted=True, consent_text_hash=None):
+        """Yardımcı metod: Sözleşme onayı kaydı oluştur"""
+        consent = UserConsent(
+            user_id=user_id,
+            consent_type=consent_type,
+            consent_version=consent_version,
+            ip_address=ip_address,
+            user_agent=user_agent[:500] if user_agent and len(user_agent) > 500 else user_agent,
+            accepted=accepted,
+            consent_text_hash=consent_text_hash
+        )
+        db.session.add(consent)
+        return consent
+    
+    def withdraw(self, ip_address):
+        """Onayı geri çek"""
+        self.withdrawn_at = datetime.utcnow()
+        self.withdrawn_ip = ip_address
 
 
 class UserProgress(db.Model):
