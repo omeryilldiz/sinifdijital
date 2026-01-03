@@ -4,7 +4,7 @@ import os
 bind = "0.0.0.0:5000"
 # Allow overriding worker count via env for low-memory containers
 workers = int(os.environ.get('GUNICORN_WORKERS', 2))  # Default 2, override via env
-worker_class = "gevent"  # Async worker for better concurrency
+worker_class = "sync"  # Changed from gevent to sync due to missing zope.event dependency
 worker_connections = 1000
 max_requests = 1000
 max_requests_jitter = 100
