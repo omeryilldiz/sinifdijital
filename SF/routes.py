@@ -1,4 +1,4 @@
-from flask import render_template, redirect, url_for, flash, request, abort, jsonify, session, g, current_app, send_from_directory
+from flask import render_template, redirect, url_for, flash, request, abort, jsonify, session, g, current_app, send_from_directory, make_response
 from SF import app, db, bcrypt, ALLOWED_EXTENSIONS, ALLOWED_PDF_EXTENSIONS, limiter, csrf
 from flask_wtf.csrf import validate_csrf
 from SF.forms import LoginForm, RegistrationForm, AdminLoginForm, AdminRegisterForm, AdminEditForm, SinifForm, DersForm, UniteForm, IcerikForm, SoruEkleForm, SoruEditForm, DersNotuForm, VideoForm, VideoEditForm, DersNotuEditForm, CompleteProfileForm, ProfileUpdateForm, StudentSearchForm, BulkActionForm, AdminStudentEditForm, PasswordResetRequestForm, PasswordResetForm, HomepageSlideForm, ChangePasswordForm, ContactForm 
@@ -47,6 +47,27 @@ os.makedirs(COZUM_UPLOAD_FOLDER, exist_ok=True)
 # Flask uygulaması başlatılırken gerekli dizinlerin oluşturulması
 
 tr_tz = pytz.timezone('Europe/Istanbul')
+
+# ========================================
+# 🔒 SECURITY DECORATORS
+# ========================================
+
+def admin_noindex(f):
+    """Admin sayfalarına noindex headers ekle"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        response = make_response(f(*args, **kwargs))
+        response.headers['X-Robots-Tag'] = 'noindex, nofollow'
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
+    return decorated_function
+
+
+# ========================================
+# STATIC FILES & ROBOTS/SITEMAP ROUTES
+# ========================================
 
 @app.route('/ads.txt')
 def ads_txt():
@@ -279,6 +300,7 @@ def fake_admin_panel():
     return render_template('404.html'), 404
 
 @app.route('/admin/login', methods=['GET', 'POST'])
+@admin_noindex
 @limiter.limit("3 per minute")
 def fake_admin_login():
     """Honeypot: Sahte admin login"""
@@ -3548,6 +3570,7 @@ def admin():
     return render_template('admin.html', title='Admin Paneli')
 
 @app.route(f'{app.config["ADMIN_URL_PREFIX"]}/login', methods=['GET', 'POST'])
+@admin_noindex
 def admin_login():
     if current_user.is_authenticated:
         return redirect(url_for('admin'))
