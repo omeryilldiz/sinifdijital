@@ -1,19 +1,18 @@
-version: '3.8'
-
 services:
   web:
     image: sf-web:latest
     build: .
     environment:
-      # Docker container'lar için host isimleri override et
-      DB_HOST: db
-      REDIS_HOST: redis
+      # Database configuration
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
       POSTGRES_USER: sfuser
       POSTGRES_DB: sfdb
+      # Redis configuration
+      REDIS_HOST: redis
       REDIS_PORT: 6379
       REDIS_DB: 0
+      # Server configuration
       SERVER_NAME: www.sinifdijital.com
       PREFERRED_URL_SCHEME: https
       GUNICORN_WORKERS: '1'
@@ -81,7 +80,7 @@ services:
     networks:
       - sf-net
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost/health"]
+      test: ["CMD", "nginx", "-t"]
       interval: 30s
       timeout: 10s
       retries: 3

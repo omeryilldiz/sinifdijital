@@ -6,9 +6,20 @@ from datetime import timedelta
 
 load_dotenv()  # .env dosyasını yükle
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or os.urandom(32).hex()
+    # SECRET_KEY zorunlu - Docker secrets veya .env'den yüklenmeli
+    SECRET_KEY = os.environ.get('SECRET_KEY')
+    if not SECRET_KEY:
+        # Development modunda fallback kullan, production'da hata ver
+        if os.environ.get('FLASK_ENV') == 'production':
+            raise ValueError("SECRET_KEY environment variable is required in production")
+        else:
+            SECRET_KEY = os.urandom(32).hex()
+            print("⚠️  WARNING: Using random SECRET_KEY (development only)")
+    
+    # Database URL - Docker entrypoint tarafından oluşturulacak
     SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'postgresql://sfuser:1174@localhost/sfdb')
     DATABASE_URL = SQLALCHEMY_DATABASE_URI  # Alias ekle
+    
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
     GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
     
@@ -38,12 +49,14 @@ class Config:
     ALLOWED_PDF_EXTENSIONS = {'pdf'}
     ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'webm'}
     MAX_CONTENT_LENGTH = int(os.environ.get('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))
-    # Daha sıkı varsayılan limitler: kötüye kullanımı azaltmak için düşürüldü
-    RATELIMIT_DEFAULT = os.environ.get('RATELIMIT_DEFAULT', "200 per day;20 per hour")
+    # Global rate limit kaldırıldı - endpoint bazlı kontrol yapılacak
+    RATELIMIT_DEFAULT = os.environ.get('RATELIMIT_DEFAULT', "")
     
-    broker_url = os.environ.get("CELERY_BROKER_URL", "redis://localhost:6379/0")
-    result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://localhost:6379/0")
+    # Redis URL - Docker entrypoint tarafından şifre ile birlikte oluşturulacak
     REDIS_URL = os.environ.get("REDIS_URL", "redis://localhost:6379/0")
+    # Celery için (kullanılmıyorsa kaldırılabilir)
+    broker_url = os.environ.get("CELERY_BROKER_URL", REDIS_URL)
+    result_backend = os.environ.get("CELERY_RESULT_BACKEND", REDIS_URL)
 
     # ✅ Dosya boyut limitleri
     MAX_UPLOAD_SIZE = 5 * 1024 * 1024  # 5MB

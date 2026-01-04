@@ -47,8 +47,8 @@ RUN pip install --no-cache-dir /wheels/*
 RUN useradd --create-home --shell /bin/bash appuser \
  && mkdir -p /app/SF/static/uploads /app/SF/static/soru_uploads \
     /app/SF/static/video_uploads /app/SF/static/cozum_uploads \
-    /app/SF/static/pdf_uploads \
- && chown -R appuser:appuser /app
+    /app/SF/static/pdf_uploads /var/log/gunicorn \
+ && chown -R appuser:appuser /app /var/log/gunicorn
 
 COPY --chown=appuser:appuser . .
 

@@ -54,9 +54,158 @@ def ads_txt():
 
 
 # ========================================
+# ROBOTS.TXT & SITEMAP ROUTES
+# ========================================
+
+@app.route('/robots.txt')
+@limiter.exempt
+def robots_txt():
+    """Robots.txt dosyasını sun - Search engine crawlers için"""
+    return send_from_directory(app.static_folder, 'robots.txt')
+
+
+@app.route('/sitemap.xml')
+@limiter.exempt
+def sitemap_main():
+    """Ana sitemap - diğer sitemap'leri referans et"""
+    return send_from_directory(app.static_folder, 'sitemap.xml')
+
+
+@app.route('/sitemap-legal.xml')
+@limiter.exempt
+def sitemap_legal():
+    """Yasal sayfalar sitemap'i"""
+    return send_from_directory(app.static_folder, 'sitemap-legal.xml')
+
+
+@app.route('/sitemap-classes.xml')
+@limiter.exempt
+def sitemap_classes():
+    """Dinamik sitemap - Tüm sınıfları listele"""
+    try:
+        base_url = request.host_url.rstrip('/')
+        
+        siniflar = Sinif.query.order_by(Sinif.id).all()
+        
+        xml_data = '<?xml version="1.0" encoding="UTF-8"?>\n'
+        xml_data += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        
+        for sinif in siniflar:
+            url = f"{base_url}/{sinif.slug}"
+            xml_data += f"""    <url>
+        <loc>{url}</loc>
+        <lastmod>{datetime.utcnow().strftime('%Y-%m-%d')}</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.8</priority>
+    </url>
+"""
+        
+        xml_data += '</urlset>'
+        
+        response = app.response_class(
+            response=xml_data,
+            status=200,
+            mimetype='application/xml'
+        )
+        response.headers['Cache-Control'] = 'public, max-age=86400'  # 24 saat cache
+        return response
+        
+    except Exception as e:
+        app.logger.error(f"Sitemap classes error: {str(e)}")
+        return '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>', 200
+
+
+@app.route('/sitemap-courses.xml')
+@limiter.exempt
+def sitemap_courses():
+    """Dinamik sitemap - Tüm dersleri listele"""
+    try:
+        base_url = request.host_url.rstrip('/')
+        
+        dersler = db.session.query(Ders, Sinif).join(
+            Sinif, Ders.sinif_id == Sinif.id
+        ).order_by(Sinif.id, Ders.id).all()
+        
+        xml_data = '<?xml version="1.0" encoding="UTF-8"?>\n'
+        xml_data += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        
+        for ders, sinif in dersler:
+            url = f"{base_url}/{sinif.slug}/{ders.slug}"
+            xml_data += f"""    <url>
+        <loc>{url}</loc>
+        <lastmod>{datetime.utcnow().strftime('%Y-%m-%d')}</lastmod>
+        <changefreq>weekly</changefreq>
+        <priority>0.7</priority>
+    </url>
+"""
+        
+        xml_data += '</urlset>'
+        
+        response = app.response_class(
+            response=xml_data,
+            status=200,
+            mimetype='application/xml'
+        )
+        response.headers['Cache-Control'] = 'public, max-age=86400'  # 24 saat cache
+        return response
+        
+    except Exception as e:
+        app.logger.error(f"Sitemap courses error: {str(e)}")
+        return '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>', 200
+
+
+@app.route('/sitemap-content.xml')
+@limiter.exempt
+def sitemap_content():
+    """Dinamik sitemap - Tüm içerikleri listele"""
+    try:
+        base_url = request.host_url.rstrip('/')
+        
+        icerikler = db.session.query(
+            Icerik, Unite, Ders, Sinif
+        ).join(
+            Unite, Icerik.unite_id == Unite.id
+        ).join(
+            Ders, Unite.ders_id == Ders.id
+        ).join(
+            Sinif, Ders.sinif_id == Sinif.id
+        ).order_by(Sinif.id, Ders.id, Unite.id, Icerik.id).all()
+        
+        xml_data = '<?xml version="1.0" encoding="UTF-8"?>\n'
+        xml_data += '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+        
+        for icerik, unite, ders, sinif in icerikler:
+            url = f"{base_url}/{sinif.slug}/{ders.slug}/{unite.slug}/{icerik.slug}"
+            last_modified = (icerik.updated_at or icerik.created_at or datetime.utcnow()).strftime('%Y-%m-%d')
+            
+            xml_data += f"""    <url>
+        <loc>{url}</loc>
+        <lastmod>{last_modified}</lastmod>
+        <changefreq>monthly</changefreq>
+        <priority>0.6</priority>
+    </url>
+"""
+        
+        xml_data += '</urlset>'
+        
+        response = app.response_class(
+            response=xml_data,
+            status=200,
+            mimetype='application/xml'
+        )
+        response.headers['Cache-Control'] = 'public, max-age=86400'  # 24 saat cache
+        return response
+        
+    except Exception as e:
+        app.logger.error(f"Sitemap content error: {str(e)}")
+        return '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>', 200
+
+
+# ========================================
 # Health Check Endpoint (Production Monitoring)
 # ========================================
 @app.route('/health')
+@limiter.exempt
 def health_check():
     """
     Production health check endpoint.
@@ -94,6 +243,7 @@ def health_check():
 
 
 @app.route('/health/ready')
+@limiter.exempt
 def readiness_check():
     """Kubernetes readiness probe - checks if app can serve requests."""
     try:
@@ -104,6 +254,7 @@ def readiness_check():
 
 
 @app.route('/health/live')
+@limiter.exempt
 def liveness_check():
     """Kubernetes liveness probe - checks if app is alive."""
     return jsonify({'alive': True}), 200
@@ -3777,6 +3928,7 @@ def delete_image_files(image_urls):
             
 @app.route('/upload', methods=['POST'])
 @admin_required
+@limiter.limit("200 per hour")
 def upload_file():
     try:
         if 'upload' not in request.files:

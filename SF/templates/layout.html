@@ -35,6 +35,37 @@
     <title>{% if title %}{{ title }} - {% endif %}Sınıf Dijital</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="{% block meta_description %}Sınıf Dijital - Tüm dersler, konular ve içerikler için öğrenci tarafından hazırlanmış çalışma kaynakları.{% endblock %}">
+    <meta name="keywords" content="{% block meta_keywords %}eğitim, dersiçi, matematik, türkçe, fizik, kimya, biyoloji, tarih, coğrafya, İngilizce{% endblock %}">
+    <meta name="author" content="Sınıf Dijital">
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{{ request.host_url.rstrip('/') }}{{ request.path }}">
+    
+    <!-- Open Graph (Social Media) -->
+    <meta property="og:type" content="{% block og_type %}website{% endblock %}">
+    <meta property="og:title" content="{% block og_title %}{% if title %}{{ title }} - {% endif %}Sınıf Dijital{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Sınıf Dijital - Tüm dersler, konular ve içerikler için öğrenci tarafından hazırlanmış çalışma kaynakları.{% endblock %}">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:image" content="{{ request.host_url.rstrip('/') }}/static/og-image.jpg">
+    <meta property="og:site_name" content="Sınıf Dijital">
+    <meta property="og:locale" content="tr_TR">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{% block twitter_title %}{% if title %}{{ title }} - {% endif %}Sınıf Dijital{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}Sınıf Dijital - Tüm dersler, konular ve içerikler için öğrenci tarafından hazırlanmış çalışma kaynakları.{% endblock %}">
+    <meta name="twitter:image" content="{{ request.host_url.rstrip('/') }}/static/og-image.jpg">
+    
+    <!-- Additional SEO -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#00457C">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="apple-touch-icon" href="{{ url_for('static', filename='apple-touch-icon.png') }}">
+    
     {% block styles %}
     <style>
         :root {
