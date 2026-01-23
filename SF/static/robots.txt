@@ -1,0 +1,51 @@
+User-agent: *
+Allow: /
+
+# Admin ve yönetim panelleri
+Disallow: /admin/
+Disallow: /yonetim-panel-x9k2m/
+
+# Kullanıcı işlemleri
+Disallow: /login
+Disallow: /register
+Disallow: /logout
+Disallow: /dashboard/
+Disallow: /complete_profile
+Disallow: /profile
+Disallow: /istatistikler
+Disallow: /guclendirme-merkezi
+Disallow: /ilerleme-patikasi
+
+# API ve dinamik içerik
+Disallow: /api/
+Disallow: /get_
+
+# Yüklenen dosyalar
+Disallow: /static/uploads/
+
+# Şifre sıfırlama ve doğrulama
+Disallow: /reset_password
+Disallow: /verify-email/
+Disallow: /resend-verification
+
+# Sistem sayfaları
+Disallow: /health
+Disallow: /upload
+Disallow: /test-google-config
+Disallow: /test-smtp-config
+
+# Sorgu parametreli URL'ler
+Disallow: /*?sort=
+Disallow: /*?filter=
+Disallow: /*?page=
+
+# Dosya tipleri
+Disallow: /*.json$
+Disallow: /*.pdf$
+
+# Sitemaps
+Sitemap: https://sinifdijital.com/sitemap.xml
+Sitemap: https://sinifdijital.com/sitemap-classes.xml
+Sitemap: https://sinifdijital.com/sitemap-courses.xml
+Sitemap: https://sinifdijital.com/sitemap-content.xml
+Sitemap: https://sinifdijital.com/sitemap-legal.xml

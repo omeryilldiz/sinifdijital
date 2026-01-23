@@ -111,6 +111,10 @@ SF/static/cozum_uploads/*
 SF/static/homepage_slides/*
 !SF/static/homepage_slides/.gitkeep
 static/
+!SF/static/robots.txt
+!SF/static/sitemap.xml
+!SF/static/sitemap-*.xml
+!SF/static/ads.txt
 uploads/
 
 # ===============================
