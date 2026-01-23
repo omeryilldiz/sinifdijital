@@ -88,8 +88,15 @@ def robots_txt():
 @app.route('/sitemap.xml')
 @limiter.exempt
 def sitemap_main():
-    """Ana sitemap - diğer sitemap'leri referans et"""
+    """Ana sitemap index - diğer sitemap'leri referans et"""
     return send_from_directory(app.static_folder, 'sitemap.xml')
+
+
+@app.route('/sitemap-pages.xml')
+@limiter.exempt
+def sitemap_pages():
+    """Statik sayfalar sitemap'i"""
+    return send_from_directory(app.static_folder, 'sitemap-pages.xml')
 
 
 @app.route('/sitemap-legal.xml')
@@ -961,23 +968,8 @@ def get_user_progress_tree(user_id):
         UserProgress.icerik_id.in_(icerik_ids)
     ).group_by(UserProgress.icerik_id).all())
     
-    # Aktif yanlış soru sayılarını hesapla
-    aktif_yanlis_per_icerik = {}
-    if icerik_ids:
-        sub = db.session.query(
-            UserProgress.soru_id,
-            func.max(UserProgress.tarih).label('mx')
-        ).filter(
-            UserProgress.user_id == user_id,
-            UserProgress.activity_type == ActivityType.QUESTION_SOLVING
-        ).group_by(UserProgress.soru_id).subquery()
-        
-        latest = db.session.query(UserProgress.soru_id, UserProgress.yanlis_sayisi, Soru.icerik_id).join(
-            sub, and_(UserProgress.soru_id == sub.c.soru_id, UserProgress.tarih == sub.c.mx)
-        ).join(Soru, UserProgress.soru_id == Soru.id).filter(UserProgress.yanlis_sayisi > 0).all()
-        
-        for _soru_id, yanlis_sayisi, icerik_id in latest:
-            aktif_yanlis_per_icerik[icerik_id] = aktif_yanlis_per_icerik.get(icerik_id, 0) + 1
+    # 🎯 YENİ: Kesin yanlış soru sayılarını hesapla (puan=0.0)
+    aktif_yanlis_per_icerik = get_yanlis_sorular_kesin(user_id, icerik_ids) if icerik_ids else {}
     
     # Map yapıları oluştur
     uniteler_by_ders = {}
@@ -1574,14 +1566,30 @@ def soru_coz(sinif_slug, ders_slug):
         if icerik_id:
             query = query.filter(Icerik.id == icerik_id)
         if yanlis_tekrar:
-            # Sadece yanlış yapılan sorular
-            yanlis_soru_ids = db.session.query(UserProgress.soru_id).filter(
+            # 🎯 YENİ: Sadece son çözümü yanlış olan sorular (puan=0.0)
+            sub = db.session.query(
+                UserProgress.soru_id,
+                func.max(UserProgress.tarih).label('max_tarih')
+            ).filter(
                 UserProgress.user_id == current_user.id,
-                UserProgress.icerik_id == icerik_id,
-                UserProgress.activity_type == ActivityType.QUESTION_SOLVING,
-                UserProgress.yanlis_sayisi > 0
-            ).all()
-            yanlis_soru_ids = [row[0] for row in yanlis_soru_ids if row[0]]
+                UserProgress.activity_type == ActivityType.QUESTION_SOLVING
+            ).group_by(UserProgress.soru_id).subquery()
+            
+            yanlis_soru_ids = db.session.query(UserProgress.soru_id).join(
+                sub,
+                and_(
+                    UserProgress.soru_id == sub.c.soru_id,
+                    UserProgress.tarih == sub.c.max_tarih
+                )
+            ).filter(
+                UserProgress.puan == 0.0  # 🔥 Son çözüm yanlış
+            )
+            
+            if icerik_id:
+                yanlis_soru_ids = yanlis_soru_ids.filter(UserProgress.icerik_id == icerik_id)
+            
+            yanlis_soru_ids = [row[0] for row in yanlis_soru_ids.all() if row[0]]
+            
             if yanlis_soru_ids:
                 query = query.filter(Soru.id.in_(yanlis_soru_ids))
             else:
@@ -1668,6 +1676,15 @@ def soru_coz(sinif_slug, ders_slug):
                         soru_id=soru.id,
                         activity_type=ActivityType.QUESTION_SOLVING
                     ).filter(func.date(UserProgress.tarih) == today).first()
+                    
+                    # 🎯 SON DURUM KODLAMASI (puan alanı)
+                    if sonuc['sonuc'] == 'Doğru':
+                        son_puan = 1.0  # ✅ Doğru
+                    elif sonuc['sonuc'] == 'Yanlış':
+                        son_puan = 0.0  # ❌ Yanlış
+                    else:
+                        son_puan = -1.0  # ⚪ Boş
+                    
                     if not progress:
                         progress = UserProgress(
                             user_id=current_user.id,
@@ -1678,26 +1695,22 @@ def soru_coz(sinif_slug, ders_slug):
                             dogru_sayisi=1 if sonuc['sonuc'] == 'Doğru' else 0,
                             yanlis_sayisi=1 if sonuc['sonuc'] == 'Yanlış' else 0,
                             bos_sayisi=1 if sonuc['sonuc'] == 'Boş' else 0,
-                            puan=sonuc['puan'],
+                            puan=son_puan,  # 🔥 Son durum
                             tarih=datetime.utcnow()
                         )
                         db.session.add(progress)
                     else:
-                        # Yanlış tekrarında doğru çözülürse yanlış sayısını sıfırla
+                        # Toplam sayıları güncelle
                         if sonuc['sonuc'] == 'Doğru':
-                            progress.dogru_sayisi = 1
-                            progress.yanlis_sayisi = 0
-                            progress.bos_sayisi = 0
+                            progress.dogru_sayisi += 1
                         elif sonuc['sonuc'] == 'Yanlış':
-                            progress.dogru_sayisi = 0
-                            progress.yanlis_sayisi = 1
-                            progress.bos_sayisi = 0
+                            progress.yanlis_sayisi += 1
                         elif sonuc['sonuc'] == 'Boş':
-                            progress.dogru_sayisi = 0
-                            progress.yanlis_sayisi = 0
-                            progress.bos_sayisi = 1
+                            progress.bos_sayisi += 1
+                        
+                        # 🔥 ÖNEMLİ: Son durumu güncelle
+                        progress.puan = son_puan
                         progress.harcanan_sure = (progress.harcanan_sure or 0) + soru_sureleri.get(soru_no, 0)
-                        progress.puan = (progress.puan or 0) + sonuc['puan']
                         progress.tarih = datetime.utcnow()
 
                 # Test özet kaydı (isteğe bağlı)
@@ -4049,6 +4062,53 @@ def get_user_agent():
     if user_agent and len(user_agent) > 500:
         user_agent = user_agent[:500]
     return user_agent
+
+
+def get_yanlis_sorular_kesin(user_id, icerik_ids=None):
+    """
+    Son çözümü YANLIŞ olan soruları bulur (puan=0.0)
+    
+    Args:
+        user_id: Kullanıcı ID
+        icerik_ids: İçerik ID listesi (opsiyonel)
+    
+    Returns:
+        dict: {icerik_id: yanlis_soru_sayisi}
+    """
+    from sqlalchemy import func, and_
+    
+    # Her soru için son kaydı bul (en son tarih)
+    sub = db.session.query(
+        UserProgress.soru_id,
+        func.max(UserProgress.tarih).label('max_tarih')
+    ).filter(
+        UserProgress.user_id == user_id,
+        UserProgress.activity_type == ActivityType.QUESTION_SOLVING
+    ).group_by(UserProgress.soru_id).subquery()
+    
+    # Son kayıtlarda puan=0.0 (YANLIŞ) olanları getir
+    query = db.session.query(
+        UserProgress.soru_id,
+        Soru.icerik_id
+    ).join(
+        sub,
+        and_(
+            UserProgress.soru_id == sub.c.soru_id,
+            UserProgress.tarih == sub.c.max_tarih
+        )
+    ).join(Soru, UserProgress.soru_id == Soru.id).filter(
+        UserProgress.puan == 0.0  # 🎯 Son çözüm YANLIŞ
+    )
+    
+    if icerik_ids:
+        query = query.filter(Soru.icerik_id.in_(icerik_ids))
+    
+    # İçerik bazında grupla
+    yanlis_sorular = {}
+    for soru_id, icerik_id in query.all():
+        yanlis_sorular[icerik_id] = yanlis_sorular.get(icerik_id, 0) + 1
+    
+    return yanlis_sorular
 
 
 def log_user_action(user_id, action_type, success=True, details=None):

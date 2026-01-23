@@ -11,9 +11,9 @@
           <p class="small text-muted mb-3">Yeni Nesil Eğitim Platformu</p>
           <h6 class="fw-bold mb-2">Yasal Sayfalar</h6>
           <ul class="list-unstyled small">
-            <li><a href="#" class="text-decoration-none text-muted">KVKK Aydınlatma Metni</a></li>
-            <li><a href="#" class="text-decoration-none text-muted">Kullanım Koşulları</a></li>
-            <li><a href="#" class="text-decoration-none text-muted">Gizlilik Sözleşmesi</a></li>
+            <li><a href="{{ url_for('kvkk') }}" class="text-decoration-none text-muted">KVKK Aydınlatma Metni</a></li>
+            <li><a href="{{ url_for('kullanim') }}" class="text-decoration-none text-muted">Kullanım Koşulları</a></li>
+            <li><a href="{{ url_for('gizlilik') }}" class="text-decoration-none text-muted">Gizlilik Sözleşmesi</a></li>
             <li>
               <a href="#" class="text-decoration-none text-muted" onclick="CookieConsent.show(); return false;">
                 Çerez Ayarları
