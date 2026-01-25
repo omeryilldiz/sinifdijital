@@ -306,24 +306,45 @@ class StudentStatisticsService:
                 }
 
             subject_question_stats = []
+            
+            # ✅ OPTIMIZED: Single query to get all unit stats for all subjects
+            all_units = Unite.query.filter(Unite.ders_id.in_([s.id for s in class_subjects])).all()
+            unit_ids = [u.id for u in all_units]
+            
+            # ✅ Get all user progress for all units in one query
+            if unit_ids:
+                all_sorular = Soru.query.filter(Soru.unite_id.in_(unit_ids)).all()
+                soru_ids = [s.id for s in all_sorular]
+                
+                # ✅ Single batch query for user progress
+                all_progress = db.session.query(
+                    UserProgress.soru_id,
+                    func.sum(UserProgress.dogru_sayisi).label('dogru'),
+                    func.sum(UserProgress.yanlis_sayisi).label('yanlis')
+                ).filter(
+                    UserProgress.user_id == self.student_id,
+                    UserProgress.soru_id.in_(soru_ids),
+                    UserProgress.activity_type == ActivityType.QUESTION_SOLVING
+                ).group_by(UserProgress.soru_id).all() if soru_ids else []
+                
+                # ✅ Convert to dict for O(1) lookup
+                progress_dict = {p.soru_id: {'dogru': p.dogru or 0, 'yanlis': p.yanlis or 0} for p in all_progress}
+            else:
+                progress_dict = {}
 
             for subject in class_subjects:
                 units_stats = []
-                units = Unite.query.filter_by(ders_id=subject.id).all()
+                units = [u for u in all_units if u.ders_id == subject.id]
 
                 for unit in units:
-                    # --- TEKİLLEŞTİRİLMİŞ BAŞARI ORANI HESABI ---
-                    sorular = Soru.query.filter_by(unite_id=unit.id).all()
+                    # --- OPTIMIZED: Use pre-fetched progress dictionary ---
+                    sorular = [s for s in all_sorular if s.unite_id == unit.id] if unit_ids else []
                     dogru = yanlis = 0
                     for soru in sorular:
-                        progress = UserProgress.query.filter_by(
-                            user_id=self.student_id,
-                            soru_id=soru.id,
-                            activity_type=ActivityType.QUESTION_SOLVING
-                        ).order_by(UserProgress.tarih.desc()).first()
-                        if progress:
-                            dogru += progress.dogru_sayisi
-                            yanlis += progress.yanlis_sayisi
+                        if soru.id in progress_dict:
+                            dogru += progress_dict[soru.id]['dogru']
+                            yanlis += progress_dict[soru.id]['yanlis']
+                    
                     toplam = dogru + yanlis
                     success_rate = int((dogru / toplam * 100) if toplam > 0 else 0)
 
@@ -352,27 +373,49 @@ class StudentStatisticsService:
                     'units': units_stats
                 })
 
-            # Zayıf yönler analizi (<%70 başarı) - TEKİLLEŞTİRİLMİŞ
+            # ✅ OPTIMIZED: Zayıf yönler analizi - single query with date
             weak_topics = []
+            
+            # Build unit name to unit object mapping
+            unit_map = {u.unite: u for u in all_units}
+            
+            # Get last wrong attempt dates for weak units in single query
+            weak_unit_ids = [
+                unit_map[unit_dict['name']].id 
+                for subject in subject_question_stats 
+                for unit_dict in subject['units']
+                if unit_dict['success_rate'] < 70 and unit_dict['total_questions'] >= 5 
+                and unit_dict['name'] in unit_map
+            ]
+            
+            if weak_unit_ids:
+                # Single query to get last wrong attempts per unit
+                last_wrongs = db.session.query(
+                    Soru.unite_id,
+                    func.max(UserProgress.tarih).label('last_wrong')
+                ).join(
+                    Soru, UserProgress.soru_id == Soru.id
+                ).filter(
+                    UserProgress.user_id == self.student_id,
+                    Soru.unite_id.in_(weak_unit_ids),
+                    UserProgress.yanlis_sayisi > 0,
+                    UserProgress.activity_type == ActivityType.QUESTION_SOLVING
+                ).group_by(Soru.unite_id).all()
+                
+                last_wrong_dict = {lw.unite_id: lw.last_wrong for lw in last_wrongs}
+            else:
+                last_wrong_dict = {}
+            
             for subject in subject_question_stats:
                 for unit_dict in subject['units']:
                     if unit_dict['success_rate'] < 70 and unit_dict['total_questions'] >= 5:
-                        unite_obj = Unite.query.filter_by(unite=unit_dict['name']).first()
-                        last_wrong = None
-                        if unite_obj:
-                            sorular = Soru.query.filter_by(unite_id=unite_obj.id).all()
-                            for soru in sorular:
-                                progress = UserProgress.query.filter_by(
-                                    user_id=self.student_id,
-                                    soru_id=soru.id,
-                                    activity_type=ActivityType.QUESTION_SOLVING
-                                ).order_by(UserProgress.tarih.desc()).first()
-                                if progress and progress.yanlis_sayisi > 0:
-                                    if not last_wrong or progress.tarih > last_wrong:
-                                        last_wrong = progress.tarih
+                        unit_name = unit_dict['name']
+                        unite_obj = unit_map.get(unit_name)
+                        last_wrong = last_wrong_dict.get(unite_obj.id) if unite_obj else None
+                        
                         weak_topics.append({
                             'subject': subject['name'],
-                            'unit': unit_dict['name'],
+                            'unit': unit_name,
                             'success_rate': unit_dict['success_rate'],
                             'total_questions': unit_dict['total_questions'],
                             'last_wrong': last_wrong

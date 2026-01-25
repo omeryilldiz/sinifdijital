@@ -172,6 +172,15 @@ class LeaderboardService:
             student_rank = None
             student_points = 0
             
+            # ✅ OPTIMIZED: Fetch all user IDs and get users in single batch query
+            user_ids = [stat.id for stat in stats]
+            if user_ids:
+                # Single batch query with eager loading
+                users_batch = db.session.query(User).filter(User.id.in_(user_ids)).all()
+                users_dict = {u.id: u for u in users_batch}
+            else:
+                users_dict = {}
+            
             for rank, stat in enumerate(stats, 1):
                 user_data = {
                     'user_id': stat.id,
@@ -180,7 +189,8 @@ class LeaderboardService:
                     'school_name': 'Okul Bilgisi Yok',
                     'class_info': '?'
                 }
-                user = User.query.get(stat.id)
+                # Use batch-fetched user instead of individual query
+                user = users_dict.get(stat.id)
                 if user:
                     if user.school:
                         user_data['school_name'] = user.school.name
@@ -403,6 +413,15 @@ class LeaderboardService:
             top_students = []
             student_rank = None
             student_points = 0
+            
+            # ✅ OPTIMIZED: Batch fetch all users
+            user_ids = [stat.id for stat in stats]
+            if user_ids:
+                users_batch = db.session.query(User).filter(User.id.in_(user_ids)).all()
+                users_dict = {u.id: u for u in users_batch}
+            else:
+                users_dict = {}
+            
             for rank, stat in enumerate(stats, 1):
                 user_data = {
                     'user_id': stat.id,
@@ -411,7 +430,7 @@ class LeaderboardService:
                     'school_name': 'Okul Bilgisi Yok',
                     'class_info': '?'
                 }
-                user = User.query.get(stat.id)
+                user = users_dict.get(stat.id)
                 if user:
                     if user.school:
                         user_data['school_name'] = user.school.name

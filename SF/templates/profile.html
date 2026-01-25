@@ -60,6 +60,23 @@
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     color: white;
 }
+
+/* ✅ YENİ: Username kartı stili */
+.username-display {
+    font-family: 'Courier New', monospace;
+    background: #f8f9fa;
+    padding: 12px 16px;
+    border-radius: 6px;
+    border-left: 4px solid #0891b2;
+    color: #1e293b;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.username-display:hover {
+    background: #f1f5f9;
+    transition: all 0.2s ease;
+}
 </style>
 {% endblock %}
 
@@ -69,6 +86,12 @@
     <div class="profile-header">
         <div class="row align-items-center">
             <div class="col-md-8">
+                <div class="mb-2">
+                    <small class="text-muted">
+                        <i class="bi bi-at me-1"></i>
+                        Kullanıcı Adı: <code class="username-display">{{ current_user.username }}</code>
+                    </small>
+                </div>
                 <h4 class="mb-1">
                     <i class="bi bi-person-circle me-2"></i>
                     {% if current_user.first_name and current_user.last_name %}
@@ -129,7 +152,32 @@
     </div>
     {% endif %}
 
-
+    <!-- ✅ YENİ: Username Bilgisi Kartı (Değiştirilmez) -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h6 class="text-muted mb-2">
+                        <i class="bi bi-at me-1"></i>
+                        Kullanıcı Adı
+                    </h6>
+                    <h5 class="mb-0">
+                        <code class="username-display">{{ current_user.username }}</code>
+                    </h5>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <span class="badge bg-secondary">
+                        <i class="bi bi-lock me-1"></i>
+                        Değiştirilmez
+                    </span>
+                </div>
+            </div>
+            <small class="text-muted d-block mt-2">
+                <i class="bi bi-info-circle me-1"></i>
+                Kullanıcı adınız benzersiz olarak atanmıştır ve değiştirilemez.
+            </small>
+        </div>
+    </div>
 
     <!-- ✅ Ana Form -->
     <div class="card">

@@ -15,12 +15,23 @@ class StatisticsService:
             week_ago = today - timedelta(days=7)
             month_ago = today - timedelta(days=30)
 
-            # Temel soru istatistikleri (sadece soru çözümleri)
+            # ✅ DÜZELTİLDİ: Soru sayısı hesaplaması - SUM kullanarak toplam soru sayısını al
+            # Her kayıtta birden fazla soru olabilir (test sonuçları), bu yüzden COUNT yerine SUM kullanıyoruz
             user_stats = db.session.query(
-                func.count(case((func.date(UserProgress.tarih) == today, 1))).label('daily'),
-                func.count(case((func.date(UserProgress.tarih) >= week_ago, 1))).label('weekly'),
-                func.count(case((func.date(UserProgress.tarih) >= month_ago, 1))).label('monthly'),
-                func.count(UserProgress.id).label('all_time_total'),
+                # Günlük çözülen soru sayısı (doğru + yanlış + boş)
+                func.sum(case((func.date(UserProgress.tarih) == today, 
+                              UserProgress.dogru_sayisi + UserProgress.yanlis_sayisi + UserProgress.bos_sayisi), 
+                              else_=0)).label('daily'),
+                # Haftalık çözülen soru sayısı
+                func.sum(case((func.date(UserProgress.tarih) >= week_ago, 
+                              UserProgress.dogru_sayisi + UserProgress.yanlis_sayisi + UserProgress.bos_sayisi), 
+                              else_=0)).label('weekly'),
+                # Aylık çözülen soru sayısı
+                func.sum(case((func.date(UserProgress.tarih) >= month_ago, 
+                              UserProgress.dogru_sayisi + UserProgress.yanlis_sayisi + UserProgress.bos_sayisi), 
+                              else_=0)).label('monthly'),
+                # Toplam çözülen soru sayısı
+                func.sum(UserProgress.dogru_sayisi + UserProgress.yanlis_sayisi + UserProgress.bos_sayisi).label('all_time_total'),
                 func.sum(UserProgress.dogru_sayisi).label('correct_count'),
                 func.sum(UserProgress.yanlis_sayisi).label('wrong_count')
             ).filter(
