@@ -508,6 +508,10 @@
 }
     </style>
     {% endblock styles %}
+    
+    <!-- Google AdSense Script (loaded once) -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7728832097527782"
+         crossorigin="anonymous"></script>
 </head>
 
 <body>
@@ -605,7 +609,15 @@
         {% if request.endpoint and request.endpoint in ['icerik', 'soru_coz', 'dashboard', 'sinif', 'ders'] %}
         <div class="header-ad-wrapper">
             <div class="header-ad-container">
-                {{ render_ad('4783550243', 'Header Reklamı', 'horizontal', 'display:block;', 'false') }}
+                <ins class="adsbygoogle"
+                     style="display:block; width:100%; height:90px;"
+                     data-ad-client="ca-pub-7728832097527782"
+                     data-ad-slot="4783550243"
+                     data-ad-format="horizontal"
+                     data-full-width-responsive="false"></ins>
+                <script>
+                     (adsbygoogle = window.adsbygoogle || []).push({});
+                </script>
             </div>
         </div>
         {% endif %}
@@ -768,7 +780,15 @@
     {% if request.endpoint and request.endpoint in ['icerik', 'soru_coz', 'dashboard', 'sinif', 'ders'] %}
     <div class="footer-ad-wrapper">
         <div class="footer-ad-container">
-            {{ render_ad('8389405726', 'Footer Reklamı', 'horizontal', 'display:block;', 'false') }}
+            <ins class="adsbygoogle"
+                 style="display:block; width:100%; height:90px;"
+                 data-ad-client="ca-pub-7728832097527782"
+                 data-ad-slot="8389405726"
+                 data-ad-format="horizontal"
+                 data-full-width-responsive="false"></ins>
+            <script>
+                 (adsbygoogle = window.adsbygoogle || []).push({});
+            </script>
         </div>
     </div>
     {% endif %}
@@ -1231,6 +1251,24 @@
         function applyConsent(consent) {
             console.log('[Cookie] Tercihler uygulanıyor:', consent);
 
+            // Google Consent Mode'ı güncelle (GTM ve AdSense için)
+            if (window.gtag) {
+                gtag('consent', 'update', {
+                    'ad_storage': consent.advertising ? 'granted' : 'denied',
+                    'analytics_storage': consent.analytics ? 'granted' : 'denied',
+                    'functionality_storage': consent.functional ? 'granted' : 'denied',
+                    'personalization_storage': consent.advertising ? 'granted' : 'denied'
+                });
+                console.log('[Cookie] Google Consent Mode güncellendi');
+            }
+
+            // AdSense'e kişiselsiz reklam modunu bildir
+            if (!consent.advertising) {
+                window.adsbygoogle = window.adsbygoogle || [];
+                window.adsbygoogle.requestNonPersonalizedAds = 1;
+                console.log('[Ads] Non-personalized mode aktif');
+            }
+
             if (consent.advertising) {
                 loadGoogleAds(true);
             } else {
@@ -1240,6 +1278,12 @@
             if (consent.analytics) {
                 loadGoogleAnalytics();
             }
+
+            console.log('[Cookie] Consent uygulandı:', {
+                advertising: consent.advertising,
+                analytics: consent.analytics,
+                functional: consent.functional
+            });
         }
 
         // Banner'ı göster
