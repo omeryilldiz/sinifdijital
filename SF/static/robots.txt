@@ -1,9 +1,4 @@
 User-agent: *
-Allow: /
-
-# Admin ve yönetim panelleri
-Disallow: /admin/
-Disallow: /yonetim-panel-x9k2m/
 
 # Kullanıcı işlemleri
 Disallow: /login
@@ -33,15 +28,6 @@ Disallow: /health
 Disallow: /upload
 Disallow: /test-google-config
 Disallow: /test-smtp-config
-
-# Sorgu parametreli URL'ler
-Disallow: /*?sort=
-Disallow: /*?filter=
-Disallow: /*?page=
-
-# Dosya tipleri
-Disallow: /*.json$
-Disallow: /*.pdf$
 
 # Sitemaps
 Sitemap: https://sinifdijital.com/sitemap.xml
