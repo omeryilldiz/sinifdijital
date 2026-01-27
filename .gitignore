@@ -115,6 +115,8 @@ static/
 !SF/static/sitemap.xml
 !SF/static/sitemap-*.xml
 !SF/static/ads.txt
+!SF/static/style.css
+!SF/static/main.js
 uploads/
 
 # ===============================
