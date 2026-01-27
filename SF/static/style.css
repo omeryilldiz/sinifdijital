@@ -1,0 +1,142 @@
+.sol {
+   height: 100vh;
+   width: 250px;
+   margin: 0;
+   padding: 0;;
+}
+
+.sol .nav {
+   margin-top: 50px;
+}
+
+.nav-link {
+   color: #fff;
+   text-decoration: none;
+   font-size: 15px;
+   padding: 0px 0px;
+   display: block;
+}
+
+.icerik {
+   margin-left: 250px;
+   margin-top: 50px;
+}
+
+.navbar-col {
+   background-color: #0a0d0c ;
+}
+
+#sinif-scroll-wrapper {
+   white-space: nowrap !important;
+   overflow-x: auto;
+   overflow-y: hidden;
+   -webkit-overflow-scrolling: touch;
+   padding: 0 40px;
+   scrollbar-width: none;
+   -ms-overflow-style: none;
+   -webkit-scrollbar {
+       display: none;
+   }
+}
+#sinif-scroll-wrapper ul.navbar {
+   flex-wrap: nowrap !important;
+   display: flex;
+}
+#sinif-scroll-wrapper .nav-item {
+   flex: 0 0 auto;
+}
+@media (max-width: 768px) {
+   #sinif-scroll-wrapper {
+       padding: 0 10px;
+   }
+   #sinif-scroll-left, #sinif-scroll-right {
+       display: none !important;
+   }
+}
+
+.loading {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.spinner {
+    display: none;
+    width: 20px;
+    height: 20px;
+    margin-left: 10px;
+}
+
+.loading + .spinner {
+    display: inline-block;
+}
+.sol {
+   height: 100vh;
+   width: 250px;
+   margin: 0;
+   padding: 0;;
+}
+
+.sol .nav {
+   margin-top: 50px;
+}
+
+.nav-link {
+   color: #fff;
+   text-decoration: none;
+   font-size: 15px;
+   padding: 0px 0px;
+   display: block;
+}
+
+.icerik {
+   margin-left: 250px;
+   margin-top: 50px;
+}
+
+.navbar-col {
+   background-color: #0a0d0c ;
+}
+
+#sinif-scroll-wrapper {
+   white-space: nowrap !important;
+   overflow-x: auto;
+   overflow-y: hidden;
+   -webkit-overflow-scrolling: touch;
+   padding: 0 40px;
+   scrollbar-width: none;
+   -ms-overflow-style: none;
+   -webkit-scrollbar {
+       display: none;
+   }
+}
+#sinif-scroll-wrapper ul.navbar {
+   flex-wrap: nowrap !important;
+   display: flex;
+}
+#sinif-scroll-wrapper .nav-item {
+   flex: 0 0 auto;
+}
+@media (max-width: 768px) {
+   #sinif-scroll-wrapper {
+       padding: 0 10px;
+   }
+   #sinif-scroll-left, #sinif-scroll-right {
+       display: none !important;
+   }
+}
+
+.loading {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.spinner {
+    display: none;
+    width: 20px;
+    height: 20px;
+    margin-left: 10px;
+}
+
+.loading + .spinner {
+    display: inline-block;
+}

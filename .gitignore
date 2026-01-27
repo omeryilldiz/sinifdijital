@@ -117,6 +117,8 @@ static/
 !SF/static/ads.txt
 !SF/static/style.css
 !SF/static/main.js
+!/SF/static/*.css
+!/SF/static/*.js
 uploads/
 
 # ===============================
