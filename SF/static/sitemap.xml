@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <sitemap>
+        <loc>https://sinifdijital.com/sitemap-pages.xml</loc>
+        <lastmod>2026-05-21</lastmod>
+    </sitemap>
+    <sitemap>
+        <loc>https://sinifdijital.com/sitemap-classes.xml</loc>
+    </sitemap>
+    <sitemap>
+        <loc>https://sinifdijital.com/sitemap-courses.xml</loc>
+    </sitemap>
+    <sitemap>
+        <loc>https://sinifdijital.com/sitemap-content.xml</loc>
+    </sitemap>
+</sitemapindex>

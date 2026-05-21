@@ -1,6 +1,20 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
+    <!-- Google Consent Mode v2 — Varsayılan denied, localStorage'dan güncellenir -->
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('consent', 'default', {
+            'ad_storage':             'denied',
+            'analytics_storage':      'denied',
+            'functionality_storage':  'denied',
+            'personalization_storage':'denied',
+            'ad_user_data':           'denied',
+            'ad_personalization':     'denied',
+            'wait_for_update':        500
+        });
+    </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }} - SF</title>
@@ -340,6 +354,28 @@
         margin-left: 0 !important;
         margin-right: 0 !important;
         padding-top: 0 !important;
+    }
+}
+
+/* ========== REKLAM ALANLARI ========== */
+.header-ad-wrapper, .footer-ad-wrapper {
+    width: 100%; display: flex; justify-content: center;
+    padding: 12px 0; background: #f8f9fa; overflow: hidden;
+}
+.header-ad-container, .footer-ad-container {
+    display: flex; justify-content: center; align-items: center;
+    overflow: hidden; margin: 0 auto;
+}
+@media (min-width: 768px) {
+    .header-ad-container, .footer-ad-container { width: 728px; height: 90px; }
+    .header-ad-container .adsbygoogle, .footer-ad-container .adsbygoogle {
+        width: 728px !important; height: 90px !important;
+    }
+}
+@media (max-width: 767.98px) {
+    .header-ad-container, .footer-ad-container { width: 320px; height: 100px; }
+    .header-ad-container .adsbygoogle, .footer-ad-container .adsbygoogle {
+        width: 320px !important; height: 100px !important;
     }
 }
 </style>
@@ -692,5 +728,47 @@
     <!-- JavaScript -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     {% block scripts %}{% endblock %}
+
+    <!-- Google AdSense — Consent-aware yükleme -->
+    <script>
+    (function() {
+        function loadDashboardAds(personalized) {
+            if (document.getElementById('adsense-script')) return;
+            window.adsbygoogle = window.adsbygoogle || [];
+            if (!personalized) window.adsbygoogle.requestNonPersonalizedAds = 1;
+            var s = document.createElement('script');
+            s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7728832097527782';
+            s.async = true; s.crossOrigin = 'anonymous'; s.id = 'adsense-script';
+            s.onload = function() {
+                setTimeout(function() {
+                    document.querySelectorAll('.adsbygoogle').forEach(function(ad) {
+                        if (!ad.getAttribute('data-adsbygoogle-status')) {
+                            try { (adsbygoogle = window.adsbygoogle || []).push({}); }
+                            catch(e) {}
+                        }
+                    });
+                }, 100);
+            };
+            document.head.appendChild(s);
+        }
+        try {
+            var stored = localStorage.getItem('cookieConsent');
+            if (stored) {
+                var c = JSON.parse(stored);
+                if (c && c.version) {
+                    gtag('consent', 'update', {
+                        'ad_storage': c.advertising ? 'granted' : 'denied',
+                        'analytics_storage': c.analytics ? 'granted' : 'denied',
+                        'functionality_storage': c.functional ? 'granted' : 'denied',
+                        'personalization_storage': c.advertising ? 'granted' : 'denied',
+                        'ad_user_data': c.advertising ? 'granted' : 'denied',
+                        'ad_personalization': c.advertising ? 'granted' : 'denied'
+                    });
+                    loadDashboardAds(c.advertising === true);
+                } else { loadDashboardAds(false); }
+            } else { loadDashboardAds(false); }
+        } catch(e) { loadDashboardAds(false); }
+    })();
+    </script>
 </body>
 </html>

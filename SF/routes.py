@@ -122,7 +122,6 @@ def sitemap_classes():
             url = f"{base_url}/{sinif.slug}"
             xml_data += f"""    <url>
         <loc>{url}</loc>
-        <lastmod>{datetime.utcnow().strftime('%Y-%m-%d')}</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.8</priority>
     </url>
@@ -161,7 +160,6 @@ def sitemap_courses():
             url = f"{base_url}/{sinif.slug}/{ders.slug}"
             xml_data += f"""    <url>
         <loc>{url}</loc>
-        <lastmod>{datetime.utcnow().strftime('%Y-%m-%d')}</lastmod>
         <changefreq>weekly</changefreq>
         <priority>0.7</priority>
     </url>
@@ -204,7 +202,7 @@ def sitemap_content():
         
         for icerik, unite, ders, sinif in icerikler:
             url = f"{base_url}/{sinif.slug}/{ders.slug}/{unite.slug}/{icerik.slug}"
-            last_modified = (icerik.updated_at or icerik.created_at or datetime.utcnow()).strftime('%Y-%m-%d')
+            last_modified = (icerik.created_at or datetime.utcnow()).strftime('%Y-%m-%d')
             
             xml_data += f"""    <url>
         <loc>{url}</loc>
@@ -748,7 +746,7 @@ def home():
 def sinif(slug):
     sinif = Sinif.query.filter_by(slug=slug).first_or_404()
     dersler = Ders.query.filter_by(sinif_id=sinif.id).all()
-    return render_template('sinif.html', sinif=sinif, dersler=dersler)
+    return render_template('sinif.html', sinif=sinif, dersler=dersler, title=f"{sinif.sinif}. Sınıf")
 
 
 def build_okundu_set(user_id, icerik_ids):
@@ -819,18 +817,27 @@ def turkce_humanize(text):
 def kvkk():
     return render_template('legal/kvkk.html')
 
-@app.route('/gizlilik')
 @app.route('/gizlilik-politikasi')
+def gizlilik_redirect():
+    return redirect('/gizlilik', code=301)
+
+@app.route('/gizlilik')
 def gizlilik():
     return render_template('legal/gizlilik.html')
 
-@app.route('/kullanim-kosullari')
 @app.route('/terms')
+def terms_redirect():
+    return redirect('/kullanim-kosullari', code=301)
+
+@app.route('/kullanim-kosullari')
 def kullanim():
     return render_template('legal/kullanim.html')
 
 
 @app.route('/about')
+def about_redirect():
+    return redirect('/hakkimizda', code=301)
+
 @app.route('/hakkimizda')
 def about():
     return render_template('about.html')
@@ -1080,18 +1087,6 @@ def get_user_progress_tree(user_id):
 @app.route('/<sinif_slug>/<ders_slug>')
 def ders(sinif_slug, ders_slug):
     try:
-        # HATA AYIKLAMA - Aranan slug'ları logla
-        app.logger.info(f"Aranan slug'lar: sinif_slug={sinif_slug}, ders_slug={ders_slug}")
-        
-        # Önce first() ile kontrol edelim ve sonucu logla
-        sinif_check = Sinif.query.filter_by(slug=sinif_slug).first()
-        app.logger.info(f"Sınıf bulundu mu: {sinif_check is not None}")
-        
-        if sinif_check:
-            ders_check = Ders.query.filter_by(slug=ders_slug, sinif_id=sinif_check.id).first()
-            app.logger.info(f"Ders bulundu mu: {ders_check is not None}")
-        
-        # Normal first_or_404 kodu
         sinif = Sinif.query.filter_by(slug=sinif_slug).first_or_404()
         ders_obj = Ders.query.filter_by(slug=ders_slug, sinif_id=sinif.id).first_or_404()
         
@@ -1170,7 +1165,8 @@ def ders(sinif_slug, ders_slug):
             sinif=sinif, 
             ders=ders_obj, 
             uniteler=uniteler_wrapped,
-            siniflar=Sinif.query.all()  # Layout için gerekli
+            siniflar=Sinif.query.all(),  # Layout için gerekli
+            title=f"{ders_obj.ders_adi} — {sinif.sinif}. Sınıf"
         )
     
     except Exception as e:
@@ -1212,19 +1208,17 @@ def icerik(sinif_slug, ders_slug, unite_slug, icerik_slug):
             icerik_id=icerik_id
         ).order_by(DersNotu.eklenme_tarihi.desc()).all()
         
-        # TÜM DERSİN İÇERİKLERİNİ ÜNİTE SIRASINA GÖRE AL
-        uniteler = Unite.query.filter_by(ders_id=ders.id).order_by(Unite.id).all()
+        # Önceki/sonraki navigasyon — uniteler_wrapped'deki mevcut veriyi kullan, ek sorgu atmadan
         all_contents = []
-        for u in uniteler:
-            unit_contents = Icerik.query.filter_by(unite_id=u.id).order_by(Icerik.id).all()
-            for content in unit_contents:
+        for block in uniteler_wrapped:
+            for content in block['icerikler']:
                 all_contents.append({
                     'id': content.id,
                     'baslik': content.baslik,
-                    'unite_id': u.id,
-                    'unite_adi': u.unite,
+                    'unite_id': content.unite_id,
                     'slug': content.slug,
-                    'unite_slug': u.slug
+                    'unite_slug': block['unite_slug'],
+                    '_obj': content
                 })
         current_index = -1
         for i, content in enumerate(all_contents):
@@ -1237,19 +1231,17 @@ def icerik(sinif_slug, ders_slug, unite_slug, icerik_slug):
         next_content_data = None
         if current_index > 0:
             prev_item = all_contents[current_index - 1]
-            prev_content = Icerik.query.get(prev_item['id'])
-            prev_unite = Unite.query.get(prev_item['unite_id'])
+            prev_content = prev_item['_obj']
             prev_content_data = {
                 'icerik': prev_content,
-                'unite_slug': prev_unite.slug
+                'unite_slug': prev_item['unite_slug']
             }
         if current_index < len(all_contents) - 1:
             next_item = all_contents[current_index + 1]
-            next_content = Icerik.query.get(next_item['id'])
-            next_unite = Unite.query.get(next_item['unite_id'])
+            next_content = next_item['_obj']
             next_content_data = {
                 'icerik': next_content,
-                'unite_slug': next_unite.slug
+                'unite_slug': next_item['unite_slug']
             }
         total_contents = len(all_contents)
         current_position = current_index + 1  # 0-tabanlı indeksi 1-tabanlı hale getir
@@ -1293,7 +1285,8 @@ def icerik(sinif_slug, ders_slug, unite_slug, icerik_slug):
             prev_content_data=prev_content_data,
             next_content_data=next_content_data,
             current_position=current_position,
-            total_contents=total_contents
+            total_contents=total_contents,
+            title=icerik.baslik
         )
     
     except Exception as e:
@@ -2001,6 +1994,7 @@ def google_login_callback():
                 success=True,
                 details=f"Google OAuth ile kayıt - IP: {get_client_ip()}"
             )
+            db.session.commit()
             
             login_user(user)
             flash("Google hesabınızla başarıyla kayıt oldunuz! Kullanım koşullarını ve gizlilik politikasını kabul etmiş sayılırsınız. Lütfen profilinizi tamamlayın.", "success")
@@ -3060,8 +3054,7 @@ def redirect_ders_notu_filtre(sinif_id, ders_id):
 def legacy_unite_redirect(sinif_id, ders_id, unite_id):
     sinif = Sinif.query.get_or_404(sinif_id)
     ders = Ders.query.filter_by(id=ders_id, sinif_id=sinif_id).first_or_404()
-    unite = Unite.query.filter_by(id=unite_id, ders_id=ders_id).first_or_404()
-    return redirect(url_for('unite', sinif_slug=sinif.slug, ders_slug=ders.slug, unite_slug=unite.slug), code=301)
+    return redirect(url_for('ders', sinif_slug=sinif.slug, ders_slug=ders.slug), code=301)
 
 @app.route('/<int:sinif_id>/<int:ders_id>/<int:unite_id>/<int:icerik_id>')
 def legacy_icerik_redirect(sinif_id, ders_id, unite_id, icerik_id):
@@ -4230,7 +4223,6 @@ def edit_icerik(id, sub_id, unite_id, icerik_id):
             # İçeriği güncelle
             icerik.baslik = form.baslik.data
             icerik.icerik = form.icerik.data
-            icerik.updated_at = datetime.utcnow()
             icerik.slug = create_slug(form.baslik.data)
             
             # Değişiklikleri kaydet

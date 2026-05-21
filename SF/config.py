@@ -22,13 +22,15 @@ class Config:
     
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
     GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
+    GA_MEASUREMENT_ID        = os.environ.get('GA_MEASUREMENT_ID', 'G-QJFK90N7G0')
+    GOOGLE_SITE_VERIFICATION = os.environ.get('GOOGLE_SITE_VERIFICATION', '')
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # ✅ Session Configuration (CSRF token için gerekli)
     SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'False') == 'True'
     SESSION_COOKIE_HTTPONLY = True
-    SESSION_COOKIE_SAMESITE = 'Lax'  # CSRF koruması için
+    SESSION_COOKIE_SAMESITE = os.environ.get('SESSION_COOKIE_SAMESITE', 'Lax')
     PERMANENT_SESSION_LIFETIME = timedelta(hours=1)
     
     # ✅ CSRF Configuration

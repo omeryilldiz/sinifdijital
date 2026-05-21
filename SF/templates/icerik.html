@@ -1,9 +1,46 @@
 {% extends "layout.html" %}
 {% from 'includes/ads_macros.html' import render_ad %}
 
+{% block meta_description %}{{ icerik.baslik }} — {{ ders.ders_adi }}, {{ sinif.sinif }}. Sınıf konu anlatımı.{% endblock %}
+{% block og_type %}article{% endblock %}
+{% block og_title %}{{ icerik.baslik }} - Sınıf Dijital{% endblock %}
+{% block og_description %}{{ icerik.baslik }} — {{ ders.ders_adi }}, {{ sinif.sinif }}. Sınıf konu anlatımı.{% endblock %}
+{% block twitter_title %}{{ icerik.baslik }} - Sınıf Dijital{% endblock %}
+{% block twitter_description %}{{ icerik.baslik }} — {{ ders.ders_adi }}, {{ sinif.sinif }}. Sınıf konu anlatımı.{% endblock %}
+
 {% block head %}
 {{ super() }}
 <meta name="csrf-token" content="{{ csrf_token() }}">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {"@type": "ListItem", "position": 1, "name": "Ana Sayfa", "item": "{{ request.host_url.rstrip('/') }}/"},
+        {"@type": "ListItem", "position": 2, "name": "{{ sinif.sinif }}. Sınıf", "item": "{{ request.host_url.rstrip('/') }}/{{ sinif.slug }}"},
+        {"@type": "ListItem", "position": 3, "name": "{{ ders.ders_adi }}", "item": "{{ request.host_url.rstrip('/') }}/{{ sinif.slug }}/{{ ders.slug }}"},
+        {"@type": "ListItem", "position": 4, "name": "{{ icerik.baslik }}", "item": "{{ request.url }}"}
+      ]
+    },
+    {
+      "@type": "Article",
+      "headline": "{{ icerik.baslik }}",
+      "description": "{{ icerik.baslik }} — {{ ders.ders_adi }}, {{ sinif.sinif }}. Sınıf konu anlatımı.",
+      "url": "{{ request.url }}",
+      "inLanguage": "tr",
+      "publisher": {
+        "@type": "Organization",
+        "name": "Sınıf Dijital",
+        "url": "{{ request.host_url.rstrip('/') }}"
+      },
+      "educationalLevel": "{{ sinif.sinif }}. Sınıf",
+      "about": "{{ ders.ders_adi }}"
+    }
+  ]
+}
+</script>
 {% endblock %}
 
 {% block content %}
@@ -199,9 +236,6 @@
          data-ad-slot="4030416361"
          data-ad-format="horizontal"
          data-full-width-responsive="false"></ins>
-    <script>
-         (adsbygoogle = window.adsbygoogle || []).push({});
-    </script>
   </div>
 </template>
 <template id="ad-template-2">
@@ -212,9 +246,6 @@
          data-ad-slot="5104766834"
          data-ad-format="horizontal"
          data-full-width-responsive="false"></ins>
-    <script>
-         (adsbygoogle = window.adsbygoogle || []).push({});
-    </script>
   </div>
 </template>
 <template id="ad-template-3">
@@ -225,9 +256,6 @@
          data-ad-slot="7730930173"
          data-ad-format="horizontal"
          data-full-width-responsive="false"></ins>
-    <script>
-         (adsbygoogle = window.adsbygoogle || []).push({});
-    </script>
   </div>
 </template>
 {% endblock %}
@@ -247,6 +275,12 @@
   function injectAdsIntoContent() {
     const contentBody = document.getElementById('content-body');
     if (!contentBody) return;
+
+    // Mobilde sidebar DOM'dan kaldır — aynı slot ID'nin iki <ins>'te çakışmasını önle
+    if (AD_CONFIG.isMobile) {
+      var sidebarCol = document.querySelector('.ad-sidebar-column');
+      if (sidebarCol) sidebarCol.remove();
+    }
 
     if (!AD_CONFIG.isMobile) return;
 
@@ -327,7 +361,7 @@
       try {
         const ads = document.querySelectorAll('.in-content-ad .adsbygoogle');
         ads.forEach(ad => {
-          if (!ad.getAttribute('data-ad-status')) {
+          if (!ad.getAttribute('data-adsbygoogle-status')) {
             (adsbygoogle = window.adsbygoogle || []).push({});
           }
         });

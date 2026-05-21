@@ -31,7 +31,3 @@ Disallow: /test-smtp-config
 
 # Sitemaps
 Sitemap: https://sinifdijital.com/sitemap.xml
-Sitemap: https://sinifdijital.com/sitemap-classes.xml
-Sitemap: https://sinifdijital.com/sitemap-courses.xml
-Sitemap: https://sinifdijital.com/sitemap-content.xml
-Sitemap: https://sinifdijital.com/sitemap-legal.xml
