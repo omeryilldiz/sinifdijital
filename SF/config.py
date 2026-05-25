@@ -5,19 +5,46 @@ from sqlalchemy.pool import QueuePool, StaticPool
 from datetime import timedelta
 
 load_dotenv()  # .env dosyasını yükle
+
+# Helper function to read Docker secrets
+def get_secret(secret_name):
+    try:
+        with open(f'/run/secrets/{secret_name}', 'r') as f:
+            return f.read().strip()
+    except FileNotFoundError:
+        return None
+
 class Config:
     # SECRET_KEY zorunlu - Docker secrets veya .env'den yüklenmeli
     SECRET_KEY = os.environ.get('SECRET_KEY')
+    if not SECRET_KEY:
+        secret_key_from_file = get_secret('secret_key')
+        SECRET_KEY = secret_key_from_file
     if not SECRET_KEY:
         # Development modunda fallback kullan, production'da hata ver
         if os.environ.get('FLASK_ENV') == 'production':
             raise ValueError("SECRET_KEY environment variable is required in production")
         else:
             SECRET_KEY = os.urandom(32).hex()
-            print("⚠️  WARNING: Using random SECRET_KEY (development only)")
+            import logging
+            logging.warning("Using random SECRET_KEY — development only. Set SECRET_KEY env var for persistence.")
     
-    # Database URL - Docker entrypoint tarafından oluşturulacak
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'postgresql://sfuser:1174@localhost/sfdb')
+    # Database URL - try env var first, then construct from secrets
+    DATABASE_URL = os.environ.get('DATABASE_URL')
+    if not DATABASE_URL:
+        # Try to construct from secrets and env vars
+        postgres_user = os.environ.get('POSTGRES_USER', 'sfuser')
+        postgres_password = os.environ.get('POSTGRES_PASSWORD', get_secret('postgres_password'))
+        postgres_host = os.environ.get('POSTGRES_HOST', 'db')
+        postgres_port = os.environ.get('POSTGRES_PORT', '5432')
+        postgres_db = os.environ.get('POSTGRES_DB', 'sfdb')
+        
+        if postgres_password:
+            DATABASE_URL = f'postgresql://{postgres_user}:{postgres_password}@{postgres_host}:{postgres_port}/{postgres_db}'
+        else:
+            DATABASE_URL = None  # Şifre bulunamadı — uygulama başlarken hata verecek
+    
+    SQLALCHEMY_DATABASE_URI = DATABASE_URL
     DATABASE_URL = SQLALCHEMY_DATABASE_URI  # Alias ekle
     
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
@@ -34,13 +61,15 @@ class Config:
     PERMANENT_SESSION_LIFETIME = timedelta(hours=1)
     
     # ✅ CSRF Configuration
-    WTF_CSRF_TIME_LIMIT = None  # CSRF token'ının hiç expire olmamsı (session bazlı)
+    WTF_CSRF_TIME_LIMIT = 43200  # 12 saat (saniye) - token süresi dolduğunda yeniden giriş gerekir
     WTF_CSRF_CHECK_DEFAULT = True
     WTF_CSRF_SSL_STRICT = False  # Proxy arkasında çalışması için
 
     # 🔐 Admin Panel Security
     ADMIN_URL_PREFIX = os.environ.get('ADMIN_URL_PREFIX', '/yonetim-panel-x9k2m')
     EMERGENCY_RECOVERY_PASSWORD = os.environ.get('EMERGENCY_RECOVERY_PASSWORD')
+    if not EMERGENCY_RECOVERY_PASSWORD:
+        EMERGENCY_RECOVERY_PASSWORD = get_secret('emergency_recovery_password')
 
     UPLOAD_FOLDER = os.environ.get('UPLOAD_FOLDER', 'SF/static/uploads')
     SORU_UPLOAD_FOLDER = os.environ.get('SORU_UPLOAD_FOLDER', 'SF/static/soru_uploads')
@@ -95,9 +124,9 @@ class Config:
         if database_url.startswith('postgresql'):
             return {
                 'poolclass': QueuePool,
-                'pool_size': int(os.environ.get('DATABASE_POOL_SIZE', 10)),  # Optimized from 20
-                'max_overflow': int(os.environ.get('DATABASE_MAX_OVERFLOW', 10)),  # Reduced from 50
-                'pool_timeout': int(os.environ.get('DATABASE_POOL_TIMEOUT', 60)),  # Increased from 30
+                'pool_size': int(os.environ.get('DATABASE_POOL_SIZE', 5)),
+                'max_overflow': int(os.environ.get('DATABASE_MAX_OVERFLOW', 10)),
+                'pool_timeout': int(os.environ.get('DATABASE_POOL_TIMEOUT', 30)),
                 'pool_recycle': 1800,  # 30 minutes
                 'pool_pre_ping': True,
                 'pool_reset_on_return': 'commit',

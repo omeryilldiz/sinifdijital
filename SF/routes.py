@@ -707,10 +707,14 @@ def get_schools_filtered(district_id, school_type_id):
         return jsonify({'error': 'Veriler alınamadı'}), 500
 
 
-@_cache_cached(timeout=300, key_prefix='inject_siniflar')
 @app.context_processor
 def inject_siniflar():
-    siniflar = Sinif.query.order_by(Sinif.id).all()
+    # siniflar cache'lenir; active_sinif per-request olduğu için cache dışında kalır
+    @_cache_cached(timeout=300, key_prefix='inject_siniflar')
+    def _get_siniflar():
+        return Sinif.query.order_by(Sinif.id).all()
+
+    siniflar = _get_siniflar()
     active_sinif = getattr(g, 'active_sinif', None)
     return dict(siniflar=siniflar, active_sinif=active_sinif)
 
@@ -771,34 +775,52 @@ def build_okundu_set(user_id, icerik_ids):
 
 def _prepare_uniteler_with_icerikler(ders_id):
     """
-    Template içinde hasattr kullanmamak için ünite + içerik listesini düzleştirir.
-    Her eleman: {'id': unite.id, 'unite': unite.unite, 'icerikler': [Icerik, ...]}
+    N+1 yerine 2 sorgu: tüm üniteler + tüm icerikler tek sorguda çekilir.
     """
-    result = []
     uniteler = Unite.query.filter_by(ders_id=ders_id).order_by(Unite.id.asc()).all()
-    for u in uniteler:
-        if hasattr(u.icerikler, 'all'):  
-            icerikler = u.icerikler.all()
-        else:
-            icerikler = u.icerikler
-        result.append({
+    if not uniteler:
+        return []
+    unite_ids = [u.id for u in uniteler]
+    all_icerikler = (
+        Icerik.query
+        .filter(Icerik.unite_id.in_(unite_ids))
+        .order_by(Icerik.id.asc())
+        .all()
+    )
+    icerikler_map = {}
+    for ic in all_icerikler:
+        icerikler_map.setdefault(ic.unite_id, []).append(ic)
+    return [
+        {
             'id': u.id,
             'unite': u.unite,
-            'unite_slug': u.slug,  
-            'icerikler': icerikler
-        })
-    return result
+            'unite_slug': u.slug,
+            'icerikler': icerikler_map.get(u.id, [])
+        }
+        for u in uniteler
+    ]
 
 
 
 
 def _wrap_uniteler(ders_id):
-    blocks = []
     uniteler = Unite.query.filter_by(ders_id=ders_id).order_by(Unite.id.asc()).all()
-    for u in uniteler:
-        coll = u.icerikler.all() if hasattr(u.icerikler, 'all') else u.icerikler
-        blocks.append({'id': u.id, 'unite': u.unite, 'icerikler': list(coll)})
-    return blocks
+    if not uniteler:
+        return []
+    unite_ids = [u.id for u in uniteler]
+    all_icerikler = (
+        Icerik.query
+        .filter(Icerik.unite_id.in_(unite_ids))
+        .order_by(Icerik.id.asc())
+        .all()
+    )
+    icerikler_map = {}
+    for ic in all_icerikler:
+        icerikler_map.setdefault(ic.unite_id, []).append(ic)
+    return [
+        {'id': u.id, 'unite': u.unite, 'icerikler': icerikler_map.get(u.id, [])}
+        for u in uniteler
+    ]
 
 
 def turkce_humanize(text):
@@ -1286,7 +1308,8 @@ def icerik(sinif_slug, ders_slug, unite_slug, icerik_slug):
             next_content_data=next_content_data,
             current_position=current_position,
             total_contents=total_contents,
-            title=icerik.baslik
+            title=icerik.baslik,
+            description_snippet=_make_description_snippet(icerik.icerik)
         )
     
     except Exception as e:
@@ -1304,73 +1327,100 @@ def _limiter_key_user_or_ip():
 
 # NOTE: Client should batch small updates into the `buffer` list
 # (debounce on client-side, e.g. send every 5-30s) to reduce request frequency.
+_VALID_ACTIVITY_TYPES = {
+    ActivityType.CONTENT_READING, ActivityType.QUESTION_SOLVING,
+    ActivityType.VIDEO_WATCHING, ActivityType.NOTE_TAKING,
+    ActivityType.PRACTICE_TEST, ActivityType.CONTENT_VIEWED,
+    ActivityType.TEST_SUMMARY,
+}
+_MAX_HARCANAN_SURE = 7200  # 2 saat — makul üst sınır
+
+_TAG_RE = re.compile(r'<[^>]+>')
+
+def _make_description_snippet(html_content, max_len=155):
+    """CKEditor HTML'inden düz metin özeti üretir (meta description için)."""
+    if not html_content:
+        return ''
+    text = _TAG_RE.sub(' ', html_content)
+    text = ' '.join(text.split())  # boşlukları normalize et
+    return text[:max_len].rsplit(' ', 1)[0] if len(text) > max_len else text
+
+
+def _upsert_sure(user_id, icerik_id, harcanan_sure, activity_type):
+    """
+    (user_id, icerik_id, activity_type, bugün) için günlük upsert.
+    Yeni satır yoksa INSERT, varsa harcanan_sure += delta.
+    """
+    harcanan_sure = min(int(harcanan_sure), _MAX_HARCANAN_SURE)
+    today = datetime.utcnow().date()
+    progress = UserProgress.query.filter_by(
+        user_id=user_id,
+        icerik_id=icerik_id,
+        activity_type=activity_type
+    ).filter(func.date(UserProgress.tarih) == today).first()
+    if not progress:
+        progress = UserProgress(
+            user_id=user_id,
+            icerik_id=icerik_id,
+            harcanan_sure=harcanan_sure,
+            activity_type=activity_type,
+            tarih=datetime.utcnow()
+        )
+        db.session.add(progress)
+    else:
+        progress.harcanan_sure = (progress.harcanan_sure or 0) + harcanan_sure
+        progress.tarih = datetime.utcnow()
+
+
 @app.route('/icerik-sure-kaydet', methods=['POST'])
 @login_required
 @limiter.limit("120 per minute", key_func=_limiter_key_user_or_ip)
-@csrf.exempt
+@csrf.exempt  # sendBeacon custom header gönderemez; @login_required yeterli koruma sağlar
 def icerik_sure_kaydet():
     try:
         data = request.get_json(silent=True)
-        
         if not data:
             return jsonify({'status': 'error', 'message': 'Boş veri'}), 400
-            
-        user_id = current_user.id
 
+        user_id = current_user.id
         buffer = data.get('buffer')
+
         if buffer and isinstance(buffer, list):
+            # Tüm icerik_id'lerin geçerli olup olmadığını tek sorguda doğrula
+            raw_ids = [item.get('icerik_id') for item in buffer if item.get('icerik_id')]
+            if raw_ids:
+                valid_ids = {
+                    r[0] for r in db.session.query(Icerik.id)
+                    .filter(Icerik.id.in_(raw_ids)).all()
+                }
+            else:
+                valid_ids = set()
+
             for item in buffer:
                 icerik_id = item.get('icerik_id')
                 harcanan_sure = item.get('harcanan_sure')
-                activity_type = item.get('activity_type', 'content_reading')
-                if not icerik_id or not harcanan_sure or int(harcanan_sure) <= 0:
+                activity_type = item.get('activity_type', ActivityType.CONTENT_READING)
+                if activity_type not in _VALID_ACTIVITY_TYPES:
+                    activity_type = ActivityType.CONTENT_READING
+                if not icerik_id or icerik_id not in valid_ids:
                     continue
+                if not harcanan_sure or int(harcanan_sure) <= 0:
+                    continue
+                _upsert_sure(user_id, icerik_id, harcanan_sure, activity_type)
 
-                # Her kullanıcı + içerik + activity_type + gün için tek kayıt!
-                today = datetime.utcnow().date()
-                progress = UserProgress.query.filter_by(
-                    user_id=user_id,
-                    icerik_id=icerik_id,
-                    activity_type=activity_type
-                ).filter(func.date(UserProgress.tarih) == today).first()
-                if not progress:
-                    progress = UserProgress(
-                        user_id=user_id,
-                        icerik_id=icerik_id,
-                        harcanan_sure=int(harcanan_sure),
-                        activity_type=activity_type,
-                        tarih=datetime.utcnow()
-                    )
-                    db.session.add(progress)
-                else:
-                    progress.harcanan_sure = (progress.harcanan_sure or 0) + int(harcanan_sure)
-                    progress.tarih = datetime.utcnow()
             db.session.commit()
             return jsonify({'status': 'success', 'message': 'Süre günlük olarak kaydedildi'})
         else:
             icerik_id = data.get('icerik_id')
             harcanan_sure = data.get('harcanan_sure')
-            activity_type = data.get('activity_type', 'content_reading')
+            activity_type = data.get('activity_type', ActivityType.CONTENT_READING)
+            if activity_type not in _VALID_ACTIVITY_TYPES:
+                activity_type = ActivityType.CONTENT_READING
             if not icerik_id or not harcanan_sure or int(harcanan_sure) <= 0:
                 return jsonify({'status': 'error', 'message': 'Eksik veya hatalı veri'}), 400
-            today = datetime.utcnow().date()
-            progress = UserProgress.query.filter_by(
-                user_id=user_id,
-                icerik_id=icerik_id,
-                activity_type=activity_type
-            ).filter(func.date(UserProgress.tarih) == today).first()
-            if not progress:
-                progress = UserProgress(
-                    user_id=user_id,
-                    icerik_id=icerik_id,
-                    harcanan_sure=int(harcanan_sure),
-                    activity_type=activity_type,
-                    tarih=datetime.utcnow()
-                )
-                db.session.add(progress)
-            else:
-                progress.harcanan_sure = (progress.harcanan_sure or 0) + int(harcanan_sure)
-                progress.tarih = datetime.utcnow()
+            if not db.session.get(Icerik, icerik_id):
+                return jsonify({'status': 'error', 'message': 'Geçersiz içerik'}), 400
+            _upsert_sure(user_id, icerik_id, harcanan_sure, activity_type)
             db.session.commit()
             return jsonify({'status': 'success'})
     except Exception as e:
@@ -1378,87 +1428,36 @@ def icerik_sure_kaydet():
         app.logger.error(f"Süre kaydı hatası: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Sistem hatası'}), 500
 
-    
-    
-@app.route('/update_content_view/<int:icerik_id>', methods=['POST'])
-@login_required
-def update_content_view(icerik_id):
-    try:
-        data = request.get_json()
-        harcanan_sure = data.get('harcanan_sure', 0)
-        baslama_zamani = datetime.fromisoformat(data.get('baslama_zamani').replace('Z', '+00:00'))
-        bitirme_zamani = datetime.fromisoformat(data.get('bitirme_zamani').replace('Z', '+00:00'))
 
-        # İlerleme kaydını bul veya oluştur
-        progress = UserProgress.query.filter_by(
-            user_id=current_user.id,
-            icerik_id=icerik_id
-        ).order_by(UserProgress.id.desc()).first()
 
-        if not progress:
-            progress = UserProgress(
-                user_id=current_user.id,
-                icerik_id=icerik_id,
-                baslama_zamani=baslama_zamani,
-                bitirme_zamani=bitirme_zamani,
-                harcanan_sure=harcanan_sure
-            )
-            db.session.add(progress)
-        else:
-            # Toplam süreyi biriktir
-            progress.harcanan_sure = (progress.harcanan_sure or 0) + harcanan_sure
-            progress.baslama_zamani = baslama_zamani
-            progress.bitirme_zamani = bitirme_zamani
 
-        db.session.commit()
-
-        return jsonify({'success': True})
-
-    except Exception as e:
-        app.logger.error(f"İçerik görüntüleme hatası: {str(e)}")
-        return jsonify({'success': False, 'error': str(e)})
-    
-    
-@app.route('/mark_content_viewed/<int:icerik_id>', methods=['POST'])
-@login_required
-def mark_content_viewed(icerik_id):
-        # Kullanıcı kontrolünü güçlendir
-    if not current_user.is_authenticated:
-        return jsonify({'error': 'Oturum sonlanmış', 'redirect': url_for('login')}), 401
-        
-
-    try:
-        # Yeni görüntüleme kaydı oluştur
-        progress = UserProgress(
-            user_id=current_user.id,
-            icerik_id=icerik_id,
-            activity_type='content_viewed',
-            tarih=datetime.utcnow()
-        )
-        db.session.add(progress)
-        db.session.commit()
-        
-        return jsonify({'success': True})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({'success': False, 'error': str(e)}), 500
-    
-    
-    
-    
 @app.route('/mark_content_read/<int:icerik_id>', methods=['POST'])
 @login_required
 def mark_content_read(icerik_id):
     try:
         user_id = current_user.id
-        # Okundu bilgisini doğrudan UserProgress tablosuna yaz
-        progress = UserProgress.query.filter_by(user_id=user_id, icerik_id=icerik_id).order_by(UserProgress.id.desc()).first()
+        if not db.session.get(Icerik, icerik_id):
+            return jsonify({'success': False, 'message': 'Geçersiz içerik'}), 400
+        today = datetime.utcnow().date()
+        # icerik_sure_kaydet ile aynı mantık: yalnızca bugünkü satırı bul.
+        # Böylece her iki endpoint da daima aynı satır üzerinde çalışır;
+        # okundu ve harcanan_sure hiçbir zaman farklı günlerin satırlarına dağılmaz.
+        progress = UserProgress.query.filter_by(
+            user_id=user_id,
+            icerik_id=icerik_id,
+            activity_type=ActivityType.CONTENT_READING
+        ).filter(func.date(UserProgress.tarih) == today).first()
         if not progress:
-            progress = UserProgress(user_id=user_id, icerik_id=icerik_id, okundu=True, activity_type=ActivityType.CONTENT_READING)
+            progress = UserProgress(
+                user_id=user_id,
+                icerik_id=icerik_id,
+                okundu=True,
+                activity_type=ActivityType.CONTENT_READING,
+                tarih=datetime.utcnow()
+            )
             db.session.add(progress)
         else:
             progress.okundu = True
-            progress.activity_type = ActivityType.CONTENT_READING
         db.session.commit()
         return jsonify({'success': True})
     except Exception as e:
@@ -1559,6 +1558,9 @@ def soru_coz(sinif_slug, ders_slug):
         if icerik_id:
             query = query.filter(Icerik.id == icerik_id)
         if yanlis_tekrar:
+            if not current_user.is_authenticated:
+                flash("Yanlış tekrar için giriş yapmanız gerekiyor.", "info")
+                return redirect(url_for('login'))
             # 🎯 DÜZELTİLDİ: İçerik bazlı son çözümü yanlış olan sorular (puan=0.0)
             sub = db.session.query(
                 UserProgress.soru_id,
@@ -1606,7 +1608,7 @@ def soru_coz(sinif_slug, ders_slug):
             
             if yanlis_soru_ids:
                 query = query.filter(Soru.id.in_(yanlis_soru_ids))
-            else:
+            elif request.method == 'GET':
                 flash("Tebrikler! Yanlış sorunuz kalmadı.", "success")
                 return redirect(url_for('ilerleme_patikasi'))
         sorular = query.order_by(func.random()).limit(adet).all()
@@ -1631,12 +1633,9 @@ def soru_coz(sinif_slug, ders_slug):
                 flash('Test oturumu sona erdi. Lütfen yeni bir test başlatın.', 'warning')
                 return redirect(url_for('soru_filtre', sinif_slug=sinif_slug, ders_slug=ders_slug))
             
-            # 🎯 Soruları ID'lere göre çek (sıralı şekilde)
-            sorular = []
-            for soru_id in soru_ids:
-                soru = Soru.query.get(soru_id)
-                if soru:
-                    sorular.append(soru)
+            # 🎯 Soruları ID'lere göre batch query ile çek (N+1 önlendi)
+            sorular_map = {s.id: s for s in Soru.query.filter(Soru.id.in_(soru_ids)).all()}
+            sorular = [sorular_map[sid] for sid in soru_ids if sid in sorular_map]
             
             if not sorular:
                 flash('Sorular bulunamadı. Lütfen tekrar deneyin.', 'danger')
@@ -1646,12 +1645,12 @@ def soru_coz(sinif_slug, ders_slug):
                 cevap = request.form.get(f'cevaplar[{i}]', 'bos')
                 cevaplar[i] = cevap
 
-            harcanan_sure = request.form.get('harcanan_sure', 0, type=int)
+            harcanan_sure = min(request.form.get('harcanan_sure', 0, type=int), _MAX_HARCANAN_SURE)
             soru_sureleri = {}
             soru_ziyaretleri = {}
             for i in range(1, len(sorular) + 1):
-                soru_sureleri[i] = request.form.get(f'soru_sureleri[{i}]', 0, type=int)
-                soru_ziyaretleri[i] = request.form.get(f'soru_ziyaretleri[{i}]', 1, type=int)
+                soru_sureleri[i] = min(request.form.get(f'soru_sureleri[{i}]', 0, type=int), _MAX_HARCANAN_SURE)
+                soru_ziyaretleri[i] = min(request.form.get(f'soru_ziyaretleri[{i}]', 1, type=int), 1000)
 
             sonuclar = []
             dogru_sayisi = 0
@@ -1776,7 +1775,7 @@ def soru_coz(sinif_slug, ders_slug):
         return redirect(url_for('soru_filtre', sinif_slug=sinif_slug, ders_slug=ders_slug))
     
     
-@app.route('/tekil-soru/<sinif_slug>/<ders_slug>/<int:soru_id>', methods=['GET', 'POST'])
+@app.route('/tekil-soru/<sinif_slug>/<ders_slug>/<int:soru_id>', methods=['GET'])
 def tekil_soru(sinif_slug, ders_slug, soru_id):
     sinif = Sinif.query.filter_by(slug=sinif_slug).first_or_404()
     ders = Ders.query.filter_by(slug=ders_slug, sinif_id=sinif.id).first_or_404()
@@ -1788,68 +1787,6 @@ def tekil_soru(sinif_slug, ders_slug, soru_id):
         if soru.icerik.unite.ders_id != ders.id or soru.icerik.unite.ders.sinif_id != sinif.id:
             flash('Soru ile seçilen ders/sınıf uyumsuz.', 'danger')
             return redirect(url_for('home'))
-        
-        if request.method == 'POST':
-            cevap = request.form.get('cevap', '').strip()
-            harcanan_sure = int(request.form.get('harcanan_sure', 0))
-            
-            # ✅ SABİT PUANLAMA SİSTEMİ: Boş cevap kontrolü
-            if not cevap:
-                sonuc = 'Boş'
-                puan = 0
-                dogru_sayisi = 0
-                yanlis_sayisi = 0
-                bos_sayisi = 1
-                sonuc_class = 'secondary'
-                sonuc_mesaj = 'Cevap verilmedi'
-            else:
-                # Normal cevap kontrolü
-                if cevap.upper() == soru.cevap.upper():
-                    sonuc = 'Doğru'
-                    puan = 10  # ✅ Sabit 10 puan
-                    dogru_sayisi = 1
-                    yanlis_sayisi = 0
-                    bos_sayisi = 0
-                    sonuc_class = 'success'
-                    sonuc_mesaj = 'Tebrikler! Doğru cevap.'
-                else:
-                    sonuc = 'Yanlış'
-                    puan = 0
-                    dogru_sayisi = 0
-                    yanlis_sayisi = 1
-                    bos_sayisi = 0
-                    sonuc_class = 'danger'
-                    sonuc_mesaj = f'Yanlış! Doğru cevap: {soru.cevap}'
-            
-            # ✅ UserProgress kaydı: Her çözüm için YENİ kayıt
-            if current_user.is_authenticated:
-                progress = UserProgress(
-                    user_id=current_user.id,
-                    icerik_id=soru.icerik_id,
-                    soru_id=soru.id,
-                    activity_type=ActivityType.QUESTION_SOLVING,
-                    harcanan_sure=harcanan_sure,
-                    dogru_sayisi=dogru_sayisi,
-                    yanlis_sayisi=yanlis_sayisi,
-                    bos_sayisi=bos_sayisi,
-                    puan=puan,
-                    tarih=datetime.utcnow()
-                )
-                db.session.add(progress)
-                db.session.commit()
-            
-            return render_template('tekil_soru_sonuc.html',
-                                sinif=sinif,
-                                ders=ders,
-                                soru=soru,
-                                verilen_cevap=cevap,
-                                dogru_cevap=soru.cevap,
-                                sonuc=sonuc,
-                                sonuc_class=sonuc_class,
-                                sonuc_mesaj=sonuc_mesaj,
-                                puan=puan,
-                                harcanan_sure=harcanan_sure,
-                                siniflar=siniflar)
         
         # GET isteği - Soruyu göster
         return render_template('tekil_soru.html',
@@ -1994,6 +1931,21 @@ def google_login_callback():
                 success=True,
                 details=f"Google OAuth ile kayıt - IP: {get_client_ip()}"
             )
+            
+            # ✅ KVKK: Google OAuth kullanıcısı için sözleşme onaylarını kaydet
+            _consent_ip = get_client_ip()
+            _consent_ua = request.headers.get('User-Agent', '')
+            _consent_version = "1.0"
+            for _ctype in [ConsentType.TERMS_OF_USE, ConsentType.PRIVACY_POLICY, ConsentType.KVKK]:
+                UserConsent.log_consent(
+                    user_id=user.id,
+                    consent_type=_ctype,
+                    consent_version=_consent_version,
+                    ip_address=_consent_ip,
+                    user_agent=_consent_ua,
+                    accepted=True
+                )
+            
             db.session.commit()
             
             login_user(user)
@@ -2910,7 +2862,11 @@ def profile():
         try:
             current_user.first_name = form.first_name.data
             current_user.last_name = form.last_name.data
-            current_user.email = form.email.data
+            # Email değiştiyse doğrulamayı sıfırla
+            new_email = form.email.data
+            if new_email != current_user.email:
+                current_user.email = new_email
+                current_user.email_verified = False
             current_user.phone = form.phone.data
             current_user.school_id = form.school.data
             current_user.class_no = form.class_no.data
@@ -3104,47 +3060,87 @@ def get_recent_courses_optimized(user_id, limit=3):
             .all()
         )
 
-        # 3. Bu içeriklerin derslerini sırayla bul ve tekilleştir
-        ders_sirasi = []
+        if not recent_progress:
+            return []
+
+        # 3. icerik → ders eşlemesini TEK JOIN sorgusunda çek (N+1 yerine 1 sorgu)
+        recent_icerik_ids = [row[0] for row in recent_progress]
+        icerik_date_map = {row[0]: row[1] for row in recent_progress}
+        icerik_to_ders_id = dict(
+            db.session.query(Icerik.id, Ders.id)
+            .join(Unite, Icerik.unite_id == Unite.id)
+            .join(Ders, Unite.ders_id == Ders.id)
+            .filter(Icerik.id.in_(recent_icerik_ids))
+            .all()
+        )
+
+        # İzleme sırasını koru, dersleri tekilleştir
+        ders_ids_ordered = []
         ders_ids_seen = set()
-        for icerik_id, son_gorulme in recent_progress:
-            icerik = Icerik.query.get(icerik_id)
-            if not icerik:
-                continue
-            unite = Unite.query.get(icerik.unite_id)
-            if not unite:
-                continue
-            ders = Ders.query.get(unite.ders_id)
-            if not ders or ders.id in ders_ids_seen:
-                continue
-            ders_sirasi.append((ders, son_gorulme))
-            ders_ids_seen.add(ders.id)
-            if len(ders_sirasi) >= limit:
+        for icerik_id in recent_icerik_ids:
+            ders_id = icerik_to_ders_id.get(icerik_id)
+            if ders_id and ders_id not in ders_ids_seen:
+                ders_ids_ordered.append((ders_id, icerik_date_map[icerik_id]))
+                ders_ids_seen.add(ders_id)
+            if len(ders_ids_seen) >= limit:
                 break
 
-        # 4. Her ders için okunan içerik sayısı ve toplam içerik sayısı
-        course_progress = []
-        for ders, son_gorulme in ders_sirasi:
-            # O derse ait tüm içeriklerin ID'leri
-            ders_icerik_ids = set(
-                ic.id for u in ders.uniteler for ic in (u.icerikler.all() if hasattr(u.icerikler, 'all') else u.icerikler)
-            )
-            read_contents = len(okunan_icerik_ids & ders_icerik_ids)
-            total_contents = len(ders_icerik_ids) or 1
-            progress_percentage = int((read_contents / total_contents * 100)) if total_contents > 0 else 0
+        if not ders_ids_ordered:
+            return []
 
-            course_data = {
+        top_ders_ids = [d[0] for d in ders_ids_ordered]
+        ders_objects = {
+            d.id: d for d in
+            Ders.query.filter(Ders.id.in_(top_ders_ids))
+            .options(joinedload(Ders.sinif))
+            .all()
+        }
+
+        # 4. Toplam içerik sayısını TEK sorguda hesapla
+        total_counts = dict(
+            db.session.query(Ders.id, func.count(Icerik.id))
+            .join(Unite, Unite.ders_id == Ders.id)
+            .join(Icerik, Icerik.unite_id == Unite.id)
+            .filter(Ders.id.in_(top_ders_ids))
+            .group_by(Ders.id)
+            .all()
+        )
+
+        # 5. Okunan içerik sayısını TEK sorguda hesapla
+        if okunan_icerik_ids:
+            read_counts_per_ders = dict(
+                db.session.query(Ders.id, func.count(func.distinct(Icerik.id)))
+                .join(Unite, Unite.ders_id == Ders.id)
+                .join(Icerik, Icerik.unite_id == Unite.id)
+                .filter(
+                    Ders.id.in_(top_ders_ids),
+                    Icerik.id.in_(okunan_icerik_ids)
+                )
+                .group_by(Ders.id)
+                .all()
+            )
+        else:
+            read_counts_per_ders = {}
+
+        # 6. Sonucu derle
+        course_progress = []
+        for ders_id, son_gorulme in ders_ids_ordered:
+            ders = ders_objects.get(ders_id)
+            if not ders:
+                continue
+            total = total_counts.get(ders_id, 1) or 1
+            read = read_counts_per_ders.get(ders_id, 0)
+            course_progress.append({
                 'ders_id': ders.id,
                 'ders_adi': ders.ders_adi,
                 'sinif': ders.sinif.sinif if ders.sinif else '',
                 'sinif_slug': ders.sinif.slug if ders.sinif else '',
                 'ders_slug': ders.slug,
                 'son_gorulme': son_gorulme,
-                'progress': progress_percentage,
-                'total_contents': int(total_contents),
-                'read_contents': int(read_contents)
-            }
-            course_progress.append(course_data)
+                'progress': int(read / total * 100),
+                'total_contents': int(total),
+                'read_contents': int(read)
+            })
 
         return course_progress
 
@@ -3192,32 +3188,45 @@ def dashboard():
         dersler = Ders.query.filter_by(sinif_id=sinif.id).all() if sinif else []
         ders = dersler[0] if dersler else None
 
-        # Sidebar için ünite ve içerik verileri
+        # Sidebar için ünite ve içerik verileri (N+1 yerine 3 sorgu)
         uniteler_with_icerikler = []
         if ders:
-            uniteler = Unite.query.filter_by(ders_id=ders.id).all()
-            for unite in uniteler:
-                icerik_listesi = []
-                icerikler = unite.icerikler.all()
-                for icerik in icerikler:
-                    progress = UserProgress.query.filter_by(
-                        user_id=current_user.id,
-                        icerik_id=icerik.id,
-                        okundu=True
-                    ).first()
-                    icerik_obj = {
-                        'id': icerik.id,
-                        'baslik': icerik.baslik,
-                        'okundu': bool(progress),
-                        'unite_slug': unite.slug  # ✅ EKLE: unite_slug eklendi
-                    }
-                    icerik_listesi.append(icerik_obj)
-                uniteler_with_icerikler.append({
-                    'unite': unite.unite,
-                    'id': unite.id,
-                    'unite_slug': unite.slug,  # ✅ EKLE: unite_slug eklendi
-                    'icerikler': icerik_listesi
-                })
+            uniteler = Unite.query.filter_by(ders_id=ders.id).order_by(Unite.id.asc()).all()
+            if uniteler:
+                unite_ids = [u.id for u in uniteler]
+                all_icerikler = (
+                    Icerik.query
+                    .filter(Icerik.unite_id.in_(unite_ids))
+                    .order_by(Icerik.id.asc())
+                    .all()
+                )
+                all_icerik_ids = [ic.id for ic in all_icerikler]
+                okundu_ids = set(
+                    row[0] for row in db.session.query(UserProgress.icerik_id)
+                    .filter(
+                        UserProgress.user_id == current_user.id,
+                        UserProgress.icerik_id.in_(all_icerik_ids),
+                        UserProgress.okundu.is_(True)
+                    ).distinct()
+                ) if all_icerik_ids else set()
+                icerikler_by_unite = {}
+                for ic in all_icerikler:
+                    icerikler_by_unite.setdefault(ic.unite_id, []).append(ic)
+                for unite in uniteler:
+                    uniteler_with_icerikler.append({
+                        'unite': unite.unite,
+                        'id': unite.id,
+                        'unite_slug': unite.slug,
+                        'icerikler': [
+                            {
+                                'id': ic.id,
+                                'baslik': ic.baslik,
+                                'okundu': ic.id in okundu_ids,
+                                'unite_slug': unite.slug
+                            }
+                            for ic in icerikler_by_unite.get(unite.id, [])
+                        ]
+                    })
 
         # ✅ YENİ: Bugünkü istatistikler (genişletilmiş)
         today_stats = db.session.query(
@@ -3735,9 +3744,14 @@ def update_konu(id):
             if mevcut_sinif:
                 flash('Bu sınıf adı zaten kullanılıyor!', 'warning')
                 return redirect(url_for('update_konu', id=id))
-                
+
+            new_slug = create_slug(form.sinif.data)
+            if Sinif.query.filter(Sinif.slug == new_slug, Sinif.id != id).first():
+                flash('Bu isme çok benzer bir sınıf zaten mevcut (slug çakışması). Lütfen farklı bir isim kullanın.', 'warning')
+                return redirect(url_for('update_konu', id=id))
+
             konu.sinif = form.sinif.data
-            konu.slug = create_slug(form.sinif.data)
+            konu.slug = new_slug
             db.session.commit()
             flash('Sınıf başarıyla güncellendi.', 'success')
             return redirect(url_for('add_konu'))
@@ -3820,9 +3834,14 @@ def update_ders(id, sub_id):
             if mevcut_ders:
                 flash('Bu ders adı zaten kullanılıyor!', 'warning')
                 return redirect(url_for('update_ders', id=id, sub_id=sub_id))
-            
+
+            new_slug = create_slug(form.ders.data)
+            if Ders.query.filter(Ders.slug == new_slug, Ders.id != sub_id).first():
+                flash('Bu isme çok benzer bir ders zaten mevcut (slug çakışması). Lütfen farklı bir isim kullanın.', 'warning')
+                return redirect(url_for('update_ders', id=id, sub_id=sub_id))
+
             ders.ders_adi = form.ders.data
-            ders.slug = create_slug(form.ders.data) 
+            ders.slug = new_slug
             db.session.commit()
             flash('Ders başarıyla güncellendi.', 'success')
             return redirect(url_for('add_ders', id=ders.sinif_id))
@@ -3914,8 +3933,12 @@ def edit_unite(id, sub_id, unite_id):
     form = UniteForm()
     if form.validate_on_submit():
         try:
+            new_slug = create_slug(form.unite.data)
+            if Unite.query.filter(Unite.slug == new_slug, Unite.id != unite_id).first():
+                flash('Bu isme çok benzer bir ünite zaten mevcut (slug çakışması). Lütfen farklı bir isim kullanın.', 'warning')
+                return redirect(url_for('add_unite', id=id, sub_id=sub_id))
             konu.unite = form.unite.data
-            konu.slug = create_slug(form.unite.data)
+            konu.slug = new_slug
             db.session.commit()
             flash('İçerik başarı ile güncellendi.')
             return redirect(url_for('add_unite', id=id, sub_id=sub_id))
@@ -4221,9 +4244,13 @@ def edit_icerik(id, sub_id, unite_id, icerik_id):
             unused_images = old_images - new_images
             
             # İçeriği güncelle
+            new_slug = create_slug(form.baslik.data)
+            if Icerik.query.filter(Icerik.slug == new_slug, Icerik.id != icerik.id).first():
+                flash('Bu başlığa çok benzer bir içerik zaten mevcut (slug çakışması). Lütfen farklı bir başlık kullanın.', 'warning')
+                return redirect(url_for('add_icerik', id=id, sub_id=sub_id, unite_id=unite_id))
             icerik.baslik = form.baslik.data
             icerik.icerik = form.icerik.data
-            icerik.slug = create_slug(form.baslik.data)
+            icerik.slug = new_slug
             
             # Değişiklikleri kaydet
             db.session.commit()

@@ -20,7 +20,7 @@ class StudentStatisticsService:
                 'achievement_summary': self.get_achievement_summary()
             }
         except Exception as e:
-            print(f"Comprehensive stats error: {str(e)}")
+            current_app.logger.error(f"Comprehensive stats error: {str(e)}", exc_info=True)
             return self._get_empty_stats()
     
     def get_subject_completion_stats(self):
@@ -29,13 +29,13 @@ class StudentStatisticsService:
             if not self.student.class_no:
                 return {'subjects': [], 'overall_completion': 0}
             
-            print(f"🔍 Student class_no: {self.student.class_no} (type: {type(self.student.class_no)})")
+            current_app.logger.debug(f"Student class_no: {self.student.class_no} (type: {type(self.student.class_no)})")
             
             # ✅ VERİTABANI KONTROLÜ: Tüm sınıfları listele
             all_siniflar = Sinif.query.all()
-            print(f"📋 Veritabanındaki tüm sınıflar:")
+            current_app.logger.debug("Veritabanındaki tüm sınıflar:")
             for sinif in all_siniflar:
-                print(f"  ID: {sinif.id}, Sınıf: '{sinif.sinif}' (type: {type(sinif.sinif)})")
+                current_app.logger.debug(f"  ID: {sinif.id}, Sınıf: '{sinif.sinif}' (type: {type(sinif.sinif)})")
             
             # ✅ ESNEK SINIF BULMA: Birden fazla yöntem dene
             matching_sinif = None
@@ -44,7 +44,7 @@ class StudentStatisticsService:
             for sinif in all_siniflar:
                 if str(sinif.sinif).strip() == str(self.student.class_no).strip():
                     matching_sinif = sinif
-                    print(f"✅ Tam eşleştirme bulundu: {sinif.id} - {sinif.sinif}")
+                    current_app.logger.debug(f"Tam eşleştirme bulundu: {sinif.id} - {sinif.sinif}")
                     break
             
             # Yöntem 2: Kısmi eşleştirme (örn: "5. Sınıf" vs "5")
@@ -52,7 +52,7 @@ class StudentStatisticsService:
                 for sinif in all_siniflar:
                     if str(self.student.class_no) in str(sinif.sinif):
                         matching_sinif = sinif
-                        print(f"⚠️ Kısmi eşleştirme bulundu: {sinif.id} - {sinif.sinif}")
+                        current_app.logger.debug(f"Kısmi eşleştirme bulundu: {sinif.id} - {sinif.sinif}")
                         break
             
             # Yöntem 3: Sadece rakam karşılaştırması
@@ -65,29 +65,29 @@ class StudentStatisticsService:
                         sinif_numbers = re.findall(r'\d+', str(sinif.sinif))
                         if sinif_numbers and sinif_numbers[0] == student_class_num:
                             matching_sinif = sinif
-                            print(f"⚠️ Rakam eşleştirmesi bulundu: {sinif.id} - {sinif.sinif}")
+                            current_app.logger.debug(f"Rakam eşleştirmesi bulundu: {sinif.id} - {sinif.sinif}")
                             break
             
             if not matching_sinif:
-                print(f"❌ No matching sinif found for class_no: {self.student.class_no}")
-                print(f"💡 Available sinif values: {[s.sinif for s in all_siniflar]}")
+                current_app.logger.warning(f"No matching sinif found for class_no: {self.student.class_no}")
+                current_app.logger.debug(f"Available sinif values: {[s.sinif for s in all_siniflar]}")
                 
                 # ✅ DEMO VERİSİ: Eğer sınıf bulunamazsa ilk sınıfı kullan (test için)
                 if all_siniflar:
                     matching_sinif = all_siniflar[0]
-                    print(f"🔧 DEMO: Using first available sinif: {matching_sinif.sinif}")
+                    current_app.logger.warning(f"DEMO: Using first available sinif: {matching_sinif.sinif}")
                 else:
                     return {'subjects': [], 'overall_completion': 0}
             
-            print(f"✅ Final matching sinif: {matching_sinif.id} - {matching_sinif.sinif}")
+            current_app.logger.debug(f"Final matching sinif: {matching_sinif.id} - {matching_sinif.sinif}")
             
             # Sınıfa ait dersleri al
             class_subjects = Ders.query.filter_by(sinif_id=matching_sinif.id).all()
-            print(f"🔍 Found {len(class_subjects)} subjects for sinif_id: {matching_sinif.id}")
+            current_app.logger.debug(f"Found {len(class_subjects)} subjects for sinif_id: {matching_sinif.id}")
             
             # Eğer ders bulunamazsa boş dersleri göster
             if not class_subjects:
-                print(f"⚠️ No subjects found for sinif_id: {matching_sinif.id}")
+                current_app.logger.warning(f"No subjects found for sinif_id: {matching_sinif.id}")
                 return {
                     'subjects': [{
                         'id': 0,
@@ -105,14 +105,14 @@ class StudentStatisticsService:
             total_completion = 0
             
             for subject in class_subjects:
-                print(f"🔍 Processing subject: {subject.ders_adi}")
+                current_app.logger.debug(f"Processing subject: {subject.ders_adi}")
                 
                 # Bu dersteki toplam içerik sayısı
                 total_contents = db.session.query(func.count(Icerik.id)).join(
                     Unite, Icerik.unite_id == Unite.id
                 ).filter(Unite.ders_id == subject.id).scalar() or 0
                 
-                print(f"📊 Total contents in {subject.ders_adi}: {total_contents}")
+                current_app.logger.debug(f"Total contents in {subject.ders_adi}: {total_contents}")
                 
                 # Öğrencinin tamamladığı içerik sayısı
                 completed_contents = db.session.query(func.count(UserProgress.id)).join(
@@ -125,7 +125,7 @@ class StudentStatisticsService:
                     Unite.ders_id == subject.id
                 ).scalar() or 0
                 
-                print(f"📊 Completed contents in {subject.ders_adi}: {completed_contents}")
+                current_app.logger.debug(f"Completed contents in {subject.ders_adi}: {completed_contents}")
                 
                 completion_percent = int((completed_contents / total_contents * 100) if total_contents > 0 else 0)
                 
@@ -143,10 +143,10 @@ class StudentStatisticsService:
                 })
                 
                 total_completion += completion_percent
-                print(f"✅ Subject {subject.ders_adi}: {completion_percent}% completed")
+                current_app.logger.debug(f"Subject {subject.ders_adi}: {completion_percent}% completed")
             
             overall_completion = int(total_completion / len(class_subjects)) if class_subjects else 0
-            print(f"📊 Overall completion: {overall_completion}%")
+            current_app.logger.debug(f"Overall completion: {overall_completion}%")
             
             return {
                 'subjects': subject_stats,
@@ -154,9 +154,7 @@ class StudentStatisticsService:
             }
             
         except Exception as e:
-            print(f"Subject completion stats error: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            current_app.logger.warning(f"Subject completion stats error: {str(e)}", exc_info=True)
             return {'subjects': [], 'overall_completion': 0}
     
     def _get_unit_details(self, subject_id):
@@ -197,7 +195,7 @@ class StudentStatisticsService:
             return unit_details
             
         except Exception as e:
-            print(f"Unit details error: {str(e)}")
+            current_app.logger.warning(f"Unit details error: {str(e)}", exc_info=True)
             return []
     
     def _get_content_details(self, unit_id):
@@ -237,7 +235,7 @@ class StudentStatisticsService:
             return content_details
             
         except Exception as e:
-            print(f"Content details error: {str(e)}")
+            current_app.logger.warning(f"Content details error: {str(e)}", exc_info=True)
             return []
     
     def get_question_analytics(self):
@@ -429,9 +427,7 @@ class StudentStatisticsService:
             }
 
         except Exception as e:
-            print(f"Question analytics error: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            current_app.logger.warning(f"Question analytics error: {str(e)}", exc_info=True)
             return {
                 'subject_stats': [{
                     'name': 'Veri Yükleme Hatası',
@@ -455,7 +451,7 @@ class StudentStatisticsService:
             cache_time_key = f"{cache_key}_time"
             
             # Session cache kontrolü (5 dakika)
-            from flask import session
+            from flask import current_app, session
             cached_data = session.get(cache_key)
             cache_time = session.get(cache_time_key)
             
@@ -464,12 +460,12 @@ class StudentStatisticsService:
                 try:
                     last_update = datetime.fromisoformat(cache_time)
                     if (datetime.now() - last_update).total_seconds() < 300:  # 5 dakika
-                        print(f"📦 Using cached performance trends for student {self.student_id}")
+                        current_app.logger.debug(f"Using cached performance trends for student {self.student_id}")
                         return cached_data
                 except:
                     pass
             
-            print(f"🔄 Generating fresh performance trends for student {self.student_id}")
+            current_app.logger.debug(f"Generating fresh performance trends for student {self.student_id}")
             
             # Tek sorgu ile son 30 günlük verileri al
             from datetime import datetime, timedelta
@@ -536,13 +532,11 @@ class StudentStatisticsService:
             session[cache_key] = result
             session[cache_time_key] = datetime.now().isoformat()
             
-            print(f"✅ Performance trends generated and cached for student {self.student_id}")
+            current_app.logger.debug(f"Performance trends generated and cached for student {self.student_id}")
             return result
             
         except Exception as e:
-            print(f"Performance trends error: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            current_app.logger.warning(f"Performance trends error: {str(e)}", exc_info=True)
             return {
                 'daily_performance': [],
                 'subject_distribution': []
@@ -590,7 +584,7 @@ class StudentStatisticsService:
             ]
             
         except Exception as e:
-            print(f"Subject distribution error: {str(e)}")
+            current_app.logger.warning(f"Subject distribution error: {str(e)}", exc_info=True)
             return []
     
     def _find_matching_sinif_cached(self):
@@ -648,7 +642,7 @@ class StudentStatisticsService:
             }
             
         except Exception as e:
-            print(f"Time analytics error: {str(e)}")
+            current_app.logger.warning(f"Time analytics error: {str(e)}", exc_info=True)
             return {
                 'total_time': {'hours': 0, 'minutes': 0},
                 'recent_time': {'hours': 0, 'minutes': 0},
@@ -698,7 +692,7 @@ class StudentStatisticsService:
             return risks
             
         except Exception as e:
-            print(f"Risk analysis error: {str(e)}")
+            current_app.logger.warning(f"Risk analysis error: {str(e)}", exc_info=True)
             return []
     
     def get_achievement_summary(self):
@@ -767,7 +761,7 @@ class StudentStatisticsService:
             }
 
         except Exception as e:
-            print(f"Achievement summary error: {str(e)}")
+            current_app.logger.warning(f"Achievement summary error: {str(e)}", exc_info=True)
             return {
                 'total_points': 0,
                 'total_questions': 0,

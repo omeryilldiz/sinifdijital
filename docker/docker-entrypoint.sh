@@ -41,6 +41,11 @@ elif [ -f /run/secrets/google_client_id_v2 ]; then
     echo "✓ GOOGLE_CLIENT_ID loaded from secret_v2"
 fi
 
+if [ -f /run/secrets/emergency_recovery_password ]; then
+    export EMERGENCY_RECOVERY_PASSWORD=$(cat /run/secrets/emergency_recovery_password)
+    echo "✓ EMERGENCY_RECOVERY_PASSWORD loaded from secret"
+fi
+
 # DATABASE_URL'i oluştur veya secret varsa üzerine yaz
 POSTGRES_USER=${POSTGRES_USER:-sfuser}
 POSTGRES_DB=${POSTGRES_DB:-sfdb}
@@ -67,11 +72,25 @@ fi
 
 echo "=== Environment Setup Complete ==="
 
-# If running as root and appuser exists, switch to appuser
-if [ "$(id -u)" = "0" ] && id appuser &>/dev/null; then
-    echo "Switching to appuser..."
-    # Use gosu to switch user while preserving environment
-    exec gosu appuser "$@"
-else
-    exec "$@"
-fi
+# Write environment variables to a file that will be sourced by gunicorn
+cat > /tmp/app_env.sh <<EOF
+export SECRET_KEY="$SECRET_KEY"
+export DATABASE_URL="$DATABASE_URL"
+export REDIS_URL="$REDIS_URL"
+export POSTGRES_PASSWORD="$POSTGRES_PASSWORD"
+export GOOGLE_CLIENT_SECRET="$GOOGLE_CLIENT_SECRET"
+export GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID"
+export MAIL_PASSWORD="$MAIL_PASSWORD"
+export EMERGENCY_RECOVERY_PASSWORD="$EMERGENCY_RECOVERY_PASSWORD"
+EOF
+chmod 600 /tmp/app_env.sh
+
+echo "Running database migrations..."
+source /tmp/app_env.sh
+gosu appuser flask db upgrade && echo "✓ Database migrations applied" || echo "⚠ Migration failed or already up to date"
+
+echo "Running application..."
+
+# Source the env vars and then exec the command
+source /tmp/app_env.sh
+exec "$@"

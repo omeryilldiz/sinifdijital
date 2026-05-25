@@ -99,7 +99,7 @@
         </div>
     </div>
 
-    <!-- Çalışma Süreleri - Geliştirilmiş Versiyon -->
+    <!-- Çalışma Süreleri -->
     <div class="row g-4 mb-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
@@ -110,215 +110,171 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <!-- Toplam Süre Özetleri -->
+
+                    {# Zaman değişkenleri #}
+                    {% set gt = genel_istatistikler.total_time   if genel_istatistikler and genel_istatistikler.total_time   else {'hours':0,'minutes':0} %}
+                    {% set dt = genel_istatistikler.daily_time   if genel_istatistikler and genel_istatistikler.daily_time   else {'hours':0,'minutes':0} %}
+                    {% set wt = genel_istatistikler.weekly_time  if genel_istatistikler and genel_istatistikler.weekly_time  else {'hours':0,'minutes':0} %}
+                    {% set mt = genel_istatistikler.monthly_time if genel_istatistikler and genel_istatistikler.monthly_time else {'hours':0,'minutes':0} %}
+
+                    <!-- Toplam Özet Kutuları -->
                     <div class="row g-3 mb-4">
-                        <div class="col-lg-2 col-md-4">
-                            <div class="text-center p-3 bg-light rounded">
-                                <div class="display-6 text-warning">
-                                    {% if genel_istatistikler and genel_istatistikler.total_time %}
-                                        {{ genel_istatistikler.total_time.hours }}s {{ genel_istatistikler.total_time.minutes }}dk
-                                    {% else %}
-                                        0s 0dk
-                                    {% endif %}
+                        <div class="col-6 col-lg-3">
+                            <div class="text-center p-3 bg-light rounded-3 h-100">
+                                <div class="h4 fw-bold text-secondary mb-1">
+                                    {% if gt.hours > 0 %}{{ gt.hours }}sa {% endif %}{{ gt.minutes }}dk
                                 </div>
-                                <small class="text-muted">Genel Toplam</small>
+                                <small class="text-muted fw-medium">Genel Toplam</small>
                             </div>
                         </div>
-                        <div class="col-lg-2 col-md-4">
-                            <div class="text-center p-3 bg-primary-subtle rounded">
-                                <div class="h4 text-primary">
-                                    {% if genel_istatistikler and genel_istatistikler.daily_time %}
-                                        {{ genel_istatistikler.daily_time.hours }}s {{ genel_istatistikler.daily_time.minutes }}dk
-                                    {% else %}
-                                        0s 0dk
-                                    {% endif %}
+                        <div class="col-6 col-lg-3">
+                            <div class="text-center p-3 bg-primary-subtle rounded-3 h-100">
+                                <div class="h4 fw-bold text-primary mb-1">
+                                    {% if dt.hours > 0 %}{{ dt.hours }}sa {% endif %}{{ dt.minutes }}dk
                                 </div>
-                                <small class="text-muted">Bugün</small>
+                                <small class="text-muted fw-medium">Bugün</small>
                             </div>
                         </div>
-                        <div class="col-lg-2 col-md-4">
-                            <div class="text-center p-3 bg-success-subtle rounded">
-                                <div class="h4 text-success">
-                                    {% if genel_istatistikler and genel_istatistikler.weekly_time %}
-                                        {{ genel_istatistikler.weekly_time.hours }}s {{ genel_istatistikler.weekly_time.minutes }}dk
-                                    {% else %}
-                                        0s 0dk
-                                    {% endif %}
+                        <div class="col-6 col-lg-3">
+                            <div class="text-center p-3 bg-success-subtle rounded-3 h-100">
+                                <div class="h4 fw-bold text-success mb-1">
+                                    {% if wt.hours > 0 %}{{ wt.hours }}sa {% endif %}{{ wt.minutes }}dk
                                 </div>
-                                <small class="text-muted">Bu Hafta</small>
+                                <small class="text-muted fw-medium">Bu Hafta</small>
                             </div>
                         </div>
-                        <div class="col-lg-2 col-md-4">
-                            <div class="text-center p-3 bg-info-subtle rounded">
-                                <div class="h4 text-info">
-                                    {% if genel_istatistikler and genel_istatistikler.monthly_time %}
-                                        {{ genel_istatistikler.monthly_time.hours }}s {{ genel_istatistikler.monthly_time.minutes }}dk
-                                    {% else %}
-                                        0s 0dk
-                                    {% endif %}
+                        <div class="col-6 col-lg-3">
+                            <div class="text-center p-3 bg-info-subtle rounded-3 h-100">
+                                <div class="h4 fw-bold text-info mb-1">
+                                    {% if mt.hours > 0 %}{{ mt.hours }}sa {% endif %}{{ mt.minutes }}dk
                                 </div>
-                                <small class="text-muted">Bu Ay</small>
-                            </div>
-                        </div>
-                        
-                        <!-- Aktivite Türlerine Göre Süreler -->
-                        <div class="col-lg-2 col-md-4">
-                            <div class="text-center p-3 bg-warning-subtle rounded">
-                                <div class="h5 text-warning">
-                                    {% if genel_istatistikler and genel_istatistikler.content_reading_time %}
-                                        {{ genel_istatistikler.content_reading_time.hours }}s {{ genel_istatistikler.content_reading_time.minutes }}dk
-                                    {% else %}
-                                        0s 0dk
-                                    {% endif %}
-                                </div>
-                                <small class="text-muted">
-                                    <i class="bi bi-book me-1"></i>İçerik Okuma
-                                </small>
-                            </div>
-                        </div>
-                        <div class="col-lg-2 col-md-4">
-                            <div class="text-center p-3 bg-danger-subtle rounded">
-                                <div class="h5 text-danger">
-                                    {% if genel_istatistikler and genel_istatistikler.question_solving_time %}
-                                        {{ genel_istatistikler.question_solving_time.hours }}s 
-                                        {{ genel_istatistikler.question_solving_time.minutes }}dk
-                                        {% if genel_istatistikler.question_solving_time.seconds %}
-                                            {{ genel_istatistikler.question_solving_time.seconds }}sn
-                                        {% endif %}
-                                    {% else %}
-                                        0s 0dk 0sn
-                                    {% endif %}
-                                </div>
-                                <small class="text-muted">
-                                    <i class="bi bi-puzzle me-1"></i>Soru Çözme
-                                </small>
+                                <small class="text-muted fw-medium">Bu Ay</small>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Aktivite Dağılımı ve Grafikler -->
-                    <div class="row">
-                        <!-- Pie Chart -->
-                        <div class="col-md-6">
-                            <div class="card border-0 shadow-sm">
-                                <div class="card-header bg-transparent border-0">
-                                    <h6 class="mb-0">
+                    <!-- Aktivite Dağılımı -->
+                    <div class="row g-4">
+
+                        <!-- Karşılaştırmalı Tablo -->
+                        <div class="col-lg-8">
+                            <h6 class="fw-semibold mb-3">
+                                <i class="bi bi-table me-2 text-primary"></i>
+                                Aktivite Türüne Göre Süre Dağılımı
+                            </h6>
+                            {% set cd = genel_istatistikler.content_daily_time    if genel_istatistikler and genel_istatistikler.content_daily_time    else {'hours':0,'minutes':0} %}
+                            {% set cw = genel_istatistikler.content_weekly_time   if genel_istatistikler and genel_istatistikler.content_weekly_time   else {'hours':0,'minutes':0} %}
+                            {% set cm = genel_istatistikler.content_monthly_time  if genel_istatistikler and genel_istatistikler.content_monthly_time  else {'hours':0,'minutes':0} %}
+                            {% set ct = genel_istatistikler.content_reading_time  if genel_istatistikler and genel_istatistikler.content_reading_time  else {'hours':0,'minutes':0} %}
+                            {% set qd = genel_istatistikler.question_daily_time   if genel_istatistikler and genel_istatistikler.question_daily_time   else {'hours':0,'minutes':0} %}
+                            {% set qw = genel_istatistikler.question_weekly_time  if genel_istatistikler and genel_istatistikler.question_weekly_time  else {'hours':0,'minutes':0} %}
+                            {% set qm = genel_istatistikler.question_monthly_time if genel_istatistikler and genel_istatistikler.question_monthly_time else {'hours':0,'minutes':0} %}
+                            {% set qt = genel_istatistikler.question_total_time   if genel_istatistikler and genel_istatistikler.question_total_time   else {'hours':0,'minutes':0} %}
+                            <div class="table-responsive">
+                                <table class="table table-hover align-middle mb-0 rounded-3 overflow-hidden">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th class="border-0 ps-3">Aktivite</th>
+                                            <th class="border-0 text-center">Bugün</th>
+                                            <th class="border-0 text-center">Bu Hafta</th>
+                                            <th class="border-0 text-center">Bu Ay</th>
+                                            <th class="border-0 text-center">Toplam</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td class="ps-3">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <span class="badge bg-warning-subtle text-warning p-2 rounded-2">
+                                                        <i class="bi bi-book-fill fs-6"></i>
+                                                    </span>
+                                                    <div>
+                                                        <div class="fw-semibold">İçerik Okuma</div>
+                                                        <small class="text-muted">%{{ (genel_istatistikler.content_reading_percentage if genel_istatistikler and genel_istatistikler.content_reading_percentage else 0) }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="text-center fw-medium">{% if cd.hours > 0 %}{{ cd.hours }}sa {% endif %}{{ cd.minutes }}dk</td>
+                                            <td class="text-center fw-medium text-success">{% if cw.hours > 0 %}{{ cw.hours }}sa {% endif %}{{ cw.minutes }}dk</td>
+                                            <td class="text-center fw-medium text-info">{% if cm.hours > 0 %}{{ cm.hours }}sa {% endif %}{{ cm.minutes }}dk</td>
+                                            <td class="text-center fw-bold text-warning">{% if ct.hours > 0 %}{{ ct.hours }}sa {% endif %}{{ ct.minutes }}dk</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="ps-3">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <span class="badge bg-danger-subtle text-danger p-2 rounded-2">
+                                                        <i class="bi bi-puzzle-fill fs-6"></i>
+                                                    </span>
+                                                    <div>
+                                                        <div class="fw-semibold">Soru Çözme</div>
+                                                        <small class="text-muted">%{{ (genel_istatistikler.question_solving_percentage if genel_istatistikler and genel_istatistikler.question_solving_percentage else 0) }}</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td class="text-center fw-medium">{% if qd.hours > 0 %}{{ qd.hours }}sa {% endif %}{{ qd.minutes }}dk</td>
+                                            <td class="text-center fw-medium text-success">{% if qw.hours > 0 %}{{ qw.hours }}sa {% endif %}{{ qw.minutes }}dk</td>
+                                            <td class="text-center fw-medium text-info">{% if qm.hours > 0 %}{{ qm.hours }}sa {% endif %}{{ qm.minutes }}dk</td>
+                                            <td class="text-center fw-bold text-danger">{% if qt.hours > 0 %}{{ qt.hours }}sa {% endif %}{{ qt.minutes }}dk</td>
+                                        </tr>
+                                        <tr class="table-light">
+                                            <td class="ps-3">
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <span class="badge bg-secondary-subtle text-secondary p-2 rounded-2">
+                                                        <i class="bi bi-clock-fill fs-6"></i>
+                                                    </span>
+                                                    <span class="fw-bold">Toplam</span>
+                                                </div>
+                                            </td>
+                                            <td class="text-center fw-bold">{% if dt.hours > 0 %}{{ dt.hours }}sa {% endif %}{{ dt.minutes }}dk</td>
+                                            <td class="text-center fw-bold text-success">{% if wt.hours > 0 %}{{ wt.hours }}sa {% endif %}{{ wt.minutes }}dk</td>
+                                            <td class="text-center fw-bold text-info">{% if mt.hours > 0 %}{{ mt.hours }}sa {% endif %}{{ mt.minutes }}dk</td>
+                                            <td class="text-center fw-bold text-secondary">{% if gt.hours > 0 %}{{ gt.hours }}sa {% endif %}{{ gt.minutes }}dk</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Pasta Grafik + Mini İstatistikler -->
+                        <div class="col-lg-4">
+                            <div class="card border-0 bg-light rounded-3 h-100">
+                                <div class="card-body d-flex flex-column">
+                                    <h6 class="fw-semibold mb-3">
                                         <i class="bi bi-pie-chart me-2 text-primary"></i>
                                         Aktivite Dağılımı
                                     </h6>
-                                </div>
-                                <div class="card-body text-center">
-                                    <div class="chart-container">
-                                        <canvas id="activityPieChart" width="300" height="300"></canvas>
-                                    </div>
-                                    <!-- Loading State -->
-                                    <div id="chart-loading" class="mt-3">
-                                        <div class="spinner-border spinner-border-sm text-primary" role="status">
-                                            <span class="visually-hidden">Grafik yükleniyor...</span>
+                                    <div class="text-center flex-grow-1">
+                                        <canvas id="activityPieChart" width="200" height="200"></canvas>
+                                        <div id="chart-loading" class="mt-2">
+                                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                                <span class="visually-hidden">Yükleniyor...</span>
+                                            </div>
+                                            <small class="text-muted ms-2">Yükleniyor...</small>
                                         </div>
-                                        <small class="text-muted ms-2">Grafik yükleniyor...</small>
+                                    </div>
+                                    <hr class="my-3">
+                                    <div class="row g-2">
+                                        <div class="col-6">
+                                            <div class="text-center p-2 bg-white rounded-3 shadow-sm">
+                                                <div class="h5 fw-bold text-primary mb-0">
+                                                    {{ genel_istatistikler.average_session_time if genel_istatistikler and genel_istatistikler.average_session_time else 0 }}dk
+                                                </div>
+                                                <small class="text-muted">Ort. Oturum</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="text-center p-2 bg-white rounded-3 shadow-sm">
+                                                <div class="h5 fw-bold text-success mb-0">
+                                                    {{ genel_istatistikler.study_days if genel_istatistikler and genel_istatistikler.study_days else 0 }}
+                                                </div>
+                                                <small class="text-muted">Çalışma Günü</small>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- Detay Bilgileri -->
-                        <div class="col-md-6">
-                            <h6 class="mb-3">
-                                <i class="bi bi-info-circle me-2"></i>
-                                Aktivite Detayları
-                            </h6>
-                            
-                            <!-- İçerik Okuma -->
-                            <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-warning-subtle rounded">
-                                <div class="d-flex align-items-center">
-                                    <div class="me-3">
-                                        <i class="bi bi-book-fill text-warning fs-4"></i>
-                                    </div>
-                                    <div>
-                                        <div class="fw-bold">İçerik Okuma</div>
-                                        <small class="text-muted">Ders materyali çalışma süresi</small>
-                                    </div>
-                                </div>
-                                <div class="text-end">
-                                    <div class="fw-bold text-warning">
-                                        {% if genel_istatistikler and genel_istatistikler.content_reading_time %}
-                                            {{ genel_istatistikler.content_reading_time.hours }}s {{ genel_istatistikler.content_reading_time.minutes }}dk
-                                        {% else %}
-                                            0s 0dk
-                                        {% endif %}
-                                    </div>
-                                    <small class="text-muted">
-                                        {% if genel_istatistikler and genel_istatistikler.content_reading_percentage %}
-                                            %{{ genel_istatistikler.content_reading_percentage }}
-                                        {% else %}
-                                            %0
-                                        {% endif %}
-                                    </small>
-                                </div>
-                            </div>
 
-                            <!-- Soru Çözme -->
-                            <div class="d-flex justify-content-between align-items-center mb-3 p-3 bg-danger-subtle rounded">
-                                <div class="d-flex align-items-center">
-                                    <div class="me-3">
-                                        <i class="bi bi-puzzle-fill text-danger fs-4"></i>
-                                    </div>
-                                    <div>
-                                        <div class="fw-bold">Soru Çözme</div>
-                                        <small class="text-muted">Test ve quiz çözme süresi</small>
-                                    </div>
-                                </div>
-                                <div class="text-end">
-                                    <div class="fw-bold text-danger">
-                                        {% if genel_istatistikler and genel_istatistikler.question_solving_time %}
-                                            {{ genel_istatistikler.question_solving_time.hours }}s 
-                                            {{ genel_istatistikler.question_solving_time.minutes }}dk
-                                            {% if genel_istatistikler.question_solving_time.seconds %}
-                                                {{ genel_istatistikler.question_solving_time.seconds }}sn
-                                            {% endif %}
-                                        {% else %}
-                                            0s 0dk 0sn
-                                        {% endif %}
-                                    </div>
-                                    <small class="text-muted">
-                                        {% if genel_istatistikler and genel_istatistikler.question_solving_percentage %}
-                                            %{{ genel_istatistikler.question_solving_percentage }}
-                                        {% else %}
-                                            %0
-                                        {% endif %}
-                                    </small>
-                                </div>
-                            </div>
-
-                            <!-- İstatistikler -->
-                            <div class="row g-2 mt-3">
-                                <div class="col-6">
-                                    <div class="text-center p-2 bg-light rounded">
-                                        <div class="fw-bold text-primary">
-                                            {% if genel_istatistikler and genel_istatistikler.average_session_time %}
-                                                {{ genel_istatistikler.average_session_time }}dk
-                                            {% else %}
-                                                0dk
-                                            {% endif %}
-                                        </div>
-                                        <small class="text-muted">Ortalama Oturum</small>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="text-center p-2 bg-light rounded">
-                                        <div class="fw-bold text-success">
-                                            {% if genel_istatistikler and genel_istatistikler.study_days %}
-                                                {{ genel_istatistikler.study_days }}
-                                            {% else %}
-                                                0
-                                            {% endif %}
-                                        </div>
-                                        <small class="text-muted">Çalışma Günü</small>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>

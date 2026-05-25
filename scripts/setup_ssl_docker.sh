@@ -3,7 +3,7 @@
 # SSL Certificate Setup & Auto-Renewal
 # ========================================
 # Bu script Let's Encrypt SSL sertifikası kurar ve otomatik yenileme ayarlar
-# Usage: sudo ./scripts/setup_ssl_docker.sh sinifdijital.com admin@sinifdijital.com
+# Usage: sudo ./scripts/setup_ssl_docker.sh sinifdijital.com omeryildiz@sinifdijital.com
 
 set -euo pipefail
 
@@ -13,7 +13,7 @@ COMPOSE_DIR="${3:-$(pwd)}"
 
 if [ -z "$DOMAIN" ] || [ -z "$EMAIL" ]; then
   echo "❌ Kullanım: sudo $0 <domain> <email>"
-  echo "   Örnek: sudo $0 sinifdijital.com admin@sinifdijital.com"
+  echo "   Örnek: sudo $0 sinifdijital.com omeryildiz@sinifdijital.com"
   exit 1
 fi
 

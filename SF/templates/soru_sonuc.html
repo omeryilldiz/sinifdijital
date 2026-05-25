@@ -251,8 +251,9 @@
                 <div class="modal-body text-center">
 
                     
-                    <img src="{{ url_for('static', filename='cozum_uploads/' ~ sonuc.cozum_resim) }}" 
-                         class="img-fluid" style="max-height: 70vh;" alt="Soru çözümü"
+                    <img data-src="{{ url_for('static', filename='cozum_uploads/' ~ sonuc.cozum_resim) }}" 
+                         src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                         class="img-fluid" style="max-height: 70vh;" alt="Soru çözümü" decoding="async"
                          onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                     <div style="display: none;" class="alert alert-danger">
                         <i class="fas fa-exclamation-triangle"></i> Resim yüklenemedi!
@@ -268,6 +269,16 @@
     {% endif %}
 {% endfor %}
 {% endif %}
+
+<script>
+// Modal açıldığında data-src → src swap (lazy loading)
+document.addEventListener('show.bs.modal', function(event) {
+    event.target.querySelectorAll('img[data-src]').forEach(function(img) {
+        img.src = img.dataset.src;
+        img.removeAttribute('data-src');
+    });
+});
+</script>
 
 {% endblock %}
 

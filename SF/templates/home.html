@@ -21,7 +21,7 @@
                         </div>
                         <div class="col-lg-6 text-center d-none d-lg-block">
                             {% if slide.image_path %}
-                            <img src="{{ url_for('static', filename='homepage_slides/' ~ slide.image_path) }}" class="img-fluid rounded shadow-lg" alt="{{ slide.title }}" style="max-height: 45vh; object-fit: contain;" loading="lazy">
+                            <img src="{{ url_for('static', filename='homepage_slides/' ~ slide.image_path) }}" class="img-fluid rounded shadow-lg" alt="{{ slide.title }}" style="max-height: 45vh; object-fit: contain;" {% if loop.first %}fetchpriority="high"{% else %}loading="lazy" decoding="async"{% endif %}>
                             {% endif %}
                         </div>
                     </div>
@@ -39,7 +39,7 @@
                             <a href="{{ url_for('register') }}" class="btn btn-primary btn-lg px-4">Hemen Başla</a>
                         </div>
                         <div class="col-lg-6 text-center d-none d-lg-block">
-                            <img src="{{ url_for('static', filename='img/hero-image.jpg') }}" class="img-fluid rounded shadow-lg" alt="Eğitim Platformu" style="max-height: 45vh; object-fit: contain;" loading="lazy">
+                            <img src="{{ url_for('static', filename='img/hero-image.jpg') }}" class="img-fluid rounded shadow-lg" alt="Eğitim Platformu" style="max-height: 45vh; object-fit: contain;" fetchpriority="high">
                         </div>
                     </div>
                 </div>
@@ -387,7 +387,7 @@
     <div class="container h-100">
         <div class="row align-items-center h-100">
             <div class="col-lg-6 mb-4 mb-lg-0 order-lg-2 text-center d-flex justify-content-center">
-                <img src="{{ url_for('static', filename='img/mobile-devices.png') }}" class="img-fluid rounded shadow" alt="Mobil Erişim" style="max-height: 45vh; object-fit: contain;" loading="lazy">
+                <img src="{{ url_for('static', filename='img/mobile-devices.png') }}" class="img-fluid rounded shadow" alt="Mobil Erişim" style="max-height: 45vh; object-fit: contain;" loading="lazy" decoding="async">
             </div>
             <div class="col-lg-6">
                 <h2 class="fw-bold mb-3">Her Yerde Öğrenmeye Devam Edin</h2>

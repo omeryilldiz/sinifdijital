@@ -2,28 +2,44 @@ from datetime import datetime, timedelta
 from sqlalchemy import func, desc
 from SF.models import db, User, UserProgress, Soru, Icerik, Unite, Ders, Sinif, School, District, ActivityType
 from flask import current_app
+from SF import cache
 
 class LeaderboardService:
     def __init__(self):
         self.current_time = datetime.utcnow()
     
     def get_student_leaderboard_data(self, student_id):
-        """Öğrenci için tüm leaderboard verilerini al"""
+        """Öğrenci için tüm leaderboard verilerini al (60sn Redis önbelleği)"""
+        cache_key = f'leaderboard:u{student_id}'
+        try:
+            cached = cache.get(cache_key)
+            if cached is not None:
+                return cached
+        except Exception:
+            pass  # Redis erişilemiyorsa doğrudan DB'ye git
+
         try:
             student = User.query.get(student_id)
             if not student:
                 current_app.logger.error(f"❌ Student {student_id} not found")
                 return self._empty_leaderboard()
-            
+
             user_info = self._get_user_competition_info(student)
-            
-            return {
+
+            result = {
                 'daily': self._get_daily_leaderboard(student),
                 'weekly': self._get_weekly_leaderboard(student),
                 'monthly': self._get_monthly_leaderboard(student),
                 'all_time': self._get_alltime_leaderboard(student),
                 'user_info': user_info
             }
+
+            try:
+                cache.set(cache_key, result, timeout=60)
+            except Exception:
+                pass  # Önbellek yazma hatası kritik değil
+
+            return result
         except Exception as e:
             current_app.logger.error(f"❌ Leaderboard service error: {str(e)}")
             return self._empty_leaderboard()

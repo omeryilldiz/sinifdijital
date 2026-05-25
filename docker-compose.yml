@@ -15,10 +15,12 @@ services:
       # Server configuration
       SERVER_NAME: www.sinifdijital.com
       PREFERRED_URL_SCHEME: https
-      GUNICORN_WORKERS: '1'
+      GUNICORN_WORKERS: '4'
       # Admin Panel Security
       ADMIN_URL_PREFIX: '/yonetim-panel-x9k2m'
-      EMERGENCY_RECOVERY_PASSWORD: 'ultra-secret-recovery-key-2026-sf'
+      # Flask environment
+      FLASK_ENV: production
+      SESSION_COOKIE_SECURE: 'True'
     # Secrets (e.g. SECRET_KEY) should be provided via Docker Secrets in production.
     # Web will load secrets from /run/secrets/ via the image entrypoint.
     secrets:
@@ -28,6 +30,7 @@ services:
       - google_client_secret_v2
       - google_client_id_v2
       - redis_password
+      - emergency_recovery_password
     # Don't override command - let ENTRYPOINT (/app/docker/docker-entrypoint.sh) run first
     command: ["gunicorn", "-c", "gunicorn_config.py", "wsgi:app"]
     ports:
@@ -57,8 +60,8 @@ services:
     deploy:
       resources:
         limits:
-          memory: 1G
-          cpus: '1.0'
+          memory: 2G
+          cpus: '2.0'
 
   nginx:
     image: nginx:1.25-alpine
@@ -84,6 +87,11 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
 
   db:
     image: postgres:15-alpine
@@ -97,27 +105,37 @@ services:
     restart: always
     networks:
       - sf-net
-    entrypoint: ["/bin/sh","-c","export POSTGRES_PASSWORD=$$(cat /run/secrets/postgres_password) && exec docker-entrypoint.sh postgres"]
+    entrypoint: ["/bin/sh","-c","export POSTGRES_PASSWORD=$$(cat /run/secrets/postgres_password) && exec docker-entrypoint.sh postgres -c shared_buffers=3GB -c effective_cache_size=10GB -c work_mem=32MB -c maintenance_work_mem=512MB -c max_connections=65 -c checkpoint_completion_target=0.9 -c wal_buffers=64MB -c random_page_cost=1.1 -c effective_io_concurrency=200 -c min_wal_size=512MB -c max_wal_size=2GB"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U sfuser -d sfdb"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 6G
+          cpus: '2.0'
 
   redis:
     image: redis:7-alpine
     restart: always
     secrets:
       - redis_password
-    command: ["/bin/sh","-c","redis-server --requirepass $$(cat /run/secrets/redis_password)"]
+    command: ["/bin/sh","-c","redis-server --requirepass $$(cat /run/secrets/redis_password) --maxmemory 512mb --maxmemory-policy allkeys-lru --save ''"]
     networks:
       - sf-net
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "$$(cat /run/secrets/redis_password)", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a $$(cat /run/secrets/redis_password) ping"]
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
 
 volumes:
   sf-db-data:
@@ -141,3 +159,5 @@ secrets:
     file: ./deploy/secrets/google_client_secret.txt
   google_client_id_v2:
     file: ./deploy/secrets/google_client_id.txt
+  emergency_recovery_password:
+    file: ./deploy/secrets/emergency_recovery_password.txt

@@ -65,7 +65,7 @@
     <meta property="og:type" content="{% block og_type %}website{% endblock %}">
     <meta property="og:title" content="{% block og_title %}{% if title %}{{ title }} - {% endif %}Sınıf Dijital{% endblock %}">
     <meta property="og:description" content="{% block og_description %}Sınıf Dijital - Tüm dersler, konular ve içerikler için öğrenci tarafından hazırlanmış çalışma kaynakları.{% endblock %}">
-    <meta property="og:url" content="{{ request.url }}">
+    <meta property="og:url" content="{{ request.base_url }}">
     <meta property="og:image" content="{{ request.host_url.rstrip('/') }}/static/og-image.jpg">
     <meta property="og:site_name" content="Sınıf Dijital">
     <meta property="og:locale" content="tr_TR">
@@ -77,6 +77,7 @@
     <meta name="twitter:image" content="{{ request.host_url.rstrip('/') }}/static/og-image.jpg">
     
     <!-- Additional SEO -->
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#00457C">
@@ -553,7 +554,7 @@
                             role="button" data-bs-toggle="dropdown">
                             {% if current_user.avatar %}
                             <img src="{{ url_for('static', filename='avatars/' + current_user.avatar) }}"
-                                class="user-avatar me-2" alt="Avatar">
+                                class="user-avatar me-2" alt="Avatar" decoding="async">
                             {% else %}
                             <div class="user-avatar-placeholder me-2">{{ current_user.username[0].upper() }}</div>
                             {% endif %}

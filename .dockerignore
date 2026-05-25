@@ -19,6 +19,27 @@ __pycache__/
 .git/
 .gitignore
 node_modules/
+
+# 🔐 CRITICAL: Docker Secrets dosyaları image'a kopyalanmamalı
+deploy/secrets/
+
+# Test ve geliştirme dosyaları
+test_*.py
+SF/test_perf.py
+seed.py
+scholl.py
+load_schools.py
+populate_*.py
+add_test_data.sh
+
+# Veritabanı dump ve SQL dosyaları (büyük + hassas)
+*.sql
+*.dump
+
+# Dokümantasyon
+*.md
+
+# Static upload dizinleri (runtime volume ile mount edilir)
 SF/static/uploads/
 SF/static/soru_uploads/
 SF/static/video_uploads/

@@ -372,9 +372,10 @@
                         <!-- Soru Resmi -->
                         {% if soru.soru_resim %}
                         <div class="question-image-container position-relative">
-                            <img src="{{ url_for('static', filename='soru_uploads/' + soru.soru_resim) }}" 
-                                 class="img-fluid rounded" 
-                                 alt="Soru {{ loop.index }}">
+                            <img {% if loop.first %}src{% else %}data-src{% endif %}="{{ url_for('static', filename='soru_uploads/' + soru.soru_resim) }}" 
+                                 class="img-fluid rounded{% if not loop.first %} lazy-img{% endif %}" 
+                                 {% if not loop.first %}src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" {% endif %}
+                                 alt="Soru {{ loop.index }}" decoding="async">
                             <!-- Referans kodu sağ alt köşe - KOPYALANABİLİR -->
                             <span id="refCode-{{ loop.index }}" 
                                   style="
@@ -548,69 +549,9 @@
     let questionStartTime = new Date();
     let questionTimes = {};
     let questionVisitCount = {};
+    let hiddenAt = null;  // Tab gizlenme anı (AFK koruması için)
 
     // Yeni: Periyodik süre kaydetme işlevi
-    function startPeriodicSaving() {
-        // Head içine meta etiketini kontrol et, yoksa ekle
-        if (!document.querySelector('meta[name="csrf-token"]')) {
-            const metaTag = document.createElement('meta');
-            metaTag.name = "csrf-token";
-            metaTag.content = document.querySelector('input[name="csrf_token"]').value;
-            document.head.appendChild(metaTag);
-        }
-        
-        // 60 saniyede bir süreleri sunucuya gönder
-        setInterval(() => {
-            // Son soruyu da güncelle
-            const currentTimeSpent = Math.floor((new Date() - questionStartTime) / 1000);
-            const updatedTimes = {...questionTimes};
-            updatedTimes[currentQuestion] = (updatedTimes[currentQuestion] || 0) + currentTimeSpent;
-            
-            // Güncelleme zamanını sıfırla
-            questionStartTime = new Date();
-            
-            // Verileri sunucuya gönder
-            fetch('/test_summary', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': document.querySelector('meta[name="csrf-token"]').content
-                },
-                body: JSON.stringify({
-                    total_time: totalSeconds,
-                    question_times: updatedTimes,
-                    visit_counts: questionVisitCount,
-                    current_question: currentQuestion,
-                    total_questions: totalQuestions
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('✅ Soru süreleri kaydedildi:', data);
-            })
-            .catch(error => {
-                console.error('❌ Soru süresi kaydetme hatası:', error);
-            });
-        }, 60000); // 60 saniye
-    }
-
-    // Sayfa kapatılma işleyicisini ekle
-    window.addEventListener('beforeunload', function() {
-        // Son sorunun süresini güncelle
-        const finalTimeSpent = Math.floor((new Date() - questionStartTime) / 1000);
-        questionTimes[currentQuestion] = (questionTimes[currentQuestion] || 0) + finalTimeSpent;
-        
-        // SendBeacon API ile veriyi gönder (sayfa kapatılırken bile çalışır)
-        navigator.sendBeacon('/test_summary', JSON.stringify({
-            total_time: totalSeconds,
-            question_times: questionTimes,
-            visit_counts: questionVisitCount,
-            current_question: currentQuestion,
-            total_questions: totalQuestions,
-            csrf_token: document.querySelector('meta[name="csrf-token"]').content
-        }));
-    });
-
     function updateTimer() {
         const now = new Date();
         const diff = Math.floor((now - startTime) / 1000);
@@ -641,8 +582,8 @@
 
     // ✅ YENİLENMİŞ: Soru geçişlerinde süre kaydetme
     function showQuestion(questionNumber) {
-        // Önceki sorunun süresini kaydet
-        if (currentQuestion > 0) {
+        // Önceki sorunun süresini kaydet — sadece gerçek geçişte (init çağrısında değil)
+        if (currentQuestion > 0 && currentQuestion !== questionNumber) {
             const timeSpent = Math.floor((new Date() - questionStartTime) / 1000);
             questionTimes[currentQuestion] = (questionTimes[currentQuestion] || 0) + timeSpent;
             questionVisitCount[currentQuestion] = (questionVisitCount[currentQuestion] || 0) + 1;
@@ -663,6 +604,12 @@
         const questionElement = document.getElementById(`question${questionNumber}`);
         if (questionElement) {
             questionElement.classList.add("active");
+            // Lazy img: data-src → src swap
+            questionElement.querySelectorAll('img.lazy-img[data-src]').forEach(img => {
+                img.src = img.dataset.src;
+                img.removeAttribute('data-src');
+                img.classList.remove('lazy-img');
+            });
         }
         
         // Soru sayısını güncelle
@@ -677,8 +624,8 @@
         currentQuestion = questionNumber;
         questionStartTime = new Date();
         
-        // İlk defa görüntülenen soru için başlangıç değeri
-        if (!questionTimes[currentQuestion]) {
+        // İlk defa görüntülenen soru için başlangıç değeri (0 değeri sıfırlamayı önlemek için 'in' kullan)
+        if (!(currentQuestion in questionTimes)) {
             questionTimes[currentQuestion] = 0;
             questionVisitCount[currentQuestion] = 0;
         }
@@ -973,10 +920,30 @@
         timer = setInterval(updateTimer, 1000);
         drawingTools.init();
 
-        // Yeni: Periyodik kaydetmeyi başlat
-        startPeriodicSaving();
-
         window.addEventListener('resize', () => drawingTools.resizeCanvas());
+    });
+
+    // ✅ AFK koruması: sekme gizlenince süre sayımı durur
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            // Sekme gizlenince: geçerli soru süresini akümüle et, timer'ı durdur
+            hiddenAt = new Date();
+            if (questionStartTime) {
+                const timeSpent = Math.floor((hiddenAt - questionStartTime) / 1000);
+                questionTimes[currentQuestion] = (questionTimes[currentQuestion] || 0) + timeSpent;
+                questionStartTime = null;
+            }
+            clearInterval(timer);
+        } else if (document.visibilityState === 'visible') {
+            // Sekme geri görününce: gizli kaldığı süreyi startTime'a ekleyerek totalSeconds'ı düzelt
+            if (hiddenAt) {
+                const hiddenDuration = new Date() - hiddenAt;
+                startTime = new Date(startTime.getTime() + hiddenDuration);
+                hiddenAt = null;
+            }
+            questionStartTime = new Date();
+            timer = setInterval(updateTimer, 1000);
+        }
     });
 
     // ✅ YENİLENMİŞ: Form gönderimi - soru bazlı süreler

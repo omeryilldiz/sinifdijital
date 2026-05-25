@@ -45,10 +45,12 @@ class AdvancedQueryOptimizer(QueryOptimizer):
         else:
             date_filter = ""
         
-        # Class filter
+        # Class filter — parameterized query ile SQL injection engellendi
+        params = {'limit': limit}
         class_filter_sql = ""
         if class_filter:
-            class_filter_sql = f"AND u.class_no = '{class_filter}'"
+            class_filter_sql = "AND u.class_no = :class_filter"
+            params['class_filter'] = class_filter
         
         sql = text(f"""
             SELECT 
@@ -72,7 +74,7 @@ class AdvancedQueryOptimizer(QueryOptimizer):
             LIMIT :limit
         """)
         
-        return db.session.execute(sql, {'limit': limit}).fetchall()
+        return db.session.execute(sql, params).fetchall()
     
     @staticmethod
     def get_user_activity_summary(user_id, days=30):

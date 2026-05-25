@@ -7,7 +7,7 @@
 set -euo pipefail
 
 DOMAIN="sinifdijital.com"
-EMAIL="admin@sinifdijital.com"
+EMAIL="omeryildiz@sinifdijital.com"
 PROJECT_DIR="/opt/SF"
 
 echo "🚀 SinifDijital.com - Production Deployment"

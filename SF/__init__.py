@@ -24,10 +24,10 @@ from datetime import timedelta
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_mail import Mail
-from SF.config import Config
 from flask_caching import Cache
 import redis
 import time
+from flask_talisman import Talisman
 
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -50,7 +50,69 @@ log_level = os.getenv('LOG_LEVEL', 'WARNING')
 app.logger.setLevel(log_level)
 
 # Mail nesnesi Config yüklendikten SONRA oluşturulmalı
-mail = Mail(app)  
+mail = Mail(app)
+
+# ✅ Content Security Policy — Nginx HSTS/X-Frame/diğer güvenlik başlıklarını ZATEN ekliyor.
+# Talisman sadece CSP için devreye giriyor; diğer tüm başlıklar devre dışı.
+_csp = {
+    'default-src': ["'self'"],
+    'script-src': [
+        "'self'",
+        "'unsafe-inline'",   # Inline <script> blokları (MathJax config, GA4, AdSense)
+        "'unsafe-eval'",     # MathJax 3 gerektiriyor
+        'cdn.jsdelivr.net',
+        'www.googletagmanager.com',
+        'pagead2.googlesyndication.com',
+        'www.google-analytics.com',
+        'googleads.g.doubleclick.net',
+        'www.googletagservices.com',
+    ],
+    'style-src': [
+        "'self'",
+        "'unsafe-inline'",   # Inline style= atribütleri
+        'cdn.jsdelivr.net',
+        'fonts.googleapis.com',
+    ],
+    'font-src': [
+        "'self'",
+        'fonts.gstatic.com',
+        'cdn.jsdelivr.net',
+    ],
+    'img-src': [
+        "'self'",
+        'data:',
+        'www.google-analytics.com',
+        'www.googletagmanager.com',
+        'googleads.g.doubleclick.net',
+    ],
+    'connect-src': [
+        "'self'",
+        'www.google-analytics.com',
+        'www.googletagmanager.com',
+        'stats.g.doubleclick.net',
+        'pagead2.googlesyndication.com',
+    ],
+    'frame-src': [
+        'googleads.g.doubleclick.net',
+        'tpc.googlesyndication.com',
+        'www.google.com',
+    ],
+    'object-src': ["'none'"],
+    'base-uri': ["'self'"],
+    'form-action': ["'self'"],
+    'frame-ancestors': ["'none'"],
+}
+Talisman(
+    app,
+    force_https=False,                # Nginx hallediyor
+    strict_transport_security=False,  # Nginx hallediyor
+    frame_options=None,               # Nginx: X-Frame-Options DENY
+    content_type_options=False,       # Nginx: X-Content-Type-Options nosniff
+    xss_protection=False,             # Nginx: X-XSS-Protection
+    referrer_policy=False,            # Nginx: Referrer-Policy
+    content_security_policy=_csp,
+    content_security_policy_nonce_in=[],
+)
 
 # Diğer uzantılar
 db = SQLAlchemy(app)
@@ -81,11 +143,16 @@ except Exception:
     app.logger.warning('Redis client not available; rate-limit monitoring disabled')
 
 try:
-    cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
-    app.logger.info('Flask-Caching SimpleCache initialized')
+    redis_url = app.config.get('REDIS_URL') or os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
+    cache = Cache(app, config={
+        'CACHE_TYPE': 'RedisCache',
+        'CACHE_REDIS_URL': redis_url,
+        'CACHE_DEFAULT_TIMEOUT': 300,
+    })
+    app.logger.info('Flask-Caching RedisCache initialized')
 except Exception:
-    cache = None
-    app.logger.warning('Cache could not be initialized')
+    cache = Cache(app, config={'CACHE_TYPE': 'SimpleCache'})
+    app.logger.warning('RedisCache başlatılamadı, SimpleCache fallback kullanılıyor')
 
 ALLOWED_EXTENSIONS = app.config['ALLOWED_EXTENSIONS']
 ALLOWED_PDF_EXTENSIONS = app.config['ALLOWED_PDF_EXTENSIONS']

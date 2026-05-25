@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from sqlalchemy import func, distinct, extract, case, and_, text
 from SF.models import UserProgress, Icerik, Unite, Ders, Soru, ActivityType
+from flask import current_app
 from SF import db
 
 class StatisticsService:
@@ -228,9 +229,7 @@ class StatisticsService:
             }
             
         except Exception as e:
-            print(f"İstatistik hesaplama hatası: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            current_app.logger.error(f"İstatistik hesaplama hatası: {str(e)}", exc_info=True)
             return None
 
     def get_performance_stats(self):
@@ -275,7 +274,7 @@ class StatisticsService:
             }
             
         except Exception as e:
-            print(f"Performans istatistiği hatası: {str(e)}")
+            current_app.logger.warning(f"Performans istatistiği hatası: {str(e)}", exc_info=True)
             return {'subject_performance': []}
 
     def get_course_stats(self):
@@ -313,7 +312,7 @@ class StatisticsService:
             }
             
         except Exception as e:
-            print(f"Ders istatistikleri hatası: {str(e)}")
+            current_app.logger.warning(f"Ders istatistikleri hatası: {str(e)}", exc_info=True)
             return {'most_studied_subjects': []}
 
     def _get_streak_days(self):
@@ -352,5 +351,5 @@ class StatisticsService:
             return streak
                 
         except Exception as e:
-            print(f"Streak hesaplama hatası: {str(e)}")
+            current_app.logger.warning(f"Streak hesaplama hatası: {str(e)}", exc_info=True)
             return 0

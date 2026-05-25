@@ -768,7 +768,6 @@ def generate_sinif_slug(mapper, connection, target):
         base_slug = create_slug(target.sinif)
         slug = base_slug
         counter = 1
-        counter = 1
         
         # Benzersiz slug kontrolü
         while connection.execute(

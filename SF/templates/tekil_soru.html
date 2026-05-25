@@ -184,7 +184,7 @@
             <div class="question-image-container position-relative">
                 <img src="{{ url_for('static', filename='soru_uploads/' + soru.soru_resim) }}" 
                      class="img-fluid rounded" 
-                     alt="Soru Resmi">
+                     alt="Soru Resmi" fetchpriority="high" decoding="async">
                 <!-- Referans kodu sağ alt köşe - KOPYALANABİLİR -->
                 <span id="refCode-single" 
                       style="

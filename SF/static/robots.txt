@@ -24,6 +24,7 @@ Disallow: /verify-email/
 Disallow: /resend-verification
 
 # Sistem sayfaları
+Disallow: /yonetim-panel-x9k2m
 Disallow: /health
 Disallow: /upload
 Disallow: /test-google-config
