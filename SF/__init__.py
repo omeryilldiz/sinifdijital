@@ -107,7 +107,6 @@ Talisman(
     force_https=False,                # Nginx hallediyor
     strict_transport_security=False,  # Nginx hallediyor
     frame_options=None,               # Nginx: X-Frame-Options DENY
-    content_type_options=False,       # Nginx: X-Content-Type-Options nosniff
     xss_protection=False,             # Nginx: X-XSS-Protection
     referrer_policy=False,            # Nginx: Referrer-Policy
     content_security_policy=_csp,
