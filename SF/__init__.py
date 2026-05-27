@@ -61,6 +61,7 @@ _csp = {
         "'unsafe-inline'",   # Inline <script> blokları (MathJax config, GA4, AdSense)
         "'unsafe-eval'",     # MathJax 3 gerektiriyor
         'cdn.jsdelivr.net',
+        'cdn.ckeditor.com',
         'www.googletagmanager.com',
         'pagead2.googlesyndication.com',
         'www.google-analytics.com',
@@ -71,6 +72,8 @@ _csp = {
         "'self'",
         "'unsafe-inline'",   # Inline style= atribütleri
         'cdn.jsdelivr.net',
+        'cdn.ckeditor.com',
+        'cdnjs.cloudflare.com',
         'fonts.googleapis.com',
     ],
     'font-src': [
@@ -91,6 +94,8 @@ _csp = {
         'www.googletagmanager.com',
         'stats.g.doubleclick.net',
         'pagead2.googlesyndication.com',
+        'cdn.ckeditor.com',
+        'proxy-event.ckeditor.com',
     ],
     'frame-src': [
         'googleads.g.doubleclick.net',
