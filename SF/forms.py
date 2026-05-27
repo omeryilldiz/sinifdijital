@@ -600,7 +600,7 @@ class AdminStudentEditForm(FlaskForm):
     
     password = PasswordField('Yeni Şifre (Opsiyonel)', validators=[
         Optional(),
-        Length(min=6, max=100, message='Şifre en az 6 karakter olmalıdır')
+        Length(min=8, max=128, message='Şifre en az 8 karakter olmalıdır')
     ])
     
     confirm_password = PasswordField('Şifre Tekrar', validators=[
@@ -620,6 +620,7 @@ class AdminStudentEditForm(FlaskForm):
     submit = SubmitField('Güncelle')
     
     def __init__(self, *args, **kwargs):
+        self._obj = kwargs.get('obj')
         super(AdminStudentEditForm, self).__init__(*args, **kwargs)
         
     def validate_username(self, username):

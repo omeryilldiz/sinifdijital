@@ -4992,16 +4992,26 @@ def admin_student_edit(student_id):
         
         # ✅ Okul seçenekleri - güvenli sorgu
         try:
-            schools = db.session.query(School, District, Province).join(
-                District, School.district_id == District.id
-            ).join(
-                Province, District.province_id == Province.id
-            ).order_by(School.name).all()
-            
-            form.school_id.choices = [('', 'Okul Seçiniz')] + [
-                (str(school.id), f"{school.name} - {district.name}/{province.name}") 
-                for school, district, province in schools
-            ]
+            school_choices = cache.get('admin_student_edit_school_choices_v1')
+            if not school_choices:
+                schools = db.session.query(
+                    School.id,
+                    School.name,
+                    District.name,
+                    Province.name
+                ).join(
+                    District, School.district_id == District.id
+                ).join(
+                    Province, District.province_id == Province.id
+                ).order_by(School.name).all()
+
+                school_choices = [('', 'Okul Seçiniz')] + [
+                    (str(school_id), f"{school_name} - {district_name}/{province_name}")
+                    for school_id, school_name, district_name, province_name in schools
+                ]
+                cache.set('admin_student_edit_school_choices_v1', school_choices, timeout=1800)
+
+            form.school_id.choices = school_choices
         except Exception as e:
             app.logger.error(f"School options loading error: {str(e)}")
             form.school_id.choices = [('', 'Okul Seçiniz')]
@@ -5013,7 +5023,7 @@ def admin_student_edit(student_id):
                 new_email = SecurityService.sanitize_input(form.email.data, 100)
                 new_first_name = SecurityService.sanitize_input(form.first_name.data, 50)
                 new_last_name = SecurityService.sanitize_input(form.last_name.data, 50)
-                new_class_name = SecurityService.sanitize_input(form.class_name.data, 10)
+                new_class_name = SecurityService.sanitize_input(form.class_name.data, 50)
                 
                 # ✅ Sınıf doğrulama
                 new_class_no = form.class_no.data
@@ -5070,14 +5080,15 @@ def admin_student_edit(student_id):
                 student.class_name = new_class_name
                 student.school_id = new_school_id
                 student.profile_completed = form.profile_completed.data
-                student.is_active = getattr(form, 'is_active', True)  # Form'da varsa
+                student.is_active = bool(form.is_active.data)
                 
                 # ✅ Şifre değişikliği - güvenli
                 if form.password.data and len(form.password.data.strip()) > 0:
-                    # Şifre uzunluk kontrolü
+                    # Şifre gücü kontrolü
                     password = form.password.data.strip()
-                    if len(password) < 6:
-                        flash('Şifre en az 6 karakter olmalıdır.', 'danger')
+                    is_valid_password, password_errors = SecurityService.validate_password_strength(password)
+                    if not is_valid_password:
+                        flash(f"Şifre geçersiz: {'; '.join(password_errors)}", 'danger')
                         return redirect(url_for('admin_student_edit', student_id=student_id))
                     
                     student.password = bcrypt.generate_password_hash(password).decode('utf-8')
