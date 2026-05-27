@@ -15,6 +15,7 @@ services:
       # Server configuration
       SERVER_NAME: www.sinifdijital.com
       PREFERRED_URL_SCHEME: https
+      GA_MEASUREMENT_ID: G-FVNY2ZZNET
       GUNICORN_WORKERS: '4'
       # Admin Panel Security
       ADMIN_URL_PREFIX: '/yonetim-panel-x9k2m'

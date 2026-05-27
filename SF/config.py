@@ -49,7 +49,7 @@ class Config:
     
     GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
     GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
-    GA_MEASUREMENT_ID        = os.environ.get('GA_MEASUREMENT_ID', 'G-QJFK90N7G0')
+    GA_MEASUREMENT_ID        = os.environ.get('GA_MEASUREMENT_ID', 'G-FVNY2ZZNET')
     GOOGLE_SITE_VERIFICATION = os.environ.get('GOOGLE_SITE_VERIFICATION', '')
     
     SQLALCHEMY_TRACK_MODIFICATIONS = False
