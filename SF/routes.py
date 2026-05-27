@@ -4676,6 +4676,25 @@ def delete_homepage_slide(slide_id):
 def admin_student_detail(student_id):
     """Admin - Öğrenci Detay Sayfası"""
     try:
+        default_stats = {
+            'subject_completion_stats': {'subjects': [], 'overall_completion': 0},
+            'question_analytics': {'subject_stats': [], 'weak_topics': []},
+            'performance_trends': {'daily_performance': [], 'weekly_trend': []},
+            'time_analytics': {
+                'total_time': {'hours': 0, 'minutes': 0},
+                'recent_time': {'hours': 0, 'minutes': 0},
+                'avg_daily_time': {'hours': 0, 'minutes': 0},
+                'active_days': 0
+            },
+            'risk_analysis': [],
+            'achievement_summary': {
+                'total_points': 0,
+                'total_questions': 0,
+                'correct_answers': 0,
+                'overall_success_rate': 0
+            }
+        }
+
         # ✅ Güvenli ID kontrolü
         if student_id <= 0:
             flash('Geçersiz öğrenci ID.', 'danger')
@@ -4694,7 +4713,15 @@ def admin_student_detail(student_id):
             comprehensive_stats = stats_service.get_comprehensive_stats()
         except Exception as e:
             app.logger.error(f"Statistics service error for student {student_id}: {str(e)}")
-            comprehensive_stats = None
+            comprehensive_stats = default_stats.copy()
+
+        # Servis None/eksik payload dönerse template kırılmasın.
+        if not comprehensive_stats or not isinstance(comprehensive_stats, dict):
+            comprehensive_stats = default_stats.copy()
+        else:
+            for key, value in default_stats.items():
+                if key not in comprehensive_stats or comprehensive_stats[key] is None:
+                    comprehensive_stats[key] = value
         
         # ✅ Leaderboard servisi - güvenli fallback
         student_leaderboard = None

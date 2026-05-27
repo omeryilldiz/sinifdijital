@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from sqlalchemy import func, case, distinct, and_, cast, String
+from flask import current_app
 from SF.models import User, UserProgress, Icerik, Unite, Ders, Soru, ActivityType, Sinif
 from SF import db
 
