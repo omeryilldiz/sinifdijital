@@ -80,6 +80,8 @@ _csp = {
         "'self'",
         'fonts.gstatic.com',
         'cdn.jsdelivr.net',
+        'cdnjs.cloudflare.com',
+        'cdn.ckeditor.com',
     ],
     'img-src': [
         "'self'",
@@ -94,6 +96,7 @@ _csp = {
         'www.googletagmanager.com',
         'stats.g.doubleclick.net',
         'pagead2.googlesyndication.com',
+        'cdn.jsdelivr.net',
         'cdn.ckeditor.com',
         'proxy-event.ckeditor.com',
     ],
