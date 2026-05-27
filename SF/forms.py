@@ -612,7 +612,10 @@ class AdminStudentEditForm(FlaskForm):
         Length(max=50, message='Sınıf adı en fazla 50 karakter olabilir')
     ])
     
-    school_id = SelectField('Okul', choices=[], default='')
+    province_id = SelectField('İl', coerce=int, choices=[(0, 'İl Seçiniz')], validators=[Optional()])
+    district_id = SelectField('İlçe', coerce=int, choices=[(0, 'Önce il seçin')], validators=[Optional()])
+    school_type_id = SelectField('Okul Türü', coerce=int, choices=[(0, 'Okul Türü Seçiniz')], validators=[Optional()])
+    school_id = SelectField('Okul', coerce=int, choices=[(0, 'Önce ilçe ve okul türü seçin')], validators=[Optional()])
     
     profile_completed = BooleanField('Profil Tamamlanmış')
     is_active = BooleanField('Aktif')

@@ -114,8 +114,44 @@
                                 </div>
                                 
                                 <div class="mb-3">
+                                    {{ form.province_id.label(class="form-label") }}
+                                    {{ form.province_id(class="form-select", id="province_id") }}
+                                    {% if form.province_id.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.province_id.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.district_id.label(class="form-label") }}
+                                    {{ form.district_id(class="form-select", id="district_id") }}
+                                    {% if form.district_id.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.district_id.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
+                                    {{ form.school_type_id.label(class="form-label") }}
+                                    {{ form.school_type_id(class="form-select", id="school_type_id") }}
+                                    {% if form.school_type_id.errors %}
+                                        <div class="text-danger small mt-1">
+                                            {% for error in form.school_type_id.errors %}
+                                                <div>{{ error }}</div>
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+
+                                <div class="mb-3">
                                     {{ form.school_id.label(class="form-label") }}
-                                    {{ form.school_id(class="form-select") }}
+                                    {{ form.school_id(class="form-select", id="school_id") }}
                                     {% if form.school_id.errors %}
                                         <div class="text-danger small mt-1">
                                             {% for error in form.school_id.errors %}
@@ -195,4 +231,88 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const provinceSelect = document.getElementById('province_id');
+    const districtSelect = document.getElementById('district_id');
+    const schoolTypeSelect = document.getElementById('school_type_id');
+    const schoolSelect = document.getElementById('school_id');
+
+    if (!provinceSelect || !districtSelect || !schoolTypeSelect || !schoolSelect) {
+        return;
+    }
+
+    function setOptions(selectEl, options, placeholder) {
+        selectEl.innerHTML = '';
+        const placeholderOption = document.createElement('option');
+        placeholderOption.value = '0';
+        placeholderOption.textContent = placeholder;
+        selectEl.appendChild(placeholderOption);
+
+        options.forEach((item) => {
+            const option = document.createElement('option');
+            option.value = String(item.id);
+            option.textContent = item.name;
+            selectEl.appendChild(option);
+        });
+    }
+
+    function resetDistrictAndSchool() {
+        setOptions(districtSelect, [], 'Önce il seçin');
+        setOptions(schoolSelect, [], 'Önce ilçe ve okul türü seçin');
+    }
+
+    function resetSchoolOnly() {
+        setOptions(schoolSelect, [], 'Önce ilçe ve okul türü seçin');
+    }
+
+    async function loadDistricts(provinceId) {
+        if (!provinceId || provinceId === '0') {
+            resetDistrictAndSchool();
+            return;
+        }
+
+        try {
+            const response = await fetch(`/get_districts/${provinceId}`);
+            if (!response.ok) throw new Error('District load failed');
+            const data = await response.json();
+            setOptions(districtSelect, data, 'İlçe Seçiniz');
+            resetSchoolOnly();
+        } catch (error) {
+            console.error('İlçe verileri alınamadı:', error);
+            resetDistrictAndSchool();
+        }
+    }
+
+    async function loadSchools(districtId, schoolTypeId) {
+        if (!districtId || districtId === '0' || !schoolTypeId || schoolTypeId === '0') {
+            resetSchoolOnly();
+            return;
+        }
+
+        try {
+            const response = await fetch(`/get_schools_filtered/${districtId}/${schoolTypeId}`);
+            if (!response.ok) throw new Error('School load failed');
+            const data = await response.json();
+            setOptions(schoolSelect, data, 'Okul Seçiniz');
+        } catch (error) {
+            console.error('Okul verileri alınamadı:', error);
+            resetSchoolOnly();
+        }
+    }
+
+    provinceSelect.addEventListener('change', function() {
+        loadDistricts(this.value);
+    });
+
+    districtSelect.addEventListener('change', function() {
+        loadSchools(this.value, schoolTypeSelect.value);
+    });
+
+    schoolTypeSelect.addEventListener('change', function() {
+        loadSchools(districtSelect.value, this.value);
+    });
+});
+</script>
 {% endblock %}

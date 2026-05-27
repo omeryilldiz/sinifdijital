@@ -4990,31 +4990,76 @@ def admin_student_edit(student_id):
             for cls in allowed_classes
         ]
         
-        # ✅ Okul seçenekleri - güvenli sorgu
+        # ✅ Coğrafi filtre seçenekleri (cache destekli)
         try:
-            school_choices = cache.get('admin_student_edit_school_choices_v1')
-            if not school_choices:
-                schools = db.session.query(
-                    School.id,
-                    School.name,
-                    District.name,
-                    Province.name
-                ).join(
-                    District, School.district_id == District.id
-                ).join(
-                    Province, District.province_id == Province.id
-                ).order_by(School.name).all()
-
-                school_choices = [('', 'Okul Seçiniz')] + [
-                    (str(school_id), f"{school_name} - {district_name}/{province_name}")
-                    for school_id, school_name, district_name, province_name in schools
-                ]
-                cache.set('admin_student_edit_school_choices_v1', school_choices, timeout=1800)
-
-            form.school_id.choices = school_choices
+            province_choices = cache.get('admin_student_edit_province_choices_v1')
+            if not province_choices:
+                provinces = Province.query.order_by(Province.name).all()
+                province_choices = [(0, 'İl Seçiniz')] + [(p.id, p.name) for p in provinces]
+                cache.set('admin_student_edit_province_choices_v1', province_choices, timeout=1800)
+            form.province_id.choices = province_choices
         except Exception as e:
-            app.logger.error(f"School options loading error: {str(e)}")
-            form.school_id.choices = [('', 'Okul Seçiniz')]
+            app.logger.error(f"Province options loading error: {str(e)}")
+            form.province_id.choices = [(0, 'İl Seçiniz')]
+
+        try:
+            school_type_choices = cache.get('admin_student_edit_school_type_choices_v1')
+            if not school_type_choices:
+                school_types = SchoolType.query.order_by(SchoolType.name).all()
+                school_type_choices = [(0, 'Okul Türü Seçiniz')] + [(st.id, st.name) for st in school_types]
+                cache.set('admin_student_edit_school_type_choices_v1', school_type_choices, timeout=1800)
+            form.school_type_id.choices = school_type_choices
+        except Exception as e:
+            app.logger.error(f"School type options loading error: {str(e)}")
+            form.school_type_id.choices = [(0, 'Okul Türü Seçiniz')]
+
+        # GET'te mevcut okuldan zinciri doldur; POST'ta form değerlerini kullan.
+        selected_province_id = 0
+        selected_district_id = 0
+        selected_school_type_id = 0
+        selected_school_id = 0
+
+        if request.method == 'POST':
+            selected_province_id = form.province_id.data or 0
+            selected_district_id = form.district_id.data or 0
+            selected_school_type_id = form.school_type_id.data or 0
+            selected_school_id = form.school_id.data or 0
+        elif student.school and student.school.district:
+            selected_school_id = student.school_id or 0
+            selected_district_id = student.school.district_id or 0
+            selected_province_id = student.school.district.province_id or 0
+            selected_school_type_id = student.school.school_type_id or 0
+
+        # İlçe seçenekleri
+        if selected_province_id:
+            try:
+                districts = District.query.filter_by(province_id=selected_province_id).order_by(District.name).all()
+                form.district_id.choices = [(0, 'İlçe Seçiniz')] + [(d.id, d.name) for d in districts]
+            except Exception as e:
+                app.logger.error(f"District options loading error: {str(e)}")
+                form.district_id.choices = [(0, 'İlçe Seçiniz')]
+        else:
+            form.district_id.choices = [(0, 'Önce il seçin')]
+
+        # Okul seçenekleri
+        if selected_district_id and selected_school_type_id:
+            try:
+                schools = School.query.filter_by(
+                    district_id=selected_district_id,
+                    school_type_id=selected_school_type_id
+                ).order_by(School.name).all()
+                form.school_id.choices = [(0, 'Okul Seçiniz')] + [(s.id, s.name) for s in schools]
+            except Exception as e:
+                app.logger.error(f"School options loading error: {str(e)}")
+                form.school_id.choices = [(0, 'Okul Seçiniz')]
+        else:
+            form.school_id.choices = [(0, 'Önce ilçe ve okul türü seçin')]
+
+        if request.method == 'GET':
+            form.province_id.data = selected_province_id
+            form.district_id.data = selected_district_id
+            form.school_type_id.data = selected_school_type_id
+            form.school_id.data = selected_school_id
         
         if form.validate_on_submit():
             try:
@@ -5033,15 +5078,22 @@ def admin_student_edit(student_id):
                 
                 # ✅ Okul ID doğrulama
                 new_school_id = None
-                if form.school_id.data:
-                    try:
-                        new_school_id = int(form.school_id.data)
-                        # Okul var mı kontrol et
-                        if not School.query.get(new_school_id):
-                            flash('Geçersiz okul seçimi.', 'danger')
-                            return redirect(url_for('admin_student_edit', student_id=student_id))
-                    except (ValueError, TypeError):
-                        flash('Geçersiz okul ID formatı.', 'danger')
+                if form.school_id.data and form.school_id.data > 0:
+                    new_school_id = form.school_id.data
+                    selected_district = form.district_id.data or 0
+                    selected_school_type = form.school_type_id.data or 0
+
+                    if not selected_district or not selected_school_type:
+                        flash('Okul seçimi için ilçe ve okul türü seçmelisiniz.', 'danger')
+                        return redirect(url_for('admin_student_edit', student_id=student_id))
+
+                    school_match = School.query.filter_by(
+                        id=new_school_id,
+                        district_id=selected_district,
+                        school_type_id=selected_school_type
+                    ).first()
+                    if not school_match:
+                        flash('Geçersiz okul seçimi.', 'danger')
                         return redirect(url_for('admin_student_edit', student_id=student_id))
                 
                 # ✅ Username benzersizlik kontrolü
