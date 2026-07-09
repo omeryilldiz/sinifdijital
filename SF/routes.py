@@ -26,6 +26,7 @@ from SF import mail, secrets, redis_client, cache
 from flask_mail import Message as MailMessage
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from flask_dance.contrib.google import make_google_blueprint, google
+import html as html_module
 
 
 UPLOAD_FOLDER = app.config['UPLOAD_FOLDER']
@@ -1343,6 +1344,7 @@ def _make_description_snippet(html_content, max_len=155):
         return ''
     text = _TAG_RE.sub(' ', html_content)
     text = ' '.join(text.split())  # boşlukları normalize et
+    text = html_module.unescape(text)  # HTML entity'leri decode et (&nbsp; → boşluk, &amp; → &)
     return text[:max_len].rsplit(' ', 1)[0] if len(text) > max_len else text
 
 
