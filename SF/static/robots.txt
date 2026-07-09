@@ -1,4 +1,9 @@
 User-agent: *
+Allow: /
+
+# Admin ve yönetim panelleri
+Disallow: /admin/
+Disallow: /yonetim-panel-x9k2m/
 
 # Kullanıcı işlemleri
 Disallow: /login
@@ -32,3 +37,6 @@ Disallow: /test-smtp-config
 
 # Sitemaps
 Sitemap: https://sinifdijital.com/sitemap.xml
+Sitemap: https://sinifdijital.com/sitemap-classes.xml
+Sitemap: https://sinifdijital.com/sitemap-courses.xml
+Sitemap: https://sinifdijital.com/sitemap-content.xml
