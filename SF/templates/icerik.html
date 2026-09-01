@@ -52,29 +52,48 @@
     <div class="content-section" data-icerik-id="{{ icerik.id }}">
       <h1 class="content-title">{{ icerik.baslik }}</h1>
 
+      <!-- Breadcrumb Bilgisi -->
+      <nav class="content-breadcrumb mb-3" aria-label="Konu Konumu">
+        <span class="badge bg-light text-primary border me-2">
+          <i class="bi bi-mortarboard-fill me-1"></i>{{ sinif.sinif }}. Sınıf
+        </span>
+        <span class="badge bg-light text-dark border me-2">
+          <i class="bi bi-book-half me-1 text-info"></i>{{ ders.ders_adi }}
+        </span>
+        <span class="badge bg-light text-secondary border">
+          <i class="bi bi-folder2-open me-1"></i>{{ unite.baslik }}
+        </span>
+      </nav>
+
       <!-- Pagination Üst -->
-      <div class="pagination-container my-5">
+      <div class="pagination-container pagination-top my-3">
         <div class="content-pagination">
           <div class="nav-left">
             {% if prev_content_data and prev_content_data.icerik %}
             <a href="{{ url_for('icerik', sinif_slug=sinif.slug, ders_slug=ders.slug, unite_slug=prev_content_data.unite_slug, icerik_slug=prev_content_data.icerik.slug) }}"
-               class="btn btn-outline-secondary d-flex align-items-center">
-              <i class="bi bi-chevron-left me-2"></i>
-              <div class="text-start">
-                <small class="fw-medium">{{ prev_content_data.icerik.baslik }}</small>
+               class="pagination-btn pagination-prev" title="Önceki Konu: {{ prev_content_data.icerik.baslik }}">
+              <i class="bi bi-arrow-left-circle-fill pagination-icon"></i>
+              <div class="pagination-text text-start">
+                <span class="pagination-label">ÖNCEKİ KONU</span>
+                <span class="pagination-title">{{ prev_content_data.icerik.baslik }}</span>
               </div>
             </a>
             {% endif %}
           </div>
-          <span class="position-indicator">{{ current_position }} / {{ total_contents }}</span>
+          <div class="position-indicator-wrapper">
+            <span class="position-indicator-badge">
+              <i class="bi bi-card-checklist me-1"></i>{{ current_position }} / {{ total_contents }}
+            </span>
+          </div>
           <div class="nav-right">
             {% if next_content_data and next_content_data.icerik %}
             <a href="{{ url_for('icerik', sinif_slug=sinif.slug, ders_slug=ders.slug, unite_slug=next_content_data.unite_slug, icerik_slug=next_content_data.icerik.slug) }}"
-               class="btn btn-outline-secondary d-flex align-items-center">
-              <div class="text-end">
-                <small class="fw-medium">{{ next_content_data.icerik.baslik }}</small>
+               class="pagination-btn pagination-next" title="Sonraki Konu: {{ next_content_data.icerik.baslik }}">
+              <div class="pagination-text text-end">
+                <span class="pagination-label">SONRAKİ KONU</span>
+                <span class="pagination-title">{{ next_content_data.icerik.baslik }}</span>
               </div>
-              <i class="bi bi-chevron-right ms-2"></i>
+              <i class="bi bi-arrow-right-circle-fill pagination-icon"></i>
             </a>
             {% endif %}
           </div>
@@ -89,9 +108,14 @@
       <!-- VİDEO BÖLÜMÜ (İçerik gövdesinin ALTINDA) -->
       {% if videolar and videolar|length > 0 %}
       <div class="video-section">
-        <h4 class="video-section-title">
-          <i class="bi bi-play-circle-fill me-2"></i>İlgili Videolar
-        </h4>
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+          <h4 class="video-section-title mb-0">
+            <i class="bi bi-play-circle-fill text-danger me-2"></i>İlgili Video Anlatımları
+          </h4>
+          <span class="badge bg-white text-secondary border px-2 py-1">
+            <i class="bi bi-collection-play me-1"></i>{{ videolar|length }} Video
+          </span>
+        </div>
         <div class="video-scroll-container">
           <div class="video-scroll-wrapper">
             {% for video in videolar %}
@@ -105,7 +129,9 @@
                 </iframe>
               </div>
               <div class="video-info">
-                <h5 class="video-title">{{ video.video_title or ('Video ' ~ loop.index) }}</h5>
+                <h5 class="video-title" title="{{ video.video_title or ('Video ' ~ loop.index) }}">
+                  {{ video.video_title or ('Video ' ~ loop.index) }}
+                </h5>
               </div>
             </div>
             {% endfor %}
@@ -115,38 +141,55 @@
       {% endif %}
       <!-- VİDEO BÖLÜMÜ SONU -->
 
-      <!-- ALıŞTIRMA SORULARI BÖLÜMÜ -->
+      <!-- ALIŞTIRMA SORULARI BÖLÜMÜ -->
       <div class="practice-section mt-4">
         <div class="practice-card">
           <div class="practice-icon">
             <i class="bi bi-pencil-square"></i>
           </div>
           <div class="practice-content">
-            <h4 class="practice-title">Alıştırma Soruları</h4>
-            <p class="practice-description">Bu konuyu ne kadar öğrendiğini test et!</p>
+            <h4 class="practice-title">Konu Testi ve Alıştırma</h4>
+            <p class="practice-description">Öğrendiklerini pekiştirmek ve seviyeni görmek için hemen soru çözmeye başla!</p>
           </div>
           <div class="practice-buttons">
             <a href="{{ url_for('soru_coz', sinif_slug=sinif.slug, ders_slug=ders.slug, icerik_id=icerik.id, adet=5) }}" 
                class="btn btn-practice btn-primary">
-              <i class="bi bi-play-circle me-2"></i>5 Soru Çöz
+              <i class="bi bi-lightning-charge-fill me-1"></i>5 Soru Çöz
             </a>
           </div>
         </div>
       </div>
 
-      <!-- Ders Notları (EN ALTA) -->
+      <!-- Ders Notları (PDF) -->
       {% if ders_notlari %}
       <div class="pdf-section mt-4">
-        <h3>Ders Notları</h3>
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+          <h4 class="pdf-section-title mb-0">
+            <i class="bi bi-file-earmark-pdf-fill text-danger me-2"></i>İndirilebilir Ders Notları & Özetler
+          </h4>
+          <span class="badge bg-white text-secondary border px-2 py-1">
+            {{ ders_notlari|length }} Dosya
+          </span>
+        </div>
         <div class="pdf-grid">
           {% for ders_notu in ders_notlari %}
           <a href="{{ url_for('static', filename='pdf_uploads/' ~ ders_notu.dosya_adi) }}" target="_blank"
              class="pdf-item text-decoration-none">
-            <div class="d-flex align-items-center">
-              <i class="bi bi-file-pdf text-danger fs-4 me-2"></i>
-              <div>
-                <div class="fw-medium text-dark">{{ ders_notu.baslik }}</div>
-                <small class="text-muted">{{ ders_notu.eklenme_tarihi.strftime('%d.%m.%Y') }}</small>
+            <div class="pdf-item-inner">
+              <div class="pdf-icon-box">
+                <i class="bi bi-file-earmark-pdf-fill"></i>
+              </div>
+              <div class="pdf-info">
+                <div class="pdf-title">{{ ders_notu.baslik }}</div>
+                <div class="pdf-meta">
+                  <span><i class="bi bi-calendar3 me-1"></i>{{ ders_notu.eklenme_tarihi.strftime('%d.%m.%Y') }}</span>
+                  <span class="ms-2 badge bg-light text-primary border">PDF</span>
+                </div>
+              </div>
+              <div class="pdf-action">
+                <span class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                  <i class="bi bi-download me-1"></i>Görüntüle
+                </span>
               </div>
             </div>
           </a>
@@ -156,28 +199,34 @@
       {% endif %}
 
       <!-- Pagination Alt -->
-      <div class="pagination-container mt-5">
+      <div class="pagination-container pagination-bottom mt-5">
         <div class="content-pagination">
           <div class="nav-left">
             {% if prev_content_data and prev_content_data.icerik %}
             <a href="{{ url_for('icerik', sinif_slug=sinif.slug, ders_slug=ders.slug, unite_slug=prev_content_data.unite_slug, icerik_slug=prev_content_data.icerik.slug) }}"
-               class="btn btn-outline-secondary d-flex align-items-center">
-              <i class="bi bi-chevron-left me-2"></i>
-              <div class="text-start">
-                <small class="fw-medium">{{ prev_content_data.icerik.baslik }}</small>
+               class="pagination-btn pagination-prev" title="Önceki Konu: {{ prev_content_data.icerik.baslik }}">
+              <i class="bi bi-arrow-left-circle-fill pagination-icon"></i>
+              <div class="pagination-text text-start">
+                <span class="pagination-label">ÖNCEKİ KONU</span>
+                <span class="pagination-title">{{ prev_content_data.icerik.baslik }}</span>
               </div>
             </a>
             {% endif %}
           </div>
-          <span class="position-indicator">{{ current_position }} / {{ total_contents }}</span>
+          <div class="position-indicator-wrapper">
+            <span class="position-indicator-badge">
+              <i class="bi bi-card-checklist me-1"></i>{{ current_position }} / {{ total_contents }}
+            </span>
+          </div>
           <div class="nav-right">
             {% if next_content_data and next_content_data.icerik %}
             <a href="{{ url_for('icerik', sinif_slug=sinif.slug, ders_slug=ders.slug, unite_slug=next_content_data.unite_slug, icerik_slug=next_content_data.icerik.slug) }}"
-               class="btn btn-outline-secondary d-flex align-items-center">
-              <div class="text-end">
-                <small class="fw-medium">{{ next_content_data.icerik.baslik }}</small>
+               class="pagination-btn pagination-next" title="Sonraki Konu: {{ next_content_data.icerik.baslik }}">
+              <div class="pagination-text text-end">
+                <span class="pagination-label">SONRAKİ KONU</span>
+                <span class="pagination-title">{{ next_content_data.icerik.baslik }}</span>
               </div>
-              <i class="bi bi-chevron-right ms-2"></i>
+              <i class="bi bi-arrow-right-circle-fill pagination-icon"></i>
             </a>
             {% endif %}
           </div>
@@ -201,20 +250,7 @@
       </script>
     </div>
 
-    <!-- 2. Reklam: Normal (Scroll ile kayar) - Sidebar Orta -->
-    <div class="ad-sidebar-item">
-      <ins class="adsbygoogle"
-           style="display:block; width:160px; height:600px;"
-           data-ad-client="ca-pub-7728832097527782"
-           data-ad-slot="9836017636"
-           data-ad-format="vertical"
-           data-full-width-responsive="false"></ins>
-      <script>
-           (adsbygoogle = window.adsbygoogle || []).push({});
-      </script>
-    </div>
-    
-    <!-- 3. Reklam: Sticky (Yapışkan) - Sidebar Alt -->
+    <!-- 2. Reklam: Sticky (Yapışkan) - Sidebar Alt -->
     <div class="ad-sidebar-item ad-sticky">
       <ins class="adsbygoogle"
            style="display:block; width:160px; height:600px;"
@@ -682,10 +718,26 @@ if (!csrfToken) {
       if (!img.decoding) img.decoding = 'async';
     });
   }
+
+  function wrapContentTables() {
+    document.querySelectorAll('.content-body table').forEach(function(tbl) {
+      if (!tbl.parentElement.classList.contains('table-responsive-wrapper')) {
+        var wrapper = document.createElement('div');
+        wrapper.className = 'table-responsive-wrapper';
+        tbl.parentNode.insertBefore(wrapper, tbl);
+        wrapper.appendChild(tbl);
+      }
+    });
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', applyLazyToContentImgs);
+    document.addEventListener('DOMContentLoaded', function() {
+      applyLazyToContentImgs();
+      wrapContentTables();
+    });
   } else {
     applyLazyToContentImgs();
+    wrapContentTables();
   }
 })();
 </script>
@@ -694,9 +746,7 @@ if (!csrfToken) {
 {% block styles %}
 {{ super() }}
 <style>
-/* ========== KRİTİK DÜZELTME: STICKY İÇİN OVERFLOW RESET ========== */
-/* layout.html'deki .content-main sınıfında bulunan overflow-y: auto; 
-   sticky elementin çalışmasını engelliyor. Bunu visible yaparak düzeltiyoruz. */
+/* ========== STICKY DÜZELTMESİ (OVERFLOW RESET) ========== */
 .content-main {
   overflow: visible !important;
 }
@@ -704,9 +754,8 @@ if (!csrfToken) {
 /* ========== ANA WRAPPER ========== */
 .icerik-wrapper {
   display: flex;
-  gap: 15px;
+  gap: 20px;
   max-width: 100%;
-  /* Sticky'nin çalışması için sidebar'ın ana içerik kadar uzaması gerekir */
   align-items: stretch; 
 }
 
@@ -714,30 +763,584 @@ if (!csrfToken) {
 .main-content-area {
   flex: 1;
   min-width: 0;
-  padding: 20px;
+  padding: 10px 0;
 }
 
-/* ========== SAĞ REKLAM KOLONU (160px genişlik) ========== */
+/* ========== İÇERİK KARTI (ANA BEYAZ KUTU) ========== */
+.content-section {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 32px;
+  border: 1px solid #eef2f6;
+  box-shadow: 0 4px 20px rgba(0, 69, 124, 0.05);
+}
+
+.content-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--primary-color);
+  letter-spacing: -0.5px;
+  line-height: 1.3;
+  margin-bottom: 0.75rem;
+}
+
+.content-breadcrumb .badge {
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+
+/* ========== PAGINATION (ÖNCEKİ / SONRAKİ BUTONLARI) ========== */
+.pagination-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pagination-top {
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.pagination-bottom {
+  padding-top: 24px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.content-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: 12px;
+}
+
+.pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 8px 16px;
+  border-radius: 12px;
+  text-decoration: none;
+  color: #1e293b;
+  min-height: 52px;
+  max-width: 300px;
+  transition: all 0.25s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.pagination-btn:hover {
+  background: linear-gradient(135deg, rgba(0, 69, 124, 0.03) 0%, rgba(0, 165, 173, 0.08) 100%);
+  border-color: var(--accent-color);
+  color: var(--primary-color);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 165, 173, 0.15);
+}
+
+.pagination-icon {
+  font-size: 1.4rem;
+  color: var(--accent-color);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.pagination-prev:hover .pagination-icon {
+  transform: translateX(-3px);
+}
+
+.pagination-next:hover .pagination-icon {
+  transform: translateX(3px);
+}
+
+.pagination-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.pagination-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--accent-color);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  line-height: 1.1;
+  margin-bottom: 2px;
+}
+
+.pagination-title {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.position-indicator-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.position-indicator-badge {
+  display: inline-flex;
+  align-items: center;
+  background: #f8fafc;
+  color: var(--primary-color);
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 6px 14px;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  letter-spacing: 0.3px;
+}
+
+/* ========== İÇERİK GÖVDESİ & TİPOGRAFİ ========== */
+.content-body {
+  line-height: 1.85;
+  font-size: 1.06rem;
+  color: #2d3748;
+}
+
+.content-body p {
+  margin-bottom: 1.25rem;
+}
+
+.content-body h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  margin-top: 2.25rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 2px solid rgba(0, 165, 173, 0.25);
+}
+
+.content-body h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.content-body h4, .content-body h5, .content-body h6 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #334155;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.content-body ul, .content-body ol {
+  padding-left: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.content-body li {
+  margin-bottom: 0.4rem;
+}
+
+.content-body blockquote {
+  border-left: 4px solid var(--accent-color);
+  background: linear-gradient(to right, rgba(0, 165, 173, 0.08), rgba(0, 69, 124, 0.02));
+  padding: 1rem 1.25rem;
+  border-radius: 0 10px 10px 0;
+  margin: 1.5rem 0;
+  color: #334155;
+  font-style: italic;
+}
+
+/* ========== TABLOLAR (RESPONSIVE WRAPPER) ========== */
+.table-responsive-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 1.75rem 0;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+  background: #ffffff;
+}
+
+.content-body table {
+  width: 100% !important;
+  border-collapse: collapse;
+  margin: 0 !important;
+  font-size: 0.95rem;
+}
+
+.content-body table th {
+  background: var(--primary-color);
+  color: #ffffff;
+  padding: 12px 16px;
+  font-weight: 600;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.content-body table td {
+  padding: 11px 16px;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.content-body table tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.content-body table tr:hover {
+  background: #f1f5f9;
+}
+
+/* ========== MATHJAX FORMÜL KAPSAYICILARI ========== */
+.content-body mjx-container[display="true"] {
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  max-width: 100% !important;
+  padding: 0.75rem 1rem !important;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  margin: 1.25rem 0 !important;
+}
+
+/* ========== CKEDITOR RESİM STİLLERİ ========== */
+.content-body img {
+  max-width: 75% !important;
+  height: auto !important;
+  display: block;
+  margin: 1.5rem auto;
+  border-radius: 10px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.content-body .image,
+.content-body figure.image {
+  max-width: 100% !important;
+  margin: 1.75rem auto;
+  text-align: center;
+}
+
+.content-body figure.image img {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
+.content-body figure.image figcaption {
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+.content-body .image-style-align-left,
+.content-body .image.image_resized[style*="float:left"] {
+  float: left;
+  margin: 0.5rem 1.5rem 1rem 0;
+  max-width: 50%;
+}
+
+.content-body .image-style-align-right,
+.content-body .image.image_resized[style*="float:right"] {
+  float: right;
+  margin: 0.5rem 0 1rem 1.5rem;
+  max-width: 50%;
+}
+
+/* ========== VİDEO BÖLÜMÜ (YATAY KAYDIRMALI) ========== */
+.video-section {
+  margin-top: 2.5rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  border-top: 4px solid var(--accent-color);
+  box-shadow: 0 4px 15px rgba(0, 69, 124, 0.04);
+}
+
+.video-section-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+}
+
+.video-scroll-container {
+  width: 100%;
+  overflow: hidden;
+}
+
+.video-scroll-wrapper {
+  display: flex;
+  gap: 1.25rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 12px;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+}
+
+.video-scroll-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+
+.video-scroll-wrapper::-webkit-scrollbar-track {
+  background: #e2e8f0;
+  border-radius: 4px;
+}
+
+.video-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: var(--accent-color);
+  border-radius: 4px;
+}
+
+.video-item {
+  flex: 0 0 320px;
+  width: 320px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  scroll-snap-align: start;
+}
+
+.video-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 69, 124, 0.12);
+  border-color: rgba(0, 165, 173, 0.4);
+}
+
+.video-frame-wrapper {
+  position: relative;
+  padding-bottom: 56.25%;
+  height: 0;
+  overflow: hidden;
+  background: #0f172a;
+}
+
+.video-frame {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.video-info {
+  padding: 12px 14px;
+  background: #ffffff;
+}
+
+.video-title {
+  margin: 0;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* ========== ALIŞTIRMA SORULARI BÖLÜMÜ (KURUMSAL TEMA) ========== */
+.practice-section {
+  margin-top: 2.5rem;
+  margin-bottom: 2rem;
+}
+
+.practice-card {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 1.5rem 2rem;
+  background: linear-gradient(135deg, rgba(0, 69, 124, 0.05) 0%, rgba(0, 165, 173, 0.1) 100%);
+  border-radius: 16px;
+  border: 1px solid rgba(0, 165, 173, 0.25);
+  border-left: 5px solid var(--accent-color);
+  box-shadow: 0 4px 15px rgba(0, 69, 124, 0.06);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.practice-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 165, 173, 0.18);
+  border-color: var(--accent-color);
+}
+
+.practice-icon {
+  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 1.6rem;
+  box-shadow: 0 4px 12px rgba(0, 69, 124, 0.25);
+}
+
+.practice-content {
+  flex: 1;
+}
+
+.practice-title {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.practice-description {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #475569;
+}
+
+.practice-buttons {
+  display: flex;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.btn-practice {
+  padding: 0.75rem 1.75rem;
+  font-weight: 600;
+  border-radius: 50px;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.btn-practice.btn-primary {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+  border: none;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 69, 124, 0.25);
+}
+
+.btn-practice.btn-primary:hover {
+  background: linear-gradient(135deg, #00335c 0%, #00878e 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 165, 173, 0.35);
+  color: #ffffff;
+}
+
+/* ========== PDF DERS NOTLARI BÖLÜMÜ ========== */
+.pdf-section {
+  margin: 2.5rem 0;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  border-top: 4px solid #ef4444;
+  box-shadow: 0 4px 15px rgba(0, 69, 124, 0.04);
+}
+
+.pdf-section-title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1e293b;
+  display: flex;
+  align-items: center;
+}
+
+.pdf-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 14px;
+}
+
+.pdf-item {
+  display: block;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 16px;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.pdf-item:hover {
+  background: #ffffff;
+  border-color: var(--accent-color);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(0, 69, 124, 0.1);
+}
+
+.pdf-item-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pdf-icon-box {
+  width: 44px;
+  height: 44px;
+  background: #fef2f2;
+  color: #dc2626;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.pdf-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pdf-title {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 0.92rem;
+  line-height: 1.3;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pdf-meta {
+  font-size: 0.78rem;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+}
+
+/* ========== SAĞ REKLAM KOLONU (160px) ========== */
 .ad-sidebar-column {
   flex: 0 0 160px;
   width: 160px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* İki reklam arasındaki boşluk */
-  gap: 40px; 
-  padding: 20px 0;
-  /* Sticky'nin çalışması için kolonun yüksekliği parent kadar olmalı */
-  height: 100%;
+  gap: 30px;
+  padding: 10px 0;
 }
 
-/* Tüm sidebar reklamları 160x600 */
 .ad-sidebar-item {
   width: 160px;
-  height: 600px;
-  background: #f8f9fa;
-  border: 1px dashed #ddd;
-  border-radius: 8px;
+  min-height: 600px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
   overflow: hidden;
   display: flex;
   justify-content: center;
@@ -745,36 +1348,28 @@ if (!csrfToken) {
   flex-shrink: 0;
 }
 
-/* İlk reklam - Normal (scroll ile kayar) */
-.ad-sidebar-item:first-child {
-  position: relative;
-  z-index: 1;
-}
-
-/* İkinci reklam - Sticky (yapışkan) */
 .ad-sidebar-item.ad-sticky {
   position: -webkit-sticky;
   position: sticky;
-  /* Navbar (60px) + Sınıf Bar (50px) + 10px boşluk = 120px */
-  top: 120px; 
-  z-index: 100;
+  top: 120px;
+  z-index: 90;
   margin-bottom: 20px;
 }
 
-/* ========== İÇERİK İÇİ REKLAMLAR (YATAY - 728x90) ========== */
+/* ========== İÇERİK İÇİ REKLAMLAR (MOBİL / TABLET) ========== */
 .in-content-ad {
-  background: #f8f9fa;
-  border: 1px dashed #ddd;
-  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
   overflow: hidden;
   text-align: center;
   width: 100%;
   max-width: 728px;
   height: 90px;
-  margin: 1.5rem auto;
+  margin: 1.75rem auto;
 }
 
-/* ========== MASAÜSTÜ (≥992px) ========== */
+/* ========== RESPONSIVE MEDYA SORGULARI ========== */
 @media (min-width: 992px) {
   .ad-sidebar-column {
     display: flex;
@@ -785,7 +1380,6 @@ if (!csrfToken) {
   }
 }
 
-/* ========== TABLET (768px - 991px) ========== */
 @media (min-width: 768px) and (max-width: 991.98px) {
   .icerik-wrapper {
     flex-direction: column;
@@ -802,14 +1396,22 @@ if (!csrfToken) {
   }
 }
 
-/* ========== MOBİL (<768px) ========== */
 @media (max-width: 767.98px) {
   .icerik-wrapper {
     flex-direction: column;
   }
   
   .main-content-area {
-    padding: 15px;
+    padding: 5px 0;
+  }
+
+  .content-section {
+    padding: 20px 16px;
+    border-radius: 12px;
+  }
+
+  .content-title {
+    font-size: 1.5rem;
   }
   
   .ad-sidebar-column {
@@ -820,562 +1422,65 @@ if (!csrfToken) {
     display: block !important;
     max-width: 320px;
     height: 100px;
-    margin: 1rem auto;
+    margin: 1.25rem auto;
   }
-}
 
-/* ========== İÇERİK BÖLÜMÜ ========== */
-.content-section {
-  background: white;
-  border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.content-title {
-  color: var(--primary-color);
-  margin-bottom: 1rem;
-}
-
-/* ========== PAGİNATION ========== */
-.pagination-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.content-pagination {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-}
-
-.content-pagination .btn {
-  max-width: 200px;
-  text-decoration: none;
-  border: 1px solid #dee2e6;
-  padding: 12px 16px;
-  border-radius: 8px;
-  transition: all 0.2s ease;
-}
-
-.content-pagination .btn:hover {
-  background-color: #f8f9fa;
-  border-color: #adb5bd;
-  transform: translateY(-1px);
-}
-
-.content-pagination .btn .fw-medium {
-  font-size: 0.9rem;
-  line-height: 1.2;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.position-indicator {
-  font-weight: bold;
-  color: #666;
-}
-
-@media (max-width: 768px) {
   .content-pagination {
     flex-direction: column;
     gap: 10px;
   }
-  
-  .content-pagination .btn {
+
+  .pagination-btn {
     max-width: 100%;
     width: 100%;
   }
-  
-  .position-indicator {
+
+  .position-indicator-wrapper {
     order: -1;
-    margin-bottom: 10px;
+    margin-bottom: 4px;
   }
-  
-  .content-section {
-    padding: 16px;
-  }
-}
 
-/* ========== VİDEO ALANI (Viewport tabanlı yükseklik) ========== */
-.video-container {
-  margin: 24px 0;
-  max-width: 1100px;
-  margin-left: auto;
-  margin-right: auto;
-  padding: 0 12px;
-}
-
-/* ========== VİDEO BÖLÜMÜ (Yatay Kaydırmalı) ========== */
-.video-section {
-  margin-top: 2rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-  border-radius: 12px;
-  border-left: 4px solid var(--primary-color);
-}
-
-.video-section-title {
-  margin: 0 0 1rem 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--primary-color);
-  display: flex;
-  align-items: center;
-}
-
-/* Yatay kaydırma container */
-.video-scroll-container {
-  width: 100%;
-  overflow: hidden;
-}
-
-.video-scroll-wrapper {
-  display: flex;
-  gap: 1rem;
-  overflow-x: auto;
-  overflow-y: hidden;
-  padding-bottom: 12px;
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* Scrollbar stilleri */
-.video-scroll-wrapper::-webkit-scrollbar {
-  height: 8px;
-}
-
-.video-scroll-wrapper::-webkit-scrollbar-track {
-  background: #e9ecef;
-  border-radius: 4px;
-}
-
-.video-scroll-wrapper::-webkit-scrollbar-thumb {
-  background: var(--primary-color);
-  border-radius: 4px;
-}
-
-.video-scroll-wrapper::-webkit-scrollbar-thumb:hover {
-  background: #003a66;
-}
-
-/* Video kartları - min %20, max %40 genişlik */
-.video-item {
-  flex: 0 0 auto;
-  width: clamp(20vw, 30vw, 40vw);
-  min-width: 250px;
-  max-width: 500px;
-  background: white;
-  border-radius: 10px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.video-item:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
-}
-
-/* Video çerçevesi - 16:9 oranı */
-.video-frame-wrapper {
-  position: relative;
-  padding-bottom: 56.25%; /* 16:9 aspect ratio */
-  height: 0;
-  overflow: hidden;
-  background: #000;
-}
-
-.video-frame {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  border: none;
-}
-
-.video-info {
-  padding: 12px 14px;
-}
-
-.video-title {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 500;
-  color: #333;
-  line-height: 1.3;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* ========== MASAÜSTÜ (≥1200px) - min %20 ========== */
-@media (min-width: 1200px) {
   .video-item {
-    width: clamp(20vw, 25vw, 30vw);
-    min-width: 280px;
-    max-width: 450px;
+    flex: 0 0 80vw;
+    width: 80vw;
   }
-}
 
-/* ========== TABLET (768px - 1199px) - %30 ========== */
-@media (min-width: 768px) and (max-width: 1199.98px) {
-  .video-item {
-    width: clamp(25vw, 35vw, 40vw);
-    min-width: 260px;
-    max-width: 400px;
-  }
-}
-
-/* ========== MOBİL (<768px) - max %40 ========== */
-@media (max-width: 767.98px) {
-  .video-section {
-    margin-top: 1.5rem;
-    padding: 1rem;
-    border-radius: 8px;
-  }
-  
-  .video-section-title {
-    font-size: 1rem;
-  }
-  
-  .video-item {
-    width: clamp(35vw, 40vw, 45vw);
-    min-width: 220px;
-    max-width: 300px;
-  }
-  
-  .video-info {
-    padding: 10px 12px;
-  }
-  
-  .video-title {
-    font-size: 0.85rem;
-  }
-}
-
-/* ========== ÇOK DAR EKRAN (<480px) ========== */
-@media (max-width: 480px) {
-  .video-item {
-    width: 70vw;
-    min-width: 200px;
-    max-width: 280px;
-  }
-}
-
-/* ========== PDF BÖLÜMÜ ========== */
-.pdf-section {
-  margin: 20px 0;
-  padding: 15px;
-  background: #f8f9fa;
-  border-radius: 8px;
-}
-
-.pdf-grid {
-  display: grid;
-  gap: 10px;
-}
-
-.pdf-item {
-  padding: 10px;
-  background: white;
-  border-radius: 6px;
-  transition: all 0.2s;
-}
-
-.pdf-item:hover {
-  background: #e9ecef;
-  transform: translateX(5px);
-}
-
-/* ========== İÇERİK GÖVDESİ ========== */
-.content-body {
-  line-height: 1.8;
-  font-size: 1.05rem;
-}
-
-.content-body p {
-  margin-bottom: 1rem;
-}
-
-.content-body h2, .content-body h3, .content-body h4 {
-  margin-top: 1.5rem;
-  margin-bottom: 1rem;
-  color: var(--primary-color);
-}
-
-/* ========== CKEDITOR RESİM STİLLERİ ========== */
-.content-body img {
-    max-width: 60% !important;
-    height: auto !important;
-    display: block;
-    margin: 1rem auto;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-/* CKEditor'ün resim sınıfları */
-.content-body .image,
-.content-body figure.image {
-    max-width: 100% !important;
-    margin: 1.5rem auto;
-    text-align: center;
-}
-
-.content-body figure.image img {
-    max-width: 100% !important;
-    height: auto !important;
-}
-
-.content-body figure.image figcaption {
-    font-size: 0.85rem;
-    color: #6c757d;
-    margin-top: 0.5rem;
-    font-style: italic;
-}
-
-/* Resim hizalama (CKEditor sınıfları) */
-.content-body .image-style-align-left,
-.content-body .image.image_resized[style*="float:left"] {
-    float: left;
-    margin: 0.5rem 1.5rem 1rem 0;
-    max-width: 50%;
-}
-
-.content-body .image-style-align-right,
-.content-body .image.image_resized[style*="float:right"] {
-    float: right;
-    margin: 0.5rem 0 1rem 1.5rem;
-    max-width: 50%;
-}
-
-.content-body .image-style-align-center {
-    margin: 1.5rem auto;
-    display: block;
-}
-
-/* Mobil: Float'ları kaldır, tam genişlik yap */
-@media (max-width: 768px) {
-    .content-body img {
-        max-width: 100% !important;
-        margin: 1rem 0;
-    }
-    
-    .content-body .image-style-align-left,
-    .content-body .image-style-align-right,
-    .content-body .image.image_resized {
-        float: none !important;
-        margin: 1rem 0 !important;
-        max-width: 100% !important;
-        width: 100% !important;
-    }
-}
-
-/* ========== SORU BÖLÜMÜ ========== */
-.question-section {
-  margin-top: 2rem;
-  padding: 1.5rem;
-  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
-  border-radius: 12px;
-  border-left: 4px solid #ff9800;
-}
-
-.question-section .section-title {
-  margin: 0 0 1rem 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #e65100;
-  display: flex;
-  align-items: center;
-}
-
-.question-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.question-item {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  background: white;
-  border-radius: 8px;
-  text-decoration: none;
-  color: #333;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.question-item:hover {
-  transform: translateX(5px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-  background: #fff8e1;
-}
-
-.question-number {
-  width: 28px;
-  height: 28px;
-  background: #ff9800;
-  color: white;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 600;
-  font-size: 0.85rem;
-  margin-right: 12px;
-  flex-shrink: 0;
-}
-
-.question-text {
-  flex: 1;
-  font-weight: 500;
-}
-
-.question-item .bi-chevron-right {
-  color: #999;
-  transition: transform 0.2s;
-}
-
-.question-item:hover .bi-chevron-right {
-  transform: translateX(3px);
-  color: #ff9800;
-}
-
-/* ========== ALIŞTIRMA SORULARI BÖLÜMÜ ========== */
-.practice-section {
-  margin-top: 2rem;
-  margin-bottom: 2rem;
-}
-
-.practice-card {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-  padding: 1.5rem 2rem;
-  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-  border-radius: 16px;
-  border-left: 5px solid #1976d2;
-  box-shadow: 0 4px 15px rgba(25, 118, 210, 0.15);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.practice-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 25px rgba(25, 118, 210, 0.2);
-}
-
-.practice-icon {
-  flex-shrink: 0;
-  width: 60px;
-  height: 60px;
-  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 1.5rem;
-  box-shadow: 0 4px 10px rgba(25, 118, 210, 0.3);
-}
-
-.practice-content {
-  flex: 1;
-}
-
-.practice-title {
-  margin: 0 0 0.25rem 0;
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: #1565c0;
-}
-
-.practice-description {
-  margin: 0;
-  font-size: 0.95rem;
-  color: #546e7a;
-}
-
-.practice-buttons {
-  display: flex;
-  gap: 0.75rem;
-  flex-shrink: 0;
-}
-
-.btn-practice {
-  padding: 0.75rem 1.5rem;
-  font-weight: 600;
-  border-radius: 25px;
-  transition: all 0.3s ease;
-  white-space: nowrap;
-}
-
-.btn-practice.btn-primary {
-  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
-  border: none;
-  box-shadow: 0 4px 10px rgba(25, 118, 210, 0.3);
-}
-
-.btn-practice.btn-primary:hover {
-  background: linear-gradient(135deg, #1565c0 0%, #0d47a1 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 15px rgba(25, 118, 210, 0.4);
-}
-
-.btn-practice.btn-outline-primary {
-  border: 2px solid #1976d2;
-  color: #1976d2;
-  background: white;
-}
-
-.btn-practice.btn-outline-primary:hover {
-  background: #1976d2;
-  color: white;
-  transform: translateY(-2px);
-}
-
-/* ========== MOBİL UYUM ========== */
-@media (max-width: 768px) {
   .practice-card {
     flex-direction: column;
     text-align: center;
     padding: 1.25rem;
     gap: 1rem;
   }
-  
+
   .practice-icon {
     width: 50px;
     height: 50px;
-    font-size: 1.25rem;
+    font-size: 1.3rem;
   }
-  
-  .practice-title {
-    font-size: 1.1rem;
-  }
-  
-  .practice-description {
-    font-size: 0.9rem;
-  }
-  
+
   .practice-buttons {
-    flex-direction: column;
     width: 100%;
   }
-  
+
   .btn-practice {
     width: 100%;
-    padding: 0.875rem 1rem;
+  }
+
+  .content-body img {
+    max-width: 100% !important;
+  }
+
+  .content-body .image-style-align-left,
+  .content-body .image-style-align-right,
+  .content-body .image.image_resized {
+    float: none !important;
+    margin: 1rem 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .pdf-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
