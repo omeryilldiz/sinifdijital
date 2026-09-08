@@ -41,12 +41,23 @@
 
 {% block content %}
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>Soru Ekleme</h2>
-        <a href="{{ url_for('admin') }}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Geri Dön
-        </a>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-0 d-inline-block me-2">Soru Ekleme</h2>
+            <span class="badge bg-success" id="addedCountBadge" style="display: none;"><i class="fas fa-check-circle me-1"></i>Bu Oturumda Eklenen: <span id="addedCount">0</span></span>
+        </div>
+        <div>
+            <button type="button" id="btnResetHierarchy" class="btn btn-outline-warning me-2" title="Sınıf, ders, ünite ve içerik seçimlerini temizler">
+                <i class="fas fa-undo me-1"></i> Konu Seçimini Sıfırla
+            </button>
+            <a href="{{ url_for('admin') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Geri Dön
+            </a>
+        </div>
     </div>
+
+    <!-- AJAX Canlı Bildirim Kutusu -->
+    <div id="ajaxAlertContainer" class="mb-3" style="display: none;"></div>
 
     <hr>
     
@@ -136,7 +147,9 @@
                         </div>
                     {% endif %}
                 </div>
-                {{ form.submit(class="btn btn-primary w-100") }}
+                <button type="submit" class="btn btn-primary w-100 py-2 fs-6" id="submitBtn">
+                    <i class="fas fa-save me-1"></i> Soruyu Kaydet
+                </button>
             </div>
             
             <!-- Resim önizleme alanı -->
@@ -311,6 +324,7 @@
                 }
                 reader.readAsDataURL(file);
             } else {
+                preview.src = '#';
                 preview.style.display = 'none';
                 previewPlaceholder.style.display = 'block';
             }
@@ -330,8 +344,139 @@
                 videoPreview.style.display = 'flex';
                 videoPlaceholder.style.display = 'none';
             } else {
+                videoSource.src = '#';
                 videoPreview.style.display = 'none';
                 videoPlaceholder.style.display = 'block';
+            }
+        });
+
+        // ✅ AJAX ile Sayfa Yenilenmeden Seri Soru Ekleme
+        const soruForm = document.getElementById('soruForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const ajaxAlertContainer = document.getElementById('ajaxAlertContainer');
+        const addedCountBadge = document.getElementById('addedCountBadge');
+        const addedCountSpan = document.getElementById('addedCount');
+        const btnResetHierarchy = document.getElementById('btnResetHierarchy');
+        let sessionAddedCount = 0;
+
+        function showAjaxAlert(message, type = 'success') {
+            ajaxAlertContainer.innerHTML = `
+                <div class="alert alert-${type} alert-dismissible fade show d-flex align-items-center shadow-sm" role="alert">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle text-success' : 'fa-exclamation-triangle text-danger'} fa-lg me-2"></i>
+                    <div class="flex-grow-1">${message}</div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Kapat"></button>
+                </div>
+            `;
+            ajaxAlertContainer.style.display = 'block';
+            ajaxAlertContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+            if (type === 'success') {
+                setTimeout(() => {
+                    const alertEl = ajaxAlertContainer.querySelector('.alert');
+                    if (alertEl) {
+                        alertEl.classList.remove('show');
+                        setTimeout(() => { ajaxAlertContainer.style.display = 'none'; }, 300);
+                    }
+                }, 5000);
+            }
+        }
+
+        // Konu Seçimini Sıfırla Butonu
+        if (btnResetHierarchy) {
+            btnResetHierarchy.addEventListener('click', function() {
+                sinifSelect.value = '0';
+                dersSelect.innerHTML = '<option value="">Önce Sınıf Seçiniz</option>';
+                uniteSelect.innerHTML = '<option value="">Önce Ders Seçiniz</option>';
+                icerikSelect.innerHTML = '<option value="">Önce Ünite Seçiniz</option>';
+                dersSelect.disabled = true;
+                uniteSelect.disabled = true;
+                icerikSelect.disabled = true;
+                sinifSelect.focus();
+                showAjaxAlert('Konu ve sınıf seçimleri sıfırlandı. Yeni bir konu seçebilirsiniz.', 'info');
+            });
+        }
+
+        soruForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            // 1. Doğrulama: Hiyerarşi seçilmiş mi?
+            if (!icerikSelect.value || icerikSelect.value === '0') {
+                showAjaxAlert('Lütfen önce Sınıf, Ders, Ünite ve İçerik seçimini tamamlayınız!', 'warning');
+                if (!sinifSelect.value || sinifSelect.value === '0') sinifSelect.focus();
+                else if (!dersSelect.value || dersSelect.value === '0') dersSelect.focus();
+                else if (!uniteSelect.value || uniteSelect.value === '0') uniteSelect.focus();
+                else icerikSelect.focus();
+                return;
+            }
+
+            // 2. Doğrulama: Soru resmi seçilmiş mi?
+            if (!soruInput.files || soruInput.files.length === 0) {
+                showAjaxAlert('Lütfen yüklenecek soru resmini seçiniz!', 'warning');
+                soruInput.focus();
+                return;
+            }
+
+            // 3. Doğrulama: Doğru cevap seçilmiş mi?
+            const selectedCevap = document.querySelector('input[name="cevap"]:checked');
+            if (!selectedCevap) {
+                showAjaxAlert('Lütfen doğru cevap şıkkını (A, B, C, D veya E) işaretleyiniz!', 'warning');
+                return;
+            }
+
+            // Buton yükleniyor durumuna geçir
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span> Kaydediliyor...';
+
+            try {
+                const formData = new FormData(soruForm);
+                const response = await fetch("{{ url_for('add_soru') }}", {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    sessionAddedCount++;
+                    addedCountSpan.textContent = sessionAddedCount;
+                    addedCountBadge.style.display = 'inline-block';
+
+                    showAjaxAlert(`<strong>Tebrikler!</strong> ${result.message || 'Soru başarıyla kaydedildi!'}`, 'success');
+
+                    // ✅ SADECE Soru ve Medya alanlarını sıfırla (Sınıf, Ders, Ünite, İçerik AYNEN KORUNUR!)
+                    soruInput.value = '';
+                    preview.src = '#';
+                    preview.style.display = 'none';
+                    previewPlaceholder.style.display = 'block';
+
+                    // Cevap şıklarını temizle
+                    document.querySelectorAll('input[name="cevap"]').forEach(rb => rb.checked = false);
+
+                    // Video ve Çözüm Görselini temizle
+                    if (videoInput) {
+                        videoInput.value = '';
+                        videoSource.src = '#';
+                        videoPreview.style.display = 'none';
+                        videoPlaceholder.style.display = 'block';
+                    }
+                    const cozumInput = document.querySelector('input[name="cozum_resim"]');
+                    if (cozumInput) cozumInput.value = '';
+
+                    // Hızlıca sıradaki soruya geçmek için dosya seçiciye odaklan
+                    soruInput.focus();
+                } else {
+                    showAjaxAlert(result.message || 'Soru kaydedilirken bir hata oluştu!', 'danger');
+                }
+            } catch (err) {
+                console.error('AJAX soru ekleme hatası:', err);
+                showAjaxAlert('Sunucu ile bağlantı kurulamadı. Lütfen tekrar deneyiniz.', 'danger');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-save me-1"></i> Soruyu Kaydet';
             }
         });
     });

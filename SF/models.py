@@ -485,6 +485,9 @@ class Icerik(db.Model):
     created_at = db.Column(db.DateTime(timezone=True), default=datetime.utcnow)
     unite_id = db.Column(db.Integer, db.ForeignKey('unite.id', ondelete='CASCADE'), nullable=False)
     slug = db.Column(db.String(255), unique=True, nullable=False)  # ✅ Slug alanı eklendi
+    meta_title = db.Column(db.String(255), nullable=True)  # İsteğe bağlı özel SEO Başlığı
+    meta_description = db.Column(db.String(300), nullable=True)  # İsteğe bağlı özel SEO Açıklaması
+    meta_keywords = db.Column(db.String(255), nullable=True)  # İsteğe bağlı özel SEO Anahtar Kelimeleri
 
 
     # ✅ PERFORMANS İYİLEŞTİRMESİ: İlişkiler optimize edildi

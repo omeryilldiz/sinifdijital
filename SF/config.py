@@ -4,7 +4,22 @@ from flask_limiter import Limiter
 from sqlalchemy.pool import QueuePool, StaticPool
 from datetime import timedelta
 
-load_dotenv()  # .env dosyasını yükle
+def load_environment():
+    """Ortama göre uygun env dosyasını (.env.production / .env.development / .env) yükler."""
+    flask_env = os.environ.get('FLASK_ENV', 'development')
+    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    if flask_env == 'production':
+        env_file = '.env.production'
+    elif flask_env == 'development' and os.path.exists(os.path.join(base_dir, '.env.development')):
+        env_file = '.env.development'
+    else:
+        env_file = '.env'
+    env_path = os.path.join(base_dir, env_file)
+    load_dotenv(env_path)
+    return env_path
+
+# Ortam değişkenlerini otomatik yükle
+load_environment()
 
 # Helper function to read Docker secrets
 def get_secret(secret_name):

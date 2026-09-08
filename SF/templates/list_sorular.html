@@ -1,5 +1,4 @@
-{% extends "admin_layout.html"%}
-
+{% extends "admin_layout.html" %}
 
 {% block content %}
 <div class="container mt-4">
@@ -13,8 +12,8 @@
     <!-- Filtreleme Formu -->
     <div class="card mb-4">
         <div class="card-body">
-            <form method="GET" action="{{ url_for('list_sorular') }}">
-                <!-- Referans Kodu Arama - YENİ -->
+            <form method="GET" action="{{ url_for('list_sorular') }}" id="filterForm">
+                <!-- Referans Kodu Arama -->
                 <div class="row mb-3">
                     <div class="col-md-9">
                         <div class="input-group">
@@ -33,9 +32,9 @@
                     </div>
                 </div>
 
-                <div class="row mb-3">
+                <div class="row">
                     <!-- Sınıf Seçimi -->
-                    <div class="col-md-3">
+                    <div class="col-md-3 mb-2 mb-md-0">
                         <select name="sinif_id" id="sinifSelect" class="form-select" onchange="this.form.submit()">
                             <option value="">Sınıf Seçiniz</option>
                             {% for sinif in siniflar %}
@@ -47,7 +46,7 @@
                     </div>
 
                     <!-- Ders Seçimi -->
-                    <div class="col-md-3">
+                    <div class="col-md-3 mb-2 mb-md-0">
                         <select name="ders_id" id="dersSelect" class="form-select" onchange="this.form.submit()">
                             <option value="">Ders Seçiniz</option>
                             {% for ders in dersler %}
@@ -59,7 +58,7 @@
                     </div>
 
                     <!-- Ünite Seçimi -->
-                    <div class="col-md-3">
+                    <div class="col-md-3 mb-2 mb-md-0">
                         <select name="unite_id" id="uniteSelect" class="form-select" onchange="this.form.submit()">
                             <option value="">Ünite Seçiniz</option>
                             {% for unite in uniteler %}
@@ -71,7 +70,7 @@
                     </div>
 
                     <!-- İçerik Seçimi -->
-                    <div class="col-md-3">
+                    <div class="col-md-3 mb-2 mb-md-0">
                         <select name="icerik_id" id="icerikSelect" class="form-select" onchange="this.form.submit()">
                             <option value="">İçerik Seçiniz</option>
                             {% for icerik in icerikler %}
@@ -82,80 +81,110 @@
                         </select>
                     </div>
                 </div>
-
-                <div class="row">
-                    <div class="col-12">
-                        <a href="{{ url_for('list_sorular') }}" class="btn btn-secondary">
-                            <i class="fas fa-sync"></i> Filtreleri Temizle
-                        </a>
-                    </div>
-                </div>
             </form>
         </div>
     </div>
 
+    <!-- AJAX Canlı Bildirim Kutusu -->
+    <div id="bulkAlertContainer" class="mb-3" style="display: none;"></div>
+
+    <!-- ✅ YENİ: Toplu İşlem Barı (Dinamik) -->
+    <div id="bulkActionBar" class="card bg-light border-danger-subtle mb-3 shadow-sm" style="display: none;">
+        <div class="card-body py-2 px-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-check-square text-primary fs-5 me-2"></i>
+                <span class="fw-semibold"><span id="selectedCount" class="badge bg-primary me-1">0</span> soru seçildi</span>
+                <button type="button" class="btn btn-link btn-sm text-secondary text-decoration-none ms-2" id="btnClearSelection">
+                    <i class="fas fa-times me-1"></i>Seçimi Temizle
+                </button>
+            </div>
+            <div>
+                <button type="button" class="btn btn-danger btn-sm px-3 shadow-sm" id="btnOpenBulkDeleteModal">
+                    <i class="fas fa-trash-alt me-1"></i> Seçilenleri Sil
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CSRF Token (JavaScript için) -->
+    <input type="hidden" id="globalCsrfToken" name="csrf_token" value="{{ csrf_token() }}">
+
     <!-- Soru Listesi -->
     <div class="table-responsive">
-        <table class="table table-hover">
+        <table class="table table-hover align-middle" id="sorularTable">
             <thead class="table-light">
                 <tr>
+                    <th style="width: 40px;" class="text-center">
+                        <input type="checkbox" class="form-check-input" id="selectAllCheckbox" title="Tümünü Seç / Kaldır">
+                    </th>
                     <th>ID</th>
-                    <!-- YENİ Sütun -->
                     <th>Referans Kodu</th>
                     <th>Sınıf</th>
                     <th>Ders</th>
                     <th>Ünite</th>
                     <th>İçerik</th>
-                    <th>İşlemler</th>
+                    <th class="text-end pe-3">İşlemler</th>
                 </tr>
             </thead>
             <tbody>
                 {% for soru in sorular %}
-                <tr>
+                <tr id="soruRow{{ soru.id }}">
+                    <td class="text-center">
+                        <input type="checkbox" class="form-check-input soru-checkbox" value="{{ soru.id }}" data-id="{{ soru.id }}">
+                    </td>
                     <td>{{ soru.id }}</td>
-                    <!-- YENİ Hücre -->
                     <td><code>{{ soru.reference_code }}</code></td>
-                    <td>{{ soru.unite.ders.sinif.sinif }}</td>
-                    <td>{{ soru.unite.ders.ders_adi }}</td>
-                    <td>{{ soru.unite.unite }}</td>
-                    <td>{{ soru.icerik.baslik }}</td>
-                    <td>
+                    <td>{{ soru.unite.ders.sinif.sinif if soru.unite and soru.unite.ders and soru.unite.ders.sinif else '-' }}</td>
+                    <td>{{ soru.unite.ders.ders_adi if soru.unite and soru.unite.ders else '-' }}</td>
+                    <td>{{ soru.unite.unite if soru.unite else '-' }}</td>
+                    <td>{{ soru.icerik.baslik if soru.icerik else '-' }}</td>
+                    <td class="text-end pe-3">
                         <div class="btn-group">
-                            <a href="{{ url_for('edit_soru', id=soru.id) }}" class="btn btn-sm btn-warning">
-                                <i class="fas fa-edit" title="Düzenle"></i>
+                            <a href="{{ url_for('edit_soru', id=soru.id) }}" class="btn btn-sm btn-warning" title="Düzenle">
+                                <i class="fas fa-edit"></i>
                             </a>
-                            <!-- Silme butonu -->
+                            <!-- Tekil Silme Butonu -->
                             <button type="button" class="btn btn-sm btn-danger" 
                                     data-bs-toggle="modal" 
-                                    data-bs-target="#deleteModal{{ soru.id }}">
-                                <i class="fas fa-trash" title="Sil"></i>
+                                    data-bs-target="#deleteModal{{ soru.id }}"
+                                    title="Sil">
+                                <i class="fas fa-trash"></i>
                             </button>
                         </div>
 
-                            <!-- Her soru için ayrı modal -->
-                                <div class="modal fade" id="deleteModal{{ soru.id }}" tabindex="-1" 
-                                aria-labelledby="deleteModalLabel{{ soru.id }}" aria-hidden="true">
-                                    <div class="modal-dialog">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h1 class="modal-title fs-5" id="deleteModalLabel{{ soru.id }}">
-                                                 Bu İşlem Geri Alınamaz!!!
-                                                </h1>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                            </div>
+                        <!-- Tekil Silme Modalı -->
+                        <div class="modal fade text-start" id="deleteModal{{ soru.id }}" tabindex="-1" 
+                             aria-labelledby="deleteModalLabel{{ soru.id }}" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-danger text-white">
+                                        <h5 class="modal-title fs-5" id="deleteModalLabel{{ soru.id }}">
+                                            <i class="fas fa-exclamation-triangle me-1"></i> Soru Silme Onayı
+                                        </h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                                    </div>
                                     <div class="modal-body">
-                                        {{ soru.id }} numaralı soruyu silmek istediğinize emin misiniz?
+                                        <p><strong>#{{ soru.id }}</strong> (<code>{{ soru.reference_code }}</code>) numaralı soruyu silmek istediğinize emin misiniz?</p>
+                                        <div class="alert alert-warning py-2 mb-0">
+                                            <small><i class="fas fa-info-circle me-1"></i>Bu işlem soru görselini, çözümlerini ve öğrencilerin ilerleme kayıtlarını kalıcı olarak siler.</small>
+                                        </div>
                                     </div>
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
                                         <form action="{{ url_for('delete_soru', id=soru.id) }}" method="POST" class="d-inline">
-                                            {{ form.csrf_token }}  <!-- CSRF token eklendi -->
-                                            <button type="submit" class="btn btn-danger">Soruyu Sil</button>
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <button type="submit" class="btn btn-danger">Evet, Soruyu Sil</button>
                                         </form>
-                                    </div>
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">
+                        <i class="fas fa-info-circle me-2"></i>Aradığınız kriterlere uygun soru bulunamadı.
                     </td>
                 </tr>
                 {% endfor %}
@@ -163,18 +192,44 @@
         </table>
     </div>
 
-    <!-- Modal -->
+    <!-- ✅ YENİ: Toplu Silme Onay Modalı -->
+    <div class="modal fade" id="bulkDeleteModal" tabindex="-1" aria-labelledby="bulkDeleteModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="bulkDeleteModalLabel">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Toplu Soru Silme Onayı
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Kapat"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="fs-6 mb-2">
+                        Toplam <strong id="modalSelectedCount" class="text-danger fs-5">0</strong> adet soruyu silmek üzeresiniz.
+                    </p>
+                    <div class="alert alert-danger py-2 mb-0">
+                        <i class="fas fa-radiation me-1"></i>
+                        Seçilen tüm sorulara ait görseller, video çözümleri ve öğrencilerin çözme kayıtları kalıcı olarak silinecektir.
+                        <strong class="d-block mt-1">Bu işlem geri alınamaz!</strong>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmBulkDelete">
+                        <i class="fas fa-trash-alt me-1"></i> Evet, Seçilenleri Kalıcı Olarak Sil
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-
-
-    <!-- Sayfalama -->
+    <!-- Sayfalama (reference_code parametresi eklendi) -->
     {% if pagination.pages > 1 %}
-    <nav aria-label="Sayfalama">
+    <nav aria-label="Sayfalama" class="mt-4">
         <ul class="pagination justify-content-center">
             {% if pagination.has_prev %}
             <li class="page-item">
                 <a class="page-link" href="{{ url_for('list_sorular', page=pagination.prev_num,
-                   sinif_id=sinif_id, ders_id=ders_id, unite_id=unite_id, icerik_id=icerik_id) }}">
+                   sinif_id=sinif_id, ders_id=ders_id, unite_id=unite_id, icerik_id=icerik_id, reference_code=reference_code) }}">
                     Önceki
                 </a>
             </li>
@@ -184,7 +239,7 @@
                 {% if page %}
                     <li class="page-item {% if page == pagination.page %}active{% endif %}">
                         <a class="page-link" href="{{ url_for('list_sorular', page=page,
-                           sinif_id=sinif_id, ders_id=ders_id, unite_id=unite_id, icerik_id=icerik_id) }}">
+                           sinif_id=sinif_id, ders_id=ders_id, unite_id=unite_id, icerik_id=icerik_id, reference_code=reference_code) }}">
                             {{ page }}
                         </a>
                     </li>
@@ -196,7 +251,7 @@
             {% if pagination.has_next %}
             <li class="page-item">
                 <a class="page-link" href="{{ url_for('list_sorular', page=pagination.next_num,
-                   sinif_id=sinif_id, ders_id=ders_id, unite_id=unite_id, icerik_id=icerik_id) }}">
+                   sinif_id=sinif_id, ders_id=ders_id, unite_id=unite_id, icerik_id=icerik_id, reference_code=reference_code) }}">
                     Sonraki
                 </a>
             </li>
@@ -205,5 +260,202 @@
     </nav>
     {% endif %}
 </div>
+{% endblock %}
 
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const bulkActionBar = document.getElementById('bulkActionBar');
+    const selectedCountSpan = document.getElementById('selectedCount');
+    const modalSelectedCount = document.getElementById('modalSelectedCount');
+    const btnClearSelection = document.getElementById('btnClearSelection');
+    const btnOpenBulkDeleteModal = document.getElementById('btnOpenBulkDeleteModal');
+    const btnConfirmBulkDelete = document.getElementById('btnConfirmBulkDelete');
+    const bulkAlertContainer = document.getElementById('bulkAlertContainer');
+    const csrfToken = document.getElementById('globalCsrfToken')?.value || '';
+
+    const bulkDeleteModalEl = document.getElementById('bulkDeleteModal');
+    let bulkDeleteModal = null;
+    if (bulkDeleteModalEl && typeof bootstrap !== 'undefined') {
+        bulkDeleteModal = new bootstrap.Modal(bulkDeleteModalEl);
+    }
+
+    function getCheckboxes() {
+        return document.querySelectorAll('.soru-checkbox');
+    }
+
+    function getSelectedCheckboxes() {
+        return document.querySelectorAll('.soru-checkbox:checked');
+    }
+
+    function showBulkAlert(message, type = 'success') {
+        if (!bulkAlertContainer) return;
+        bulkAlertContainer.className = `alert alert-${type} alert-dismissible fade show`;
+        bulkAlertContainer.innerHTML = `
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        `;
+        bulkAlertContainer.style.display = 'block';
+        window.scrollTo({ top: bulkAlertContainer.offsetTop - 80, behavior: 'smooth' });
+    }
+
+    function updateSelectionState() {
+        const checkboxes = getCheckboxes();
+        const selected = getSelectedCheckboxes();
+        const count = selected.length;
+
+        // Sayacı güncelle
+        if (selectedCountSpan) selectedCountSpan.textContent = count;
+        if (modalSelectedCount) modalSelectedCount.textContent = count;
+
+        // Toplu işlem barını göster / gizle
+        if (count > 0) {
+            bulkActionBar.style.display = 'block';
+        } else {
+            bulkActionBar.style.display = 'none';
+        }
+
+        // Satır vurgularını güncelle
+        checkboxes.forEach(cb => {
+            const row = cb.closest('tr');
+            if (row) {
+                if (cb.checked) {
+                    row.classList.add('table-primary');
+                } else {
+                    row.classList.remove('table-primary');
+                }
+            }
+        });
+
+        // "Tümünü Seç" durumunu güncelle
+        if (selectAllCheckbox) {
+            if (checkboxes.length > 0 && count === checkboxes.length) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else if (count > 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            }
+        }
+    }
+
+    // "Tümünü Seç" kutusu
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            const isChecked = this.checked;
+            getCheckboxes().forEach(cb => {
+                cb.checked = isChecked;
+            });
+            updateSelectionState();
+        });
+    }
+
+    // Tekil checkbox tıklamaları
+    document.addEventListener('change', function(e) {
+        if (e.target && e.target.classList.contains('soru-checkbox')) {
+            updateSelectionState();
+        }
+    });
+
+    // "Seçimi Temizle" butonu
+    if (btnClearSelection) {
+        btnClearSelection.addEventListener('click', function() {
+            getCheckboxes().forEach(cb => {
+                cb.checked = false;
+            });
+            updateSelectionState();
+        });
+    }
+
+    // "Seçilenleri Sil" butonuna basıldığında onay modalını aç
+    if (btnOpenBulkDeleteModal) {
+        btnOpenBulkDeleteModal.addEventListener('click', function() {
+            const count = getSelectedCheckboxes().length;
+            if (count === 0) {
+                showBulkAlert('Lütfen önce silmek istediğiniz soruları seçiniz.', 'warning');
+                return;
+            }
+            if (modalSelectedCount) modalSelectedCount.textContent = count;
+            if (bulkDeleteModal) {
+                bulkDeleteModal.show();
+            }
+        });
+    }
+
+    // Modal içindeki "Evet, Hepsini Sil" onay butonu
+    if (btnConfirmBulkDelete) {
+        btnConfirmBulkDelete.addEventListener('click', async function() {
+            const selected = getSelectedCheckboxes();
+            const selectedIds = Array.from(selected).map(cb => parseInt(cb.value)).filter(id => !isNaN(id));
+
+            if (selectedIds.length === 0) {
+                if (bulkDeleteModal) bulkDeleteModal.hide();
+                showBulkAlert('Silinecek soru seçilmedi.', 'warning');
+                return;
+            }
+
+            // Butonu yükleniyor durumuna al
+            const originalBtnHtml = btnConfirmBulkDelete.innerHTML;
+            btnConfirmBulkDelete.disabled = true;
+            btnConfirmBulkDelete.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Siliniyor...';
+
+            try {
+                const response = await fetch("{{ url_for('bulk_delete_sorular') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRFToken': csrfToken
+                    },
+                    body: JSON.stringify({
+                        question_ids: selectedIds,
+                        csrf_token: csrfToken
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    if (bulkDeleteModal) bulkDeleteModal.hide();
+
+                    // Silinen satırları tablodan yumuşakça kaldır
+                    selectedIds.forEach(id => {
+                        const row = document.getElementById(`soruRow${id}`);
+                        if (row) {
+                            row.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+                            row.style.opacity = '0';
+                            row.style.transform = 'translateX(20px)';
+                            setTimeout(() => {
+                                row.remove();
+                                // Eğer tabloda hiç soru kalmadıysa sayfayı yenile
+                                if (getCheckboxes().length === 0) {
+                                    window.location.reload();
+                                }
+                            }, 400);
+                        }
+                    });
+
+                    showBulkAlert(`<strong>Başarılı!</strong> ${result.message}`, 'success');
+                    updateSelectionState();
+                } else {
+                    if (bulkDeleteModal) bulkDeleteModal.hide();
+                    showBulkAlert(result.message || 'Toplu silme sırasında bir hata oluştu.', 'danger');
+                }
+            } catch (err) {
+                console.error('Toplu silme AJAX hatası:', err);
+                if (bulkDeleteModal) bulkDeleteModal.hide();
+                showBulkAlert('Sunucu ile iletişim kurulurken hata oluştu. Lütfen tekrar deneyiniz.', 'danger');
+            } finally {
+                btnConfirmBulkDelete.disabled = false;
+                btnConfirmBulkDelete.innerHTML = originalBtnHtml;
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

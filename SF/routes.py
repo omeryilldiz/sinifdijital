@@ -12,7 +12,7 @@ from flask_login import login_user, current_user, logout_user, login_required
 from functools import wraps
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
-import re, os, traceback, time, humanize, pytz
+import re, os, traceback, time, humanize, pytz, threading
 from urllib.parse import urlparse
 from datetime import datetime, timedelta, timezone
 from werkzeug.utils import secure_filename
@@ -49,6 +49,15 @@ os.makedirs(COZUM_UPLOAD_FOLDER, exist_ok=True)
 
 tr_tz = pytz.timezone('Europe/Istanbul')
 
+def send_async_email(msg):
+    """E-postayı arka planda ayrı thread ile gönderir — request döngüsünü bloklamaz."""
+    with app.app_context():
+        try:
+            mail.send(msg)
+        except Exception as e:
+            app.logger.error(f"Async mail gönderim hatası: {str(e)}")
+
+
 # ========================================
 # 🔒 SECURITY DECORATORS
 # ========================================
@@ -78,6 +87,13 @@ def ads_txt():
 # ========================================
 # ROBOTS.TXT & SITEMAP ROUTES
 # ========================================
+
+@app.route('/favicon.ico')
+@limiter.exempt
+def favicon():
+    """Favicon dosyasını sun"""
+    return send_from_directory(app.static_folder, 'favicon.ico', mimetype='image/vnd.microsoft.icon')
+
 
 @app.route('/robots.txt')
 @limiter.exempt
@@ -886,7 +902,8 @@ Konu: {form.subject.data}
 Mesaj:
 {form.message.data}"""
             )
-            mail.send(msg)
+            t = threading.Thread(target=send_async_email, args=(msg,), daemon=True)
+            t.start()
             flash('Mesajınız başarıyla gönderildi. En kısa zamanda sizinle iletişime geçeceğiz.', 'success')
             return redirect(url_for('contact'))
         except Exception as e:
@@ -1107,6 +1124,17 @@ def get_user_progress_tree(user_id):
     
     return result
 
+
+def invalidate_user_progress_cache(user_id):
+    """Kullanıcının ilerleme patikası önbelleğini temizler (test çözüldüğünde veya konu tamamlandığında)"""
+    if cache and user_id:
+        try:
+            cache.delete_memoized(get_user_progress_tree, user_id)
+            app.logger.debug(f"İlerleme patikası önbelleği temizlendi: user_id={user_id}")
+        except Exception as e:
+            app.logger.warning(f"İlerleme cache temizleme hatası (user={user_id}): {str(e)}")
+
+
 @app.route('/<sinif_slug>/<ders_slug>')
 def ders(sinif_slug, ders_slug):
     try:
@@ -1292,6 +1320,9 @@ def icerik(sinif_slug, ders_slug, unite_slug, icerik_slug):
                 db.session.rollback()
                 app.logger.error(f"İçerik görüntüleme kaydı hatası: {str(e)}")
 
+        # SEO Meta Bilgilerini hesapla
+        seo_meta = get_content_seo(icerik, unite_obj=unite, ders_obj=ders, sinif_obj=sinif)
+
         return render_template(
             'icerik.html',
             sinif=sinif,
@@ -1310,7 +1341,8 @@ def icerik(sinif_slug, ders_slug, unite_slug, icerik_slug):
             current_position=current_position,
             total_contents=total_contents,
             title=icerik.baslik,
-            description_snippet=_make_description_snippet(icerik.icerik)
+            seo_meta=seo_meta,
+            description_snippet=seo_meta['description']
         )
     
     except Exception as e:
@@ -1338,8 +1370,92 @@ _MAX_HARCANAN_SURE = 7200  # 2 saat — makul üst sınır
 
 _TAG_RE = re.compile(r'<[^>]+>')
 
+def format_sinif_label(sinif_val):
+    """
+    Sınıf adını SEO için akıllı biçimlendirir.
+    Örn: '10' -> '10. Sınıf', 'TYT' -> 'TYT', 'AYT' -> 'AYT', 'LGS' -> 'LGS'
+    """
+    if not sinif_val:
+        return ''
+    s = str(sinif_val).strip()
+    if s.isdigit():
+        return f"{s}. Sınıf"
+    # Eğer zaten 'sınıf' kelimesi geçiyorsa olduğu gibi bırak
+    if 'sınıf' in s.lower() or 'sinif' in s.lower():
+        return s
+    return s
+
+
+def get_content_seo(icerik_obj, unite_obj=None, ders_obj=None, sinif_obj=None):
+    """
+    İçerik için optimize edilmiş SEO meta verilerini (Title, Description, Keywords) döner.
+    Admin özel olarak bir alan girdiyse onu kullanır, boşsa akıllı otomatik şablon üretir.
+    """
+    unite = unite_obj or (icerik_obj.unite if hasattr(icerik_obj, 'unite') else None)
+    ders = ders_obj or (unite.ders if unite and hasattr(unite, 'ders') else None)
+    sinif = sinif_obj or (ders.sinif if ders and hasattr(ders, 'sinif') else None)
+
+    baslik = getattr(icerik_obj, 'baslik', '') or ''
+    unite_adi = getattr(unite, 'unite', '') or ''
+    ders_adi = getattr(ders, 'ders_adi', '') or ''
+    sinif_raw = getattr(sinif, 'sinif', '') if sinif else ''
+    sinif_label = format_sinif_label(sinif_raw)
+
+    # 1. Title Üretimi
+    custom_title = getattr(icerik_obj, 'meta_title', None)
+    if custom_title and str(custom_title).strip():
+        meta_title = str(custom_title).strip()
+    else:
+        parts = []
+        if baslik:
+            parts.append(f"{baslik} Konu Anlatımı")
+        sinif_ders = " ".join([p for p in [sinif_label, ders_adi] if p]).strip()
+        if sinif_ders:
+            parts.append(sinif_ders)
+        meta_title = " | ".join(parts) if parts else "Konu Anlatımı"
+        meta_title = f"{meta_title} - Sınıf Dijital"
+
+    # 2. Description Üretimi
+    custom_desc = getattr(icerik_obj, 'meta_description', None)
+    if custom_desc and str(custom_desc).strip():
+        meta_description = str(custom_desc).strip()
+    else:
+        # Şablonik ve yüksek kaliteli açıklama
+        sinif_ders = " ".join([p for p in [sinif_label, ders_adi] if p]).strip()
+        desc_parts = []
+        if sinif_ders:
+            desc_parts.append(sinif_ders)
+        if unite_adi:
+            desc_parts.append(f"{unite_adi} ünitesi")
+        if baslik:
+            desc_parts.append(f"{baslik} konusu detaylı konu anlatımı")
+        desc_main = " ".join(desc_parts) if desc_parts else (baslik or "Konu anlatımı")
+        meta_description = f"{desc_main}, ders notları, örnek soru ve video çözümleri Sınıf Dijital'de."
+
+    # 3. Keywords Üretimi
+    custom_kw = getattr(icerik_obj, 'meta_keywords', None)
+    if custom_kw and str(custom_kw).strip():
+        meta_keywords = str(custom_kw).strip()
+    else:
+        kw_list = []
+        for val in [baslik, ders_adi, sinif_label, unite_adi, 'konu anlatımı', 'ders notları', 'çözümlü sorular']:
+            if val and val.strip() and val.strip() not in kw_list:
+                kw_list.append(val.strip())
+        meta_keywords = ", ".join(kw_list)
+
+    return {
+        'title': meta_title,
+        'description': meta_description,
+        'keywords': meta_keywords,
+        'sinif_label': sinif_label,
+        'ders_adi': ders_adi,
+        'unite_adi': unite_adi,
+        'baslik': baslik
+    }
+
+
 def _make_description_snippet(html_content, max_len=155):
-    """CKEditor HTML'inden düz metin özeti üretir (meta description için)."""
+    """CKEditor HTML'inden düz metin özeti üretir (meta description için fallback)."""
     if not html_content:
         return ''
     text = _TAG_RE.sub(' ', html_content)
@@ -1461,6 +1577,7 @@ def mark_content_read(icerik_id):
         else:
             progress.okundu = True
         db.session.commit()
+        invalidate_user_progress_cache(user_id)
         return jsonify({'success': True})
     except Exception as e:
         db.session.rollback()
@@ -1732,6 +1849,9 @@ def soru_coz(sinif_slug, ders_slug):
                 # ✅ Commit et
                 db.session.commit()
                 app.logger.info(f"Test tamamlandı - User: {current_user.id}, Soru sayısı: {len(sorular)}, Doğru: {dogru_sayisi}, Süre: {harcanan_sure}s")
+
+                # ⚡ İlerleme patikası önbelleğini temizle (yeni veriler anında yansısın)
+                invalidate_user_progress_cache(current_user.id)
 
             # 🧹 Session temizle
             session.pop('aktif_sorular', None)
@@ -2392,8 +2512,9 @@ def send_verification_email(user):
             recipients=[user.email],
             html=html_body
         )
-        mail.send(msg)
-        app.logger.info(f"Doğrulama emaili gönderildi: {user.email}")
+        t = threading.Thread(target=send_async_email, args=(msg,), daemon=True)
+        t.start()
+        app.logger.info(f"Doğrulama emaili kuyruğa alındı: {user.email}")
         return True
     except Exception as e:
         app.logger.error(f"Email gönderme hatası: {str(e)}")
@@ -2426,8 +2547,9 @@ def send_password_changed_notification(user):
             recipients=[user.email],
             html=html_body
         )
-        mail.send(msg)
-        app.logger.info(f"Şifre değişiklik bildirimi gönderildi: {user.email}")
+        t = threading.Thread(target=send_async_email, args=(msg,), daemon=True)
+        t.start()
+        app.logger.info(f"Şifre değişiklik bildirimi kuyruğa alındı: {user.email}")
     except Exception as e:
         app.logger.error(f"Şifre değişiklik bildirimi gönderilemedi: {str(e)}")
         app.logger.warning(f"Şifre değişiklik bildirimi başarısız: {user.email}")
@@ -2537,8 +2659,9 @@ def reset_password_request():
                         html=html_body
                     )
                     
-                    mail.send(msg)
-                    app.logger.info(f"Şifre sıfırlama maili gönderildi: {user.email}, IP: {get_client_ip()}")
+                    t = threading.Thread(target=send_async_email, args=(msg,), daemon=True)
+                    t.start()
+                    app.logger.info(f"Şifre sıfırlama maili kuyruğa alındı: {user.email}")
                 except Exception as e:
                     db.session.rollback()
                     app.logger.error(f"Mail gönderme hatası: {str(e)}")
@@ -2777,6 +2900,13 @@ def complete_profile():
 
                 db.session.commit()
                 
+                # Sınıf eşleşme ve ilerleme önbelleğini temizle
+                try:
+                    cache.delete(f"sinif_match_{current_user.id}")
+                    invalidate_user_progress_cache(current_user.id)
+                except Exception:
+                    pass
+                
                 # ✅ Güvenli log yazma
                 changes = []
                 for key, old_value in old_data.items():
@@ -2879,6 +3009,13 @@ def profile():
                 current_user.profile_completed_date = datetime.utcnow()
             
             db.session.commit()
+            
+            # Sınıf eşleşme ve ilerleme önbelleğini temizle
+            try:
+                cache.delete(f"sinif_match_{current_user.id}")
+                invalidate_user_progress_cache(current_user.id)
+            except Exception:
+                pass
             flash('Profiliniz başarıyla güncellendi!', 'success')
             return redirect(url_for('dashboard'))
             
@@ -3954,27 +4091,31 @@ def edit_unite(id, sub_id, unite_id):
 
 
 def get_image_urls_from_content(content):
-    """İçerikteki resim URL'lerini güvenli şekilde çıkar"""
+    """İçerikteki resim URL'lerini (hem mutlak hem göreli) güvenli şekilde çıkar"""
     if not content:
         return []
     
     try:
-        # Host URL'ini al
-        base_url = request.host_url.rstrip('/')
+        # Hem göreli (/static/uploads/...) hem de tam domainli (http.../static/uploads/...) URL'leri yakala
+        pattern = r'src=[\'"](?:https?://[^\'"]+)?(/static/uploads/([^\'"?#]+))(?:\?[^\'"]*)?[\'"]'
         
-        # Sadece uploads klasöründeki resimleri bul
-        pattern = f'src=[\'"]({re.escape(base_url)}/static/uploads/[^\'"]+)[\'"]'
+        matches = re.findall(pattern, content)
         
-        # URL'leri bul ve filtrele  
-        urls = re.findall(pattern, content)
-        
-        # Sadece güvenli domain'deki URL'leri döndür
         filtered_urls = []
-        for url in urls:
-            parsed_url = urlparse(url)
-            if parsed_url.netloc == urlparse(base_url).netloc:
-                filtered_urls.append(url)
+        seen = set()
+        
+        for full_url, filename in matches:
+            clean_filename = filename.strip()
+            if not clean_filename or clean_filename in seen:
+                continue
+            seen.add(clean_filename)
+            
+            # Güvenlik: Path traversal (..) ve eğik çizgi engelle
+            if '..' in clean_filename or '/' in clean_filename or '\\' in clean_filename:
+                continue
                 
+            filtered_urls.append(f"/static/uploads/{clean_filename}")
+            
         return filtered_urls
         
     except Exception as e:
@@ -3982,19 +4123,30 @@ def get_image_urls_from_content(content):
         return []
     
     
-    
-def delete_image_files(image_urls):
-    """Belirtilen URL'lerdeki resim dosyalarını sil"""
+def delete_image_files(image_urls, exclude_icerik_id=None):
+    """Belirtilen URL'lerdeki resim dosyalarını güvenli şekilde diskten sil"""
     for url in image_urls:
         try:
-            # URL'den dosya adını çıkar
-            filename = url.split('/')[-1]
+            # URL'den dosya adını temiz şekilde çıkar
+            filename = url.split('/')[-1].split('?')[0].split('#')[0].strip()
+            if not filename or '..' in filename or '/' in filename or '\\' in filename:
+                continue
+
+            # ✅ Güvenlik: Bu görsel başka bir içerikte hala kullanılıyor mu?
+            query = Icerik.query.filter(Icerik.icerik.like(f'%{filename}%'))
+            if exclude_icerik_id:
+                query = query.filter(Icerik.id != exclude_icerik_id)
+            other_usage = query.first()
+            if other_usage:
+                app.logger.info(f"Görsel başka bir içerik (ID: {other_usage.id}) tarafından kullanıldığı için silinmedi: {filename}")
+                continue
+
             fullpath = _abspath_join(app.config['UPLOAD_FOLDER'], filename)
 
             # Dosya varsa ve uploads klasöründeyse sil
             if is_within_directory(app.config['UPLOAD_FOLDER'], fullpath) and os.path.exists(fullpath):
                 os.remove(fullpath)
-                app.logger.info(f"Dosya silindi: {filename}")
+                app.logger.info(f"Kullanılmayan editör görseli başarıyla silindi: {filename}")
             
         except Exception as e:
             app.logger.error(f"Dosya silme hatası: {str(e)}")
@@ -4213,7 +4365,14 @@ def add_icerik(id, sub_id, unite_id):
     
     try:
         if form.validate_on_submit():
-            icerik = Icerik(baslik=form.baslik.data, icerik=form.icerik.data, unite_id=unite_id)
+            icerik = Icerik(
+                baslik=form.baslik.data,
+                icerik=form.icerik.data,
+                unite_id=unite_id,
+                meta_title=form.meta_title.data.strip() if form.meta_title.data and form.meta_title.data.strip() else None,
+                meta_description=form.meta_description.data.strip() if form.meta_description.data and form.meta_description.data.strip() else None,
+                meta_keywords=form.meta_keywords.data.strip() if form.meta_keywords.data and form.meta_keywords.data.strip() else None
+            )
             db.session.add(icerik)
             db.session.commit()
             flash('İçerik başarıyla eklendi!', 'success')
@@ -4253,12 +4412,15 @@ def edit_icerik(id, sub_id, unite_id, icerik_id):
             icerik.baslik = form.baslik.data
             icerik.icerik = form.icerik.data
             icerik.slug = new_slug
+            icerik.meta_title = form.meta_title.data.strip() if form.meta_title.data and form.meta_title.data.strip() else None
+            icerik.meta_description = form.meta_description.data.strip() if form.meta_description.data and form.meta_description.data.strip() else None
+            icerik.meta_keywords = form.meta_keywords.data.strip() if form.meta_keywords.data and form.meta_keywords.data.strip() else None
             
             # Değişiklikleri kaydet
             db.session.commit()
             
             # Kullanılmayan resimleri sil
-            delete_image_files(unused_images)
+            delete_image_files(unused_images, exclude_icerik_id=icerik.id)
             
             flash('İçerik başarıyla güncellendi!', 'success')
             return redirect(url_for('add_icerik', id=id, sub_id=sub_id, unite_id=unite_id))
@@ -4266,6 +4428,12 @@ def edit_icerik(id, sub_id, unite_id, icerik_id):
         elif request.method == 'GET':
             form.baslik.data = icerik.baslik
             form.icerik.data = icerik.icerik
+            
+            # SEO alanları: Mevcut varsa onu doldur, yoksa otomatik üretileni form kutusuna öneri olarak yaz
+            seo_suggest = get_content_seo(icerik, unite_obj=unite)
+            form.meta_title.data = icerik.meta_title if (icerik.meta_title and icerik.meta_title.strip()) else seo_suggest['title']
+            form.meta_description.data = icerik.meta_description if (icerik.meta_description and icerik.meta_description.strip()) else seo_suggest['description']
+            form.meta_keywords.data = icerik.meta_keywords if (icerik.meta_keywords and icerik.meta_keywords.strip()) else seo_suggest['keywords']
             
     except SQLAlchemyError as e:
         db.session.rollback()
@@ -4297,7 +4465,7 @@ def delete_icerik(id, sub_id, unite_id, icerik_id):
         
         # İçerikteki resimleri bul ve sil
         image_urls = get_image_urls_from_content(icerik.icerik)
-        delete_image_files(image_urls)
+        delete_image_files(image_urls, exclude_icerik_id=icerik_id)
         
         # İçeriği sil
         db.session.delete(icerik)
@@ -4319,7 +4487,15 @@ def delete_icerik(id, sub_id, unite_id, icerik_id):
 @app.route('/soru_ekleme', methods=['GET', 'POST'])
 @admin_required
 def add_soru():
-    """Admin - Soru Ekleme"""
+    """Admin - Soru Ekleme (AJAX / Klasik Uyumlu)"""
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or 'application/json' in request.headers.get('Accept', '')
+    
+    def return_error(message, status_code=400):
+        if is_ajax:
+            return jsonify({'success': False, 'message': message}), status_code
+        flash(message, 'danger')
+        return redirect(request.url)
+
     try:
         form = SoruEkleForm()
 
@@ -4372,18 +4548,15 @@ def add_soru():
             try:
                 # ✅ Dosya varlık kontrolü
                 if 'soru' not in request.files:
-                    flash('Soru resmi yüklenmedi!', 'danger')
-                    return redirect(request.url)
+                    return return_error('Soru resmi yüklenmedi!')
                 
                 file = request.files['soru']
                 if file.filename == '':
-                    flash('Dosya seçilmedi!', 'danger')
-                    return redirect(request.url)
+                    return return_error('Dosya seçilmedi!')
                 
                 # ✅ Dosya güvenlik kontrolü
                 if not file or not allowed_file(file.filename):
-                    flash('İzin verilmeyen dosya türü! Sadece JPG, JPEG, PNG, GIF dosyaları yüklenebilir.', 'danger')
-                    return redirect(request.url)
+                    return return_error('İzin verilmeyen dosya türü! Sadece JPG, JPEG, PNG, GIF dosyaları yüklenebilir.')
                 
                 # ✅ Dosya boyutu kontrolü (5MB maksimum)
                 file.seek(0, 2)  # Dosya sonuna git
@@ -4391,8 +4564,7 @@ def add_soru():
                 file.seek(0)  # Başa dön
                 
                 if file_size > 5 * 1024 * 1024:  # 5MB
-                    flash('Dosya boyutu 5MB\'dan büyük olamaz!', 'danger')
-                    return redirect(request.url)
+                    return return_error("Dosya boyutu 5MB'dan büyük olamaz!")
                 
                 # ✅ Form verilerini güvenli şekilde al
                 cevap = SecurityService.sanitize_input(form.cevap.data, 10)
@@ -4401,15 +4573,13 @@ def add_soru():
                 
                 # ✅ Cevap doğrulama - sadece A-E harfleri
                 if not cevap or cevap.upper() not in ['A', 'B', 'C', 'D', 'E']:
-                    flash('Geçersiz cevap seçimi! Cevap A, B, C, D veya E olmalıdır.', 'danger')
-                    return redirect(request.url)
+                    return return_error('Geçersiz cevap seçimi! Cevap A, B, C, D veya E olmalıdır.')
                 
                 # ✅ İlişki doğrulama - unite ve icerik uyumlu mu?
                 if unite_id and icerik_id:
                     icerik_check = Icerik.query.filter_by(id=icerik_id, unite_id=unite_id).first()
                     if not icerik_check:
-                        flash('Seçilen ünite ve içerik uyumsuz!', 'danger')
-                        return redirect(request.url)
+                        return return_error('Seçilen ünite ve içerik uyumsuz!')
                 
                 # ✅ Güvenli dosya adı oluştur
                 filename = secure_filename(file.filename)
@@ -4421,8 +4591,7 @@ def add_soru():
 
                 # Dosya yolu güvenlik kontrolü
                 if not is_within_directory(app.config['SORU_UPLOAD_FOLDER'], upload_path):
-                    flash('Güvenlik hatası: Geçersiz dosya yolu!', 'danger')
-                    return redirect(request.url)
+                    return return_error('Güvenlik hatası: Geçersiz dosya yolu!')
 
                 # ✅ Dosyayı güvenli şekilde kaydet
                 file.save(upload_path)
@@ -4433,17 +4602,14 @@ def add_soru():
                     video_file = form.video.data
                     if allowed_video_file(video_file.filename):
                         video_filename = secure_filename(video_file.filename)
-                        # Benzersiz dosya adı oluştur
                         video_unique_filename = f"{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_video_{video_filename}"
                         video_upload_path = _abspath_join(app.config['VIDEO_UPLOAD_FOLDER'], video_unique_filename)
                         if not is_within_directory(app.config['VIDEO_UPLOAD_FOLDER'], video_upload_path):
-                            flash('Güvenlik hatası: Geçersiz video yolu!', 'danger')
-                            return redirect(request.url)
+                            return return_error('Güvenlik hatası: Geçersiz video yolu!')
                         video_file.save(video_upload_path)
                         video_path = video_unique_filename
                     else:
-                        flash('Geçersiz video formatı. Sadece MP4 desteklenir.', 'danger')
-                        return redirect(request.url)
+                        return return_error('Geçersiz video formatı. Sadece MP4 desteklenir.')
                 
                 # ✅ Çözüm resmi yükleme kontrolü (opsiyonel)
                 cozum_path = None
@@ -4451,17 +4617,14 @@ def add_soru():
                     cozum_file = form.cozum_resim.data
                     if allowed_file(cozum_file.filename):
                         cozum_filename = secure_filename(cozum_file.filename)
-                        # Benzersiz dosya adı oluştur
                         cozum_unique_filename = f"{datetime.utcnow().strftime('%Y%m%d%H%M%S')}_cozum_{cozum_filename}"
                         cozum_upload_path = _abspath_join(app.config['COZUM_UPLOAD_FOLDER'], cozum_unique_filename)
                         if not is_within_directory(app.config['COZUM_UPLOAD_FOLDER'], cozum_upload_path):
-                            flash('Güvenlik hatası: Geçersiz çözüm resmi yolu!', 'danger')
-                            return redirect(request.url)
+                            return return_error('Güvenlik hatası: Geçersiz çözüm resmi yolu!')
                         cozum_file.save(cozum_upload_path)
                         cozum_path = cozum_unique_filename
                     else:
-                        flash('Geçersiz çözüm resmi formatı.', 'danger')
-                        return redirect(request.url)
+                        return return_error('Geçersiz çözüm resmi formatı.')
                 
                 # ✅ Soru nesnesini oluştur
                 soru = Soru(
@@ -4469,8 +4632,8 @@ def add_soru():
                     cevap=cevap.upper(),  # Büyük harfe çevir
                     unite_id=unite_id,
                     icerik_id=icerik_id,
-                    video_path=video_path,  # Yeni alan
-                    cozum_resim=cozum_path  # Yeni alan
+                    video_path=video_path,
+                    cozum_resim=cozum_path
                 )
                 
                 db.session.add(soru)
@@ -4478,6 +4641,14 @@ def add_soru():
                 
                 # ✅ Güvenli log yazma
                 app.logger.info(f"Admin {current_user.id} added question - Unite: {unite_id}, Content: {icerik_id}, Answer: {cevap}")
+                
+                if is_ajax:
+                    return jsonify({
+                        'success': True,
+                        'message': f'Soru başarıyla eklendi! (Ref: {soru.reference_code})',
+                        'reference_code': soru.reference_code,
+                        'soru_id': soru.id
+                    })
                 
                 flash('Soru başarıyla eklendi!', 'success')
                 return redirect(url_for('add_soru'))
@@ -4513,14 +4684,19 @@ def add_soru():
 
                 app.logger.error(f"Question adding error: {str(e)}")
                 app.logger.error(traceback.format_exc())
-                flash('Soru eklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 'danger')
-                return redirect(request.url)
+                return return_error('Soru eklenirken bir hata oluştu. Lütfen daha sonra tekrar deneyiniz.', 500)
 
         # ✅ Form validation hataları
-        if form.errors:
+        if request.method == 'POST' and form.errors:
+            error_messages = []
             for field, errors in form.errors.items():
+                field_label = getattr(form, field).label.text if hasattr(form, field) and hasattr(getattr(form, field), 'label') else field
                 for error in errors:
-                    flash(f'{field}: {error}', 'danger')
+                    error_messages.append(f'{field_label}: {error}')
+            if is_ajax:
+                return jsonify({'success': False, 'message': ' | '.join(error_messages)}), 400
+            for err in error_messages:
+                flash(err, 'danger')
 
         return render_template('add_soru.html', 
                              form=form,
@@ -6145,7 +6321,28 @@ def delete_soru(id):
                             app.logger.info(f"Deleted image file: {soru.soru_resim}")
                     except Exception as e:
                         app.logger.error(f"Image deletion error: {str(e)}")
-                        # Dosya silme hatası kritik değil, devam et
+
+            # ✅ Video çözüm dosyasını güvenli şekilde sil
+            if soru.video_path:
+                video_file_path = _abspath_join(app.config['VIDEO_UPLOAD_FOLDER'], soru.video_path)
+                if is_within_directory(app.config['VIDEO_UPLOAD_FOLDER'], video_file_path):
+                    try:
+                        if os.path.exists(video_file_path):
+                            os.remove(video_file_path)
+                            app.logger.info(f"Deleted video file: {soru.video_path}")
+                    except Exception as e:
+                        app.logger.error(f"Video deletion error: {str(e)}")
+
+            # ✅ Çözüm resmini güvenli şekilde sil
+            if soru.cozum_resim:
+                cozum_file_path = _abspath_join(app.config['COZUM_UPLOAD_FOLDER'], soru.cozum_resim)
+                if is_within_directory(app.config['COZUM_UPLOAD_FOLDER'], cozum_file_path):
+                    try:
+                        if os.path.exists(cozum_file_path):
+                            os.remove(cozum_file_path)
+                            app.logger.info(f"Deleted cozum image file: {soru.cozum_resim}")
+                    except Exception as e:
+                        app.logger.error(f"Cozum image deletion error: {str(e)}")
             
             # ✅ Soru bilgilerini log için sakla
             soru_info = {
@@ -6178,8 +6375,154 @@ def delete_soru(id):
         app.logger.error(traceback.format_exc())
         flash('Silme işlemi sırasında hata oluştu.', 'danger')
         return redirect(url_for('list_sorular'))
-    
-    
+
+
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/sorular/toplu_sil', methods=['POST'])
+@login_required
+@admin_required
+def bulk_delete_sorular():
+    """Admin - Toplu Soru Silme (Bulk Delete)"""
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json
+    try:
+        # ✅ Güvenli CSRF token kontrolü
+        from flask_wtf.csrf import validate_csrf
+        csrf_token = request.headers.get('X-CSRFToken') or request.form.get('csrf_token')
+        if not csrf_token and request.is_json:
+            csrf_token = (request.get_json(silent=True) or {}).get('csrf_token')
+        
+        try:
+            validate_csrf(csrf_token)
+        except Exception as e:
+            app.logger.warning(f"Bulk delete CSRF validation failed: {str(e)}")
+            if is_ajax:
+                return jsonify({'success': False, 'message': 'Güvenlik doğrulaması başarısız oldu. Lütfen sayfayı yenileyiniz.'}), 400
+            flash('Güvenlik doğrulaması başarısız. Lütfen sayfayı yenileyin.', 'danger')
+            return redirect(url_for('list_sorular'))
+
+        # ✅ Soru ID listesini al (JSON veya Form)
+        raw_ids = []
+        if request.is_json:
+            data = request.get_json(silent=True) or {}
+            raw_ids = data.get('question_ids', [])
+        else:
+            raw_ids = request.form.getlist('selected_soru_ids')
+
+        # ✅ Sayısal ID doğrulama ve temizleme
+        valid_ids = []
+        for qid in raw_ids:
+            try:
+                val = int(qid)
+                if val > 0:
+                    valid_ids.append(val)
+            except (ValueError, TypeError):
+                continue
+
+        if not valid_ids:
+            msg = 'Lütfen silmek için en az bir soru seçiniz.'
+            if is_ajax:
+                return jsonify({'success': False, 'message': msg}), 400
+            flash(msg, 'warning')
+            return redirect(url_for('list_sorular'))
+
+        # ✅ Üst sınır kontrolü (güvenlik / DoS engelleme)
+        if len(valid_ids) > 200:
+            msg = 'Tek seferde en fazla 200 soru silebilirsiniz.'
+            if is_ajax:
+                return jsonify({'success': False, 'message': msg}), 400
+            flash(msg, 'warning')
+            return redirect(url_for('list_sorular'))
+
+        # ✅ Soruları veritabanından çek
+        sorular = Soru.query.filter(Soru.id.in_(valid_ids)).all()
+        if not sorular:
+            msg = 'Seçilen sorular sistemde bulunamadı.'
+            if is_ajax:
+                return jsonify({'success': False, 'message': msg}), 404
+            flash(msg, 'warning')
+            return redirect(url_for('list_sorular'))
+
+        deleted_ids = []
+        total_progress_deleted = 0
+
+        # ✅ Transaction ile güvenli silme
+        try:
+            for soru in sorular:
+                qid = soru.id
+                
+                # 1. İlgili UserProgress kayıtlarını temizle
+                related_progress = UserProgress.query.filter_by(soru_id=qid).all()
+                total_progress_deleted += len(related_progress)
+                for prog in related_progress:
+                    db.session.delete(prog)
+
+                # 2. Soru görselini diskten sil
+                if soru.soru_resim:
+                    img_path = _abspath_join(app.config['SORU_UPLOAD_FOLDER'], soru.soru_resim)
+                    if is_within_directory(app.config['SORU_UPLOAD_FOLDER'], img_path):
+                        try:
+                            if os.path.exists(img_path):
+                                os.remove(img_path)
+                        except Exception as file_err:
+                            app.logger.error(f"Toplu silmede soru resmi silinemedi ({soru.soru_resim}): {str(file_err)}")
+
+                # 3. Video çözüm dosyasını diskten sil
+                if soru.video_path:
+                    vid_path = _abspath_join(app.config['VIDEO_UPLOAD_FOLDER'], soru.video_path)
+                    if is_within_directory(app.config['VIDEO_UPLOAD_FOLDER'], vid_path):
+                        try:
+                            if os.path.exists(vid_path):
+                                os.remove(vid_path)
+                        except Exception as file_err:
+                            app.logger.error(f"Toplu silmede video dosyası silinemedi ({soru.video_path}): {str(file_err)}")
+
+                # 4. Çözüm görselini diskten sil
+                if soru.cozum_resim:
+                    cozum_path = _abspath_join(app.config['COZUM_UPLOAD_FOLDER'], soru.cozum_resim)
+                    if is_within_directory(app.config['COZUM_UPLOAD_FOLDER'], cozum_path):
+                        try:
+                            if os.path.exists(cozum_path):
+                                os.remove(cozum_path)
+                        except Exception as file_err:
+                            app.logger.error(f"Toplu silmede çözüm resmi silinemedi ({soru.cozum_resim}): {str(file_err)}")
+
+                # 5. Soruyu oturumdan sil
+                db.session.delete(soru)
+                deleted_ids.append(qid)
+
+            db.session.commit()
+
+            app.logger.info(f"Admin {current_user.id} toplu olarak {len(deleted_ids)} soru sildi (ID'ler: {deleted_ids}, İlerleme Kayıtları: {total_progress_deleted})")
+
+            success_msg = f'{len(deleted_ids)} adet soru ve ilişkili tüm veriler başarıyla silindi.'
+            if is_ajax:
+                return jsonify({
+                    'success': True,
+                    'message': success_msg,
+                    'deleted_ids': deleted_ids,
+                    'count': len(deleted_ids)
+                }), 200
+
+            flash(success_msg, 'success')
+            return redirect(url_for('list_sorular'))
+
+        except Exception as db_err:
+            db.session.rollback()
+            app.logger.error(f"Toplu soru silme DB hatası: {str(db_err)}")
+            app.logger.error(traceback.format_exc())
+            err_msg = 'Sorular silinirken bir veritabanı hatası oluştu.'
+            if is_ajax:
+                return jsonify({'success': False, 'message': err_msg}), 500
+            flash(err_msg, 'danger')
+            return redirect(url_for('list_sorular'))
+
+    except Exception as general_err:
+        app.logger.error(f"Toplu soru silme genel hatası: {str(general_err)}")
+        app.logger.error(traceback.format_exc())
+        err_msg = 'Silme işlemi sırasında beklenmeyen bir hata oluştu.'
+        if is_ajax:
+            return jsonify({'success': False, 'message': err_msg}), 500
+        flash(err_msg, 'danger')
+        return redirect(url_for('list_sorular'))
 
 
 @app.route('/ders_notu_ekle', methods=['GET', 'POST'])

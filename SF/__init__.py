@@ -1,12 +1,8 @@
-from dotenv import load_dotenv
 import os
-
-# Production'da .env.production, development'ta .env kullan
-env_file = '.env.production' if os.environ.get('FLASK_ENV') == 'production' else '.env'
-load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), env_file))
-
 import secrets
 import logging
+
+from SF.config import Config, load_environment
 
 # OAuth güvenlik: Sadece development modunda HTTP'ye izin ver
 if os.environ.get('FLASK_ENV') != 'production':
@@ -17,7 +13,6 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from sqlalchemy import event
 from flask_bcrypt import Bcrypt
-from SF.config import Config
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
 from datetime import timedelta

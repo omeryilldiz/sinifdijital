@@ -27,60 +27,13 @@ class StudentStatisticsService:
     def get_subject_completion_stats(self):
         """2. KONU TAMAMLAMA İSTATİSTİKLERİ"""
         try:
-            if not self.student.class_no:
+            if not self.student or not self.student.class_no:
                 return {'subjects': [], 'overall_completion': 0}
             
-            current_app.logger.debug(f"Student class_no: {self.student.class_no} (type: {type(self.student.class_no)})")
-            
-            # ✅ VERİTABANI KONTROLÜ: Tüm sınıfları listele
-            all_siniflar = Sinif.query.all()
-            current_app.logger.debug("Veritabanındaki tüm sınıflar:")
-            for sinif in all_siniflar:
-                current_app.logger.debug(f"  ID: {sinif.id}, Sınıf: '{sinif.sinif}' (type: {type(sinif.sinif)})")
-            
-            # ✅ ESNEK SINIF BULMA: Birden fazla yöntem dene
-            matching_sinif = None
-            
-            # Yöntem 1: Tam eşleştirme
-            for sinif in all_siniflar:
-                if str(sinif.sinif).strip() == str(self.student.class_no).strip():
-                    matching_sinif = sinif
-                    current_app.logger.debug(f"Tam eşleştirme bulundu: {sinif.id} - {sinif.sinif}")
-                    break
-            
-            # Yöntem 2: Kısmi eşleştirme (örn: "5. Sınıf" vs "5")
+            # Sınıf bulma (Redis cache ve yarışma grubu destekli)
+            matching_sinif = self._find_matching_sinif_cached()
             if not matching_sinif:
-                for sinif in all_siniflar:
-                    if str(self.student.class_no) in str(sinif.sinif):
-                        matching_sinif = sinif
-                        current_app.logger.debug(f"Kısmi eşleştirme bulundu: {sinif.id} - {sinif.sinif}")
-                        break
-            
-            # Yöntem 3: Sadece rakam karşılaştırması
-            if not matching_sinif:
-                import re
-                student_number = re.findall(r'\d+', str(self.student.class_no))
-                if student_number:
-                    student_class_num = student_number[0]
-                    for sinif in all_siniflar:
-                        sinif_numbers = re.findall(r'\d+', str(sinif.sinif))
-                        if sinif_numbers and sinif_numbers[0] == student_class_num:
-                            matching_sinif = sinif
-                            current_app.logger.debug(f"Rakam eşleştirmesi bulundu: {sinif.id} - {sinif.sinif}")
-                            break
-            
-            if not matching_sinif:
-                current_app.logger.warning(f"No matching sinif found for class_no: {self.student.class_no}")
-                current_app.logger.debug(f"Available sinif values: {[s.sinif for s in all_siniflar]}")
-                
-                # ✅ DEMO VERİSİ: Eğer sınıf bulunamazsa ilk sınıfı kullan (test için)
-                if all_siniflar:
-                    matching_sinif = all_siniflar[0]
-                    current_app.logger.warning(f"DEMO: Using first available sinif: {matching_sinif.sinif}")
-                else:
-                    return {'subjects': [], 'overall_completion': 0}
-            
-            current_app.logger.debug(f"Final matching sinif: {matching_sinif.id} - {matching_sinif.sinif}")
+                return {'subjects': [], 'overall_completion': 0}
             
             # Sınıfa ait dersleri al
             class_subjects = Ders.query.filter_by(sinif_id=matching_sinif.id).all()
@@ -159,30 +112,82 @@ class StudentStatisticsService:
             return {'subjects': [], 'overall_completion': 0}
     
     def _get_unit_details(self, subject_id):
-        """Ders için ünite detaylarını getir"""
+        """Ders için ünite detaylarını batch sorgularla getir (N+1 önlenmiş)"""
         try:
             units = Unite.query.filter_by(ders_id=subject_id).all()
-            unit_details = []
-            
-            for unit in units:
-                # Ünitedeki toplam içerik sayısı
-                total_contents = Icerik.query.filter_by(unite_id=unit.id).count()
-                
-                # Tamamlanan içerik sayısı - DİNAMİK
-                completed_contents = db.session.query(func.count(UserProgress.id)).join(
-                    Icerik, UserProgress.icerik_id == Icerik.id
-                ).filter(
+            if not units:
+                return []
+
+            unite_ids = [u.id for u in units]
+
+            # Batch 1: Tüm ünitelerdeki tüm içerikler
+            all_icerikler = Icerik.query.filter(
+                Icerik.unite_id.in_(unite_ids)
+            ).all()
+            all_icerik_ids = [ic.id for ic in all_icerikler]
+
+            # Batch 2: Tamamlanan içerik ID'leri
+            okundu_ids = set()
+            if all_icerik_ids:
+                okundu_rows = db.session.query(UserProgress.icerik_id).filter(
                     UserProgress.user_id == self.student_id,
-                    UserProgress.okundu == True,
-                    Icerik.unite_id == unit.id
-                    # activity_type kontrolü kaldırıldı
-                ).scalar() or 0
-                
+                    UserProgress.icerik_id.in_(all_icerik_ids),
+                    UserProgress.okundu == True
+                ).distinct().all()
+                okundu_ids = {row[0] for row in okundu_rows}
+
+            # Batch 3: Harcanan süreler
+            sure_rows = db.session.query(
+                UserProgress.icerik_id,
+                func.sum(UserProgress.harcanan_sure).label('total_sure')
+            ).filter(
+                UserProgress.user_id == self.student_id,
+                UserProgress.icerik_id.in_(all_icerik_ids)
+            ).group_by(UserProgress.icerik_id).all() if all_icerik_ids else []
+            sure_map = {row.icerik_id: row.total_sure or 0 for row in sure_rows}
+
+            # Batch 4: Tarihler (son görüntüleme)
+            tarih_rows = db.session.query(
+                UserProgress.icerik_id,
+                func.max(UserProgress.tarih).label('son_tarih')
+            ).filter(
+                UserProgress.user_id == self.student_id,
+                UserProgress.icerik_id.in_(all_icerik_ids),
+                UserProgress.okundu == True
+            ).group_by(UserProgress.icerik_id).all() if all_icerik_ids else []
+            tarih_map = {row.icerik_id: row.son_tarih for row in tarih_rows}
+
+            # İçerikleri üniteye göre grupla
+            icerikler_by_unite = {}
+            for ic in all_icerikler:
+                icerikler_by_unite.setdefault(ic.unite_id, []).append(ic)
+
+            unit_details = []
+            for unit in units:
+                unit_icerikler = icerikler_by_unite.get(unit.id, [])
+                total_contents = len(unit_icerikler)
+                completed_contents = sum(1 for ic in unit_icerikler if ic.id in okundu_ids)
                 completion_percent = int((completed_contents / total_contents * 100) if total_contents > 0 else 0)
-                
-                # İçerik detayları
-                contents = self._get_content_details(unit.id)
-                
+
+                contents = []
+                for content in unit_icerikler:
+                    is_read = content.id in okundu_ids
+                    total_time = sure_map.get(content.id, 0)
+                    if is_read:
+                        status = 'completed'
+                    elif total_time > 0:
+                        status = 'in_progress'
+                    else:
+                        status = 'not_started'
+                    contents.append({
+                        'id': content.id,
+                        'name': content.baslik,
+                        'status': status,
+                        'status_icon': self._get_status_icon(status),
+                        'spent_time': self._format_time(total_time),
+                        'last_viewed': tarih_map.get(content.id)
+                    })
+
                 unit_details.append({
                     'id': unit.id,
                     'name': unit.unite,
@@ -192,49 +197,72 @@ class StudentStatisticsService:
                     'contents': contents,
                     'color_class': self._get_progress_color(completion_percent)
                 })
-            
+
             return unit_details
-            
+
         except Exception as e:
             current_app.logger.warning(f"Unit details error: {str(e)}", exc_info=True)
             return []
     
     def _get_content_details(self, unit_id):
-        """Ünite için içerik detaylarını getir"""
+        """Ünite için içerik detaylarını batch sorgularla getir (N+1 önlenmiş)"""
         try:
             contents = Icerik.query.filter_by(unite_id=unit_id).all()
+            if not contents:
+                return []
+
+            icerik_ids = [c.id for c in contents]
+
+            # Batch 1: Okundu durumu
+            okundu_ids = {row[0] for row in db.session.query(UserProgress.icerik_id).filter(
+                UserProgress.user_id == self.student_id,
+                UserProgress.icerik_id.in_(icerik_ids),
+                UserProgress.okundu == True
+            ).all()}
+
+            # Batch 2: Harcanan süreler
+            sure_rows = db.session.query(
+                UserProgress.icerik_id,
+                func.sum(UserProgress.harcanan_sure).label('total')
+            ).filter(
+                UserProgress.user_id == self.student_id,
+                UserProgress.icerik_id.in_(icerik_ids)
+            ).group_by(UserProgress.icerik_id).all()
+            sure_map = {row.icerik_id: row.total or 0 for row in sure_rows}
+
+            # Batch 3: Son görüntüleme tarihleri
+            tarih_rows = db.session.query(
+                UserProgress.icerik_id,
+                func.max(UserProgress.tarih).label('son_tarih')
+            ).filter(
+                UserProgress.user_id == self.student_id,
+                UserProgress.icerik_id.in_(icerik_ids),
+                UserProgress.okundu == True
+            ).group_by(UserProgress.icerik_id).all()
+            tarih_map = {row.icerik_id: row.son_tarih for row in tarih_rows}
+
             content_details = []
-            
             for content in contents:
-                # İçeriğin okunup okunmadığını kontrol et - DİNAMİK
-                progress = UserProgress.query.filter_by(
-                    user_id=self.student_id,
-                    icerik_id=content.id
-                ).filter(
-                    UserProgress.okundu == True
-                ).first()
-                
-                # Harcanan süre - TÜMÜ
-                total_time = db.session.query(func.sum(UserProgress.harcanan_sure)).filter_by(
-                    user_id=self.student_id,
-                    icerik_id=content.id
-                ).scalar() or 0
-                
-                status = 'completed' if progress else 'not_started'
-                if not progress and total_time > 0:
+                is_read = content.id in okundu_ids
+                total_time = sure_map.get(content.id, 0)
+                if is_read:
+                    status = 'completed'
+                elif total_time > 0:
                     status = 'in_progress'
-                
+                else:
+                    status = 'not_started'
+
                 content_details.append({
                     'id': content.id,
                     'name': content.baslik,
                     'status': status,
                     'status_icon': self._get_status_icon(status),
                     'spent_time': self._format_time(total_time),
-                    'last_viewed': progress.tarih if progress else None
+                    'last_viewed': tarih_map.get(content.id)
                 })
-            
+
             return content_details
-            
+
         except Exception as e:
             current_app.logger.warning(f"Content details error: {str(e)}", exc_info=True)
             return []
@@ -244,31 +272,12 @@ class StudentStatisticsService:
             if not self.student.class_no:
                 return {'subject_stats': [], 'weak_topics': []}
 
-            # Sınıf bulma (mevcut esnek yöntemler)
-            all_siniflar = Sinif.query.all()
-            matching_sinif = None
-
-            for sinif in all_siniflar:
-                if str(sinif.sinif).strip() == str(self.student.class_no).strip():
-                    matching_sinif = sinif
-                    break
+            # Sınıf bulma (Redis cache destekli)
+            matching_sinif = self._find_matching_sinif_cached()
             if not matching_sinif:
-                for sinif in all_siniflar:
-                    if str(self.student.class_no) in str(sinif.sinif) or str(sinif.sinif) in str(self.student.class_no):
-                        matching_sinif = sinif
-                        break
-            if not matching_sinif:
-                import re
-                student_numbers = re.findall(r'\d+', str(self.student.class_no))
-                if student_numbers:
-                    student_class_num = student_numbers[0]
-                    for sinif in all_siniflar:
-                        sinif_numbers = re.findall(r'\d+', str(sinif.sinif))
-                        if sinif_numbers and sinif_numbers[0] == student_class_num:
-                            matching_sinif = sinif
-                            break
-            if not matching_sinif and all_siniflar:
-                matching_sinif = all_siniflar[0]
+                all_siniflar = Sinif.query.all()
+                if all_siniflar:
+                    matching_sinif = all_siniflar[0]
 
             if not matching_sinif:
                 return {
@@ -447,31 +456,20 @@ class StudentStatisticsService:
     def get_performance_trends(self):
         """4. OPTİMİZE EDİLMİŞ PERFORMANS TRENDLERİ"""
         try:
-            # ✅ Cache kontrolü
+            from SF import cache
             cache_key = f"perf_trends_{self.student_id}"
-            cache_time_key = f"{cache_key}_time"
-            
-            # Session cache kontrolü (5 dakika)
-            from flask import current_app, session
-            cached_data = session.get(cache_key)
-            cache_time = session.get(cache_time_key)
-            
-            if cached_data and cache_time:
-                from datetime import datetime
-                try:
-                    last_update = datetime.fromisoformat(cache_time)
-                    if (datetime.now() - last_update).total_seconds() < 300:  # 5 dakika
-                        current_app.logger.debug(f"Using cached performance trends for student {self.student_id}")
-                        return cached_data
-                except:
-                    pass
-            
+
+            # Redis cache kontrolü (5 dakika)
+            cached_data = cache.get(cache_key)
+            if cached_data:
+                current_app.logger.debug(f"Using cached performance trends for student {self.student_id}")
+                return cached_data
+
             current_app.logger.debug(f"Generating fresh performance trends for student {self.student_id}")
-            
+
             # Tek sorgu ile son 30 günlük verileri al
-            from datetime import datetime, timedelta
             thirty_days_ago = datetime.utcnow() - timedelta(days=30)
-            
+
             # ✅ Optimize edilmiş sorgu - tek seferde tüm günleri al
             daily_stats = db.session.query(
                 func.date(UserProgress.tarih).label('date'),
@@ -485,7 +483,7 @@ class StudentStatisticsService:
             ).group_by(
                 func.date(UserProgress.tarih)
             ).all()
-            
+
             # ✅ Dictionary'ye dönüştür (hızlı erişim için)
             stats_dict = {}
             for stat in daily_stats:
@@ -494,13 +492,13 @@ class StudentStatisticsService:
                     'correct_answers': stat.correct_answers or 0,
                     'points': stat.points or 0
                 }
-            
+
             # ✅ Son 30 günü doldur
             daily_performance = []
             for i in range(30):
                 day = thirty_days_ago + timedelta(days=i)
                 day_str = day.strftime('%Y-%m-%d')
-                
+
                 if day_str in stats_dict:
                     stat = stats_dict[day_str]
                     total = stat['total_questions']
@@ -509,7 +507,7 @@ class StudentStatisticsService:
                 else:
                     total = correct = success_rate = 0
                     stat = {'points': 0}
-                
+
                 daily_performance.append({
                     'date': day_str,
                     'date_display': day.strftime('%d.%m'),
@@ -518,24 +516,22 @@ class StudentStatisticsService:
                     'success_rate': success_rate,
                     'points': stat['points']
                 })
-            
+
             # ✅ Subject distribution (sadece veri varsa hesapla)
             subject_distribution = []
             if any(d['total_questions'] > 0 for d in daily_performance):
                 subject_distribution = self._get_subject_distribution_optimized()
-            
+
             result = {
                 'daily_performance': daily_performance,
                 'subject_distribution': subject_distribution
             }
-            
-            # ✅ Cache'e kaydet
-            session[cache_key] = result
-            session[cache_time_key] = datetime.now().isoformat()
-            
-            current_app.logger.debug(f"Performance trends generated and cached for student {self.student_id}")
+
+            # ✅ Redis cache'e kaydet (5 dakika)
+            cache.set(cache_key, result, timeout=300)
+            current_app.logger.debug(f"Performance trends cached for student {self.student_id}")
             return result
-            
+
         except Exception as e:
             current_app.logger.warning(f"Performance trends error: {str(e)}", exc_info=True)
             return {
@@ -589,28 +585,85 @@ class StudentStatisticsService:
             return []
     
     def _find_matching_sinif_cached(self):
-        """Cache'lenmiş sınıf bulma"""
-        cache_key = f"sinif_match_{self.student_id}"
-        
-        from flask import session
-        cached_sinif_id = session.get(cache_key)
-        
-        if cached_sinif_id:
-            return Sinif.query.get(cached_sinif_id)
-        
-        # Sınıf bulma işlemi (mevcut kod)
-        matching_sinif = self._find_matching_sinif()
-        
-        if matching_sinif:
-            session[cache_key] = matching_sinif.id
-        
-        return matching_sinif
+        """Cache'lenmiş sınıf bulma — Redis üzerinden"""
+        try:
+            from SF import cache
+            cache_key = f"sinif_match_{self.student_id}"
+
+            cached_sinif_id = cache.get(cache_key)
+            if cached_sinif_id:
+                sinif = Sinif.query.get(cached_sinif_id)
+                if sinif:
+                    return sinif
+
+            matching_sinif = self._find_matching_sinif()
+            if matching_sinif:
+                cache.set(cache_key, matching_sinif.id, timeout=3600)  # 1 saat
+
+            return matching_sinif
+        except Exception as e:
+            current_app.logger.warning(f"Sinif cache error: {str(e)}")
+            return self._find_matching_sinif()
     
     def _find_matching_sinif(self):
-        """Esnek sınıf bulma (önceki kod)"""
-        # ... (mevcut esnek sınıf bulma kodunu buraya kopyalayın)
-        # Bu kod önceki örneklerde verilmişti
-        pass
+        """Esnek sınıf bulma — Tam, Yarışma Grubu, Kısmi ve Rakam karşılaştırması"""
+        if not self.student or not self.student.class_no:
+            return None
+
+        all_siniflar = Sinif.query.all()
+        if not all_siniflar:
+            return None
+
+        matching_sinif = None
+        student_class_str = str(self.student.class_no).strip()
+
+        # Yöntem 1: Tam eşleştirme (isim veya slug)
+        for sinif in all_siniflar:
+            if (str(sinif.sinif).strip().lower() == student_class_str.lower() or 
+                (sinif.slug and str(sinif.slug).strip().lower() == student_class_str.lower())):
+                matching_sinif = sinif
+                break
+
+        # Yöntem 2: Yarışma grubu eşleştirmesi (Örn: 12 veya Mezun -> TYT / AYT, 8 -> LGS)
+        if not matching_sinif and hasattr(self.student, 'get_competing_classes'):
+            try:
+                competing_classes = self.student.get_competing_classes() or []
+                for comp_name in competing_classes:
+                    comp_str = str(comp_name).strip().lower()
+                    for sinif in all_siniflar:
+                        if (str(sinif.sinif).strip().lower() == comp_str or 
+                            (sinif.slug and str(sinif.slug).strip().lower() == comp_str)):
+                            matching_sinif = sinif
+                            break
+                    if matching_sinif:
+                        break
+            except Exception as e:
+                current_app.logger.debug(f"get_competing_classes check error: {str(e)}")
+
+        # Yöntem 3: Kısmi eşleştirme (örn: "5. Sınıf" vs "5")
+        if not matching_sinif:
+            for sinif in all_siniflar:
+                if (student_class_str.lower() in str(sinif.sinif).lower() or 
+                    str(sinif.sinif).lower() in student_class_str.lower()):
+                    matching_sinif = sinif
+                    break
+
+        # Yöntem 4: Rakam karşılaştırması (örn: "12. Sınıf" -> 12)
+        if not matching_sinif:
+            import re
+            student_numbers = re.findall(r'\d+', student_class_str)
+            if student_numbers:
+                for sinif in all_siniflar:
+                    sinif_numbers = re.findall(r'\d+', str(sinif.sinif))
+                    if sinif_numbers and sinif_numbers[0] == student_numbers[0]:
+                        matching_sinif = sinif
+                        break
+
+        # Yöntem 5: Güvenli fallback (hiçbiri bulunamazsa ilk sınıf)
+        if not matching_sinif and all_siniflar:
+            matching_sinif = all_siniflar[0]
+
+        return matching_sinif
     
     def get_time_analytics(self):
         """5. ZAMAN ANALİTİĞİ"""
@@ -740,7 +793,7 @@ class StudentStatisticsService:
             weekly_increase = this_week - prev_week
 
             # Streak (aralıksız gün)
-            streak = self._get_streak_days() if hasattr(self, '_get_streak_days') else 0
+            streak = self._get_streak_days()
 
             # Yeni rozetler (örnek: başarı oranı %80 üstü, 1000 puan, vs.)
             new_badges = []
@@ -814,6 +867,40 @@ class StudentStatisticsService:
         minutes = int((seconds % 3600) // 60)
         return {'hours': hours, 'minutes': minutes}
     
+    def _get_streak_days(self):
+        """Bugünden geriye aralıksız çalışılan gün sayısı"""
+        try:
+            days_query = db.session.query(
+                func.date(UserProgress.tarih)
+            ).filter(
+                UserProgress.user_id == self.student_id,
+                UserProgress.tarih.isnot(None)
+            ).distinct().order_by(
+                func.date(UserProgress.tarih)
+            ).all()
+
+            if not days_query:
+                return 0
+
+            dates = [day[0] for day in days_query if day[0] is not None]
+            if not dates:
+                return 0
+
+            today = datetime.utcnow().date()
+            if dates[-1] != today:
+                return 0
+
+            streak = 1
+            for i in range(len(dates) - 1, 0, -1):
+                if (dates[i] - dates[i - 1]).days == 1:
+                    streak += 1
+                else:
+                    break
+            return streak
+        except Exception as e:
+            current_app.logger.warning(f"Streak hesaplama hatası: {str(e)}", exc_info=True)
+            return 0
+
     def _get_empty_stats(self):
         """Hata durumunda boş istatistikler"""
         return {

@@ -172,10 +172,23 @@ class UniteForm(FlaskForm):
 
 class IcerikForm(FlaskForm):
     baslik = StringField('Başlık', validators=[
-        DataRequired(message='Başlık gereklidir')
+        DataRequired(message='Başlık gereklidir'),
+        Length(max=255, message='Başlık en fazla 255 karakter olabilir')
     ])
     icerik = TextAreaField('İçerik', validators=[
         DataRequired(message='İçerik gereklidir')
+    ])
+    meta_title = StringField('Özel SEO Başlığı (Title)', validators=[
+        Optional(),
+        Length(max=255, message='SEO başlığı en fazla 255 karakter olabilir')
+    ])
+    meta_description = TextAreaField('Özel Meta Açıklaması (Meta Description)', validators=[
+        Optional(),
+        Length(max=300, message='Meta açıklaması en fazla 300 karakter olabilir')
+    ])
+    meta_keywords = StringField('Özel Anahtar Kelimeler (Meta Keywords)', validators=[
+        Optional(),
+        Length(max=255, message='Anahtar kelimeler en fazla 255 karakter olabilir')
     ])
     submit = SubmitField('Kaydet')
 

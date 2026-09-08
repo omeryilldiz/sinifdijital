@@ -26,16 +26,46 @@
         {{ form.icerik.label(class="form-label") }}
         {{ form.icerik(class="form-control", id="icerik") }}
     </div>
+
+    <!-- SEO Ayarları Kartı (Opsiyonel) -->
+    <div class="card mb-4 border-info">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center" role="button" data-bs-toggle="collapse" data-bs-target="#seoFieldsCollapse" aria-expanded="false">
+            <span class="fw-bold text-dark"><i class="fas fa-search me-2 text-info"></i>SEO & Arama Motoru Ayarları <small class="text-muted fw-normal">(İsteğe Bağlı - Boş bırakırsanız sistem otomatik üretir)</small></span>
+            <i class="fas fa-chevron-down text-muted"></i>
+        </div>
+        <div class="collapse" id="seoFieldsCollapse">
+            <div class="card-body bg-white">
+                <div class="mb-3">
+                    {{ form.meta_title.label(class="form-label fw-semibold") }}
+                    <small class="text-muted d-block mb-1">Google sekme ve arama başlığı (Önerilen: En fazla 60-70 karakter)</small>
+                    {{ form.meta_title(class="form-control", placeholder="Örn: 2. Temel İşlemler Konu Anlatımı | TYT Matematik - Sınıf Dijital", id="seo_title_input", maxlength="255") }}
+                    <small class="text-muted float-end mt-1"><span id="seo_title_count">0</span> / 255</small>
+                </div>
+                <div class="mb-3">
+                    {{ form.meta_description.label(class="form-label fw-semibold") }}
+                    <small class="text-muted d-block mb-1">Google arama sonuçlarındaki açıklama metni (Önerilen: 140-160 karakter)</small>
+                    {{ form.meta_description(class="form-control", rows=3, placeholder="Örn: TYT Matematik Sayılar ünitesi 2. Temel İşlemler konusu detaylı konu anlatımı, ders notları ve çözümlü soruları Sınıf Dijital'de.", id="seo_desc_input", maxlength="300") }}
+                    <small class="text-muted float-end mt-1"><span id="seo_desc_count">0</span> / 300</small>
+                </div>
+                <div class="mb-2">
+                    {{ form.meta_keywords.label(class="form-label fw-semibold") }}
+                    <small class="text-muted d-block mb-1">Virgülle ayrılmış anahtar kelimeler</small>
+                    {{ form.meta_keywords(class="form-control", placeholder="Örn: temel işlemler, matematik, tyt, sayılar, konu anlatımı", maxlength="255") }}
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{ form.submit(class="btn btn-primary w-100") }}  
 </form>
 
 <table class="table table-striped table-hover table-bordered mt-5">
     <thead class="table-dark">
         <tr>
-            <th class="text-center">Ünite ID</th>
-            <th class="text-center">Ders</th>
-            <th class="text-center">Ünite Adı</th>
-            <th class="text-center">İşlemler</th>
+            <th class="text-center" style="width: 100px;">İçerik ID</th>
+            <th class="text-center" style="width: 150px;">Ders</th>
+            <th>İçerik Başlığı</th>
+            <th class="text-center" style="width: 180px;">İşlemler</th>
         </tr>
     </thead>
     <tbody>
@@ -93,6 +123,21 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     window.initCKEditor('#icerik', 'Konu girişini buraya ekleyiniz...');
+
+    // Karakter sayacı
+    const titleInp = document.getElementById('seo_title_input');
+    const descInp = document.getElementById('seo_desc_input');
+    const titleCount = document.getElementById('seo_title_count');
+    const descCount = document.getElementById('seo_desc_count');
+
+    if (titleInp && titleCount) {
+        titleCount.textContent = titleInp.value.length;
+        titleInp.addEventListener('input', () => titleCount.textContent = titleInp.value.length);
+    }
+    if (descInp && descCount) {
+        descCount.textContent = descInp.value.length;
+        descInp.addEventListener('input', () => descCount.textContent = descInp.value.length);
+    }
 });
 </script>
 
