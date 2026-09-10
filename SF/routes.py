@@ -7,6 +7,7 @@ from SF.models import User, Sinif, Ders, Unite, Icerik, Soru, DersNotu, VideoIce
 from SF.services.advanced_query_optimizer import AdvancedQueryOptimizer
 from SF.services.performance_monitor import performance_monitor
 from SF.services.query_optimizer import QueryOptimizer
+from SF.services.indexnow_service import IndexNowService
 from sqlalchemy import text, select
 from flask_login import login_user, current_user, logout_user, login_required
 from functools import wraps
@@ -121,6 +122,30 @@ def sitemap_pages():
 def sitemap_legal():
     """Yasal sayfalar sitemap'i"""
     return send_from_directory(app.static_folder, 'sitemap-legal.xml')
+
+
+@app.route('/<key>.txt')
+@limiter.exempt
+def indexnow_key_verification(key):
+    """IndexNow API key doğrulama dosyası"""
+    api_key = app.config.get('INDEXNOW_API_KEY')
+    if api_key and key == api_key:
+        response = app.response_class(
+            response=api_key,
+            status=200,
+            mimetype='text/plain'
+        )
+        response.headers['Cache-Control'] = 'public, max-age=86400'
+        return response
+    
+    # Static klasöründe bu isimde bir dosya varsa sun
+    filename = f"{key}.txt"
+    filepath = os.path.join(app.static_folder, filename)
+    if os.path.isfile(filepath):
+        return send_from_directory(app.static_folder, filename, mimetype='text/plain')
+        
+    abort(404)
+
 
 
 @app.route('/sitemap-classes.xml')
@@ -3901,6 +3926,13 @@ def add_konu():
             db.session.add(yeni_sinif)
             db.session.commit()
             
+            # 🔍 IndexNow: Yeni sınıfı arama motorlarına bildir
+            try:
+                if yeni_sinif.slug:
+                    IndexNowService.notify_content_change(sinif_slug=yeni_sinif.slug, background=True)
+            except Exception as ex:
+                app.logger.warning(f"IndexNow add_konu bildirim hatası: {ex}")
+            
             flash('Sınıf başarıyla eklendi!', 'success')
             return redirect(url_for('add_konu'))
             
@@ -3940,6 +3972,14 @@ def update_konu(id):
             konu.sinif = form.sinif.data
             konu.slug = new_slug
             db.session.commit()
+
+            # 🔍 IndexNow: Güncellenen sınıfı bildir
+            try:
+                if konu.slug:
+                    IndexNowService.notify_content_change(sinif_slug=konu.slug, background=True)
+            except Exception as ex:
+                app.logger.warning(f"IndexNow update_konu bildirim hatası: {ex}")
+
             flash('Sınıf başarıyla güncellendi.', 'success')
             return redirect(url_for('add_konu'))
             
@@ -3990,6 +4030,17 @@ def add_ders(id):
             db.session.add(ders)
             db.session.commit()
             
+            # 🔍 IndexNow: Yeni dersi bildir
+            try:
+                if ders.sinif and ders.sinif.slug and ders.slug:
+                    IndexNowService.notify_content_change(
+                        sinif_slug=ders.sinif.slug,
+                        ders_slug=ders.slug,
+                        background=True
+                    )
+            except Exception as ex:
+                app.logger.warning(f"IndexNow add_ders bildirim hatası: {ex}")
+
             flash('Ders başarıyla eklendi.', 'success')
             return redirect(url_for('add_ders', id=id))
             
@@ -4030,6 +4081,18 @@ def update_ders(id, sub_id):
             ders.ders_adi = form.ders.data
             ders.slug = new_slug
             db.session.commit()
+
+            # 🔍 IndexNow: Güncellenen dersi bildir
+            try:
+                if ders.sinif and ders.sinif.slug and ders.slug:
+                    IndexNowService.notify_content_change(
+                        sinif_slug=ders.sinif.slug,
+                        ders_slug=ders.slug,
+                        background=True
+                    )
+            except Exception as ex:
+                app.logger.warning(f"IndexNow update_ders bildirim hatası: {ex}")
+
             flash('Ders başarıyla güncellendi.', 'success')
             return redirect(url_for('add_ders', id=ders.sinif_id))
             
@@ -4049,13 +4112,30 @@ def update_ders(id, sub_id):
 def delete_ders(id, sub_id):
     ders = Ders.query.get_or_404(sub_id)
     try:
+        del_sinif_slug = ders.sinif.slug if ders.sinif else None
+        del_ders_slug = ders.slug
+        sinif_id = ders.sinif_id
+
         db.session.delete(ders)
         db.session.commit()
+
+        # 🔍 IndexNow: Silinen dersi bildir
+        if del_sinif_slug and del_ders_slug:
+            try:
+                IndexNowService.notify_content_change(
+                    sinif_slug=del_sinif_slug,
+                    ders_slug=del_ders_slug,
+                    background=True
+                )
+            except Exception as ex:
+                app.logger.warning(f"IndexNow delete_ders bildirim hatası: {ex}")
+
         flash('Ders başarı ile silinmiştir. ', 'success')  
-        return redirect(url_for('add_ders', id=ders.sinif_id))
-    except:
+        return redirect(url_for('add_ders', id=sinif_id))
+    except Exception as e:
+        app.logger.error(f"Ders silme hatası: {str(e)}")
         flash('İşlem esnasında bir sorun ile karşılaşıldı. Tekrar deneyiniz.', 'danger')
-        return redirect(url_for('add_ders', id=ders.sinif_id))
+        return redirect(url_for('add_ders', id=id))
     
     
 
@@ -4082,6 +4162,17 @@ def add_unite(id, sub_id):
             db.session.add(unite)
             db.session.commit()
             
+            # 🔍 IndexNow: Yeni üniteyi bildir (ders sayfası güncellendi)
+            try:
+                if ders.sinif and ders.sinif.slug and ders.slug:
+                    IndexNowService.notify_content_change(
+                        sinif_slug=ders.sinif.slug,
+                        ders_slug=ders.slug,
+                        background=True
+                    )
+            except Exception as ex:
+                app.logger.warning(f"IndexNow add_unite bildirim hatası: {ex}")
+
             flash('Ünite başarıyla eklendi!', 'success')
             return redirect(url_for('add_unite', id=id, sub_id=sub_id))
             
@@ -4099,11 +4190,25 @@ def add_unite(id, sub_id):
 @admin_required  # Sadece adminler yeni admin ekleyebilir   
 def delete_unite(id, sub_id, unite_id):
     konu = Unite.query.get_or_404(unite_id)
-    try:        
+    try:
+        del_sinif_slug = konu.ders.sinif.slug if (konu.ders and konu.ders.sinif) else None
+        del_ders_slug = konu.ders.slug if konu.ders else None
+
         # İçeriği sil
         db.session.delete(konu)
         db.session.commit()
-               
+        
+        # 🔍 IndexNow: Silinen üniteyi bildir
+        if del_sinif_slug and del_ders_slug:
+            try:
+                IndexNowService.notify_content_change(
+                    sinif_slug=del_sinif_slug,
+                    ders_slug=del_ders_slug,
+                    background=True
+                )
+            except Exception as ex:
+                app.logger.warning(f"IndexNow delete_unite bildirim hatası: {ex}")
+
         flash('Ünite başarıyla silindi.', 'success')
         return redirect(url_for('add_unite', id=id, sub_id=sub_id))
     except Exception as e:
@@ -4127,6 +4232,18 @@ def edit_unite(id, sub_id, unite_id):
             konu.unite = form.unite.data
             konu.slug = new_slug
             db.session.commit()
+
+            # 🔍 IndexNow: Güncellenen üniteyi bildir
+            try:
+                if ders.sinif and ders.sinif.slug and ders.slug:
+                    IndexNowService.notify_content_change(
+                        sinif_slug=ders.sinif.slug,
+                        ders_slug=ders.slug,
+                        background=True
+                    )
+            except Exception as ex:
+                app.logger.warning(f"IndexNow edit_unite bildirim hatası: {ex}")
+
             flash('İçerik başarı ile güncellendi.')
             return redirect(url_for('add_unite', id=id, sub_id=sub_id))
         except Exception as e:
@@ -4423,6 +4540,22 @@ def add_icerik(id, sub_id, unite_id):
             )
             db.session.add(icerik)
             db.session.commit()
+            
+            # 🔍 IndexNow: Yeni içeriği bildir
+            try:
+                ders = unite.ders if unite else None
+                sinif = ders.sinif if ders else None
+                if sinif and ders and unite and icerik.slug:
+                    IndexNowService.notify_content_change(
+                        sinif_slug=sinif.slug,
+                        ders_slug=ders.slug,
+                        unite_slug=unite.slug,
+                        icerik_slug=icerik.slug,
+                        background=True
+                    )
+            except Exception as ex:
+                app.logger.warning(f"IndexNow add_icerik bildirim hatası: {ex}")
+
             flash('İçerik başarıyla eklendi!', 'success')
             return redirect(url_for('add_icerik', id=id, sub_id=sub_id, unite_id=unite_id))
     
@@ -4466,6 +4599,21 @@ def edit_icerik(id, sub_id, unite_id, icerik_id):
             
             # Değişiklikleri kaydet
             db.session.commit()
+
+            # 🔍 IndexNow: Güncellenen içeriği bildir
+            try:
+                ders = unite.ders if unite else None
+                sinif = ders.sinif if ders else None
+                if sinif and ders and unite and icerik.slug:
+                    IndexNowService.notify_content_change(
+                        sinif_slug=sinif.slug,
+                        ders_slug=ders.slug,
+                        unite_slug=unite.slug,
+                        icerik_slug=icerik.slug,
+                        background=True
+                    )
+            except Exception as ex:
+                app.logger.warning(f"IndexNow edit_icerik bildirim hatası: {ex}")
             
             # Kullanılmayan resimleri sil
             delete_image_files(unused_images, exclude_icerik_id=icerik.id)
@@ -4497,6 +4645,19 @@ def delete_icerik(id, sub_id, unite_id, icerik_id):
     try:
         # İçeriği bul
         icerik = Icerik.query.get_or_404(icerik_id)
+
+        # IndexNow için silinmeden önce slug bilgilerini al
+        del_sinif_slug = None
+        del_ders_slug = None
+        del_unite_slug = None
+        del_icerik_slug = icerik.slug
+        try:
+            if icerik.unite and icerik.unite.ders and icerik.unite.ders.sinif:
+                del_sinif_slug = icerik.unite.ders.sinif.slug
+                del_ders_slug = icerik.unite.ders.slug
+                del_unite_slug = icerik.unite.slug
+        except Exception:
+            pass
         
         # Önce bu içeriğe bağlı soruları bul
         bagli_sorular = Soru.query.filter_by(icerik_id=icerik_id).all()
@@ -4518,6 +4679,19 @@ def delete_icerik(id, sub_id, unite_id, icerik_id):
         # İçeriği sil
         db.session.delete(icerik)
         db.session.commit()
+
+        # 🔍 IndexNow: Silinen içeriği bildir
+        if del_sinif_slug and del_ders_slug and del_unite_slug and del_icerik_slug:
+            try:
+                IndexNowService.notify_content_change(
+                    sinif_slug=del_sinif_slug,
+                    ders_slug=del_ders_slug,
+                    unite_slug=del_unite_slug,
+                    icerik_slug=del_icerik_slug,
+                    background=True
+                )
+            except Exception as ex:
+                app.logger.warning(f"IndexNow delete_icerik bildirim hatası: {ex}")
         
         flash('İçerik ve bağlı tüm sorular başarıyla silindi!', 'success')
         return redirect(url_for('add_icerik', id=id, sub_id=sub_id, unite_id=unite_id))
@@ -7650,7 +7824,49 @@ def admin_settings():
                            mail_sender=mail_sender,
                            mail_password=mail_password,
                            google_client_id=google_client_id,
-                           google_client_secret=google_client_secret)  
+                           google_client_secret=google_client_secret,
+                           indexnow_status=IndexNowService.get_status())
+
+
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/indexnow/status', methods=['GET'])
+@login_required
+@admin_required
+def indexnow_status_api():
+    """IndexNow durumunu JSON olarak döndür"""
+    return jsonify(IndexNowService.get_status())
+
+
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/indexnow/submit-url', methods=['POST'])
+@login_required
+@admin_required
+def indexnow_submit_url():
+    """Admin panelinden tekil URL'yi IndexNow'a bildir"""
+    url = request.form.get('url', '').strip()
+    if not url:
+        flash('Lütfen geçerli bir URL giriniz.', 'warning')
+        return redirect(url_for('admin_settings'))
+    
+    success, msg = IndexNowService.submit_url(url, background=False)
+    if success:
+        flash(f'IndexNow bildirimi başarılı: {msg}', 'success')
+    else:
+        flash(f'IndexNow bildirimi başarısız: {msg}', 'danger')
+    
+    return redirect(url_for('admin_settings'))
+
+
+@app.route(f'{app.config["ADMIN_URL_PREFIX"]}/indexnow/submit-all', methods=['POST'])
+@login_required
+@admin_required
+def indexnow_submit_all():
+    """Admin panelinden tüm public URL'leri IndexNow'a toplu bildir"""
+    success, msg = IndexNowService.submit_all_public_urls(background=True)
+    if success:
+        flash(f'Toplu IndexNow bildirimi başlatıldı: {msg}', 'success')
+    else:
+        flash(f'Toplu IndexNow bildirimi başlatılamadı: {msg}', 'danger')
+    
+    return redirect(url_for('admin_settings'))  
 
 
 @app.route(f'{app.config["ADMIN_URL_PREFIX"]}/system/performance-test')

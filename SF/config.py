@@ -67,6 +67,12 @@ class Config:
     GA_MEASUREMENT_ID        = os.environ.get('GA_MEASUREMENT_ID', 'G-FVNY2ZZNET')
     GOOGLE_SITE_VERIFICATION = os.environ.get('GOOGLE_SITE_VERIFICATION', '')
     
+    # 🔍 IndexNow Configuration (Bing, Yandex, Seznam, Naver)
+    INDEXNOW_API_KEY = os.environ.get('INDEXNOW_API_KEY', 'be8b0e0a9c5b9afed0d072c643ed9120')
+    INDEXNOW_ENABLED = os.environ.get('INDEXNOW_ENABLED', 'True').lower() in ('true', '1', 'yes')
+    INDEXNOW_HOST = os.environ.get('INDEXNOW_HOST', 'api.indexnow.org')
+    BASE_URL = os.environ.get('BASE_URL', 'https://sinifdijital.com').rstrip('/')
+    
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # ✅ Session Configuration (CSRF token için gerekli)

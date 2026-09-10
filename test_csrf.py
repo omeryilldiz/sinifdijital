@@ -3,6 +3,7 @@ from flask import Flask, request
 from flask_wtf.csrf import CSRFProtect
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = 'test-secret-key-123'
 csrf = CSRFProtect(app)
 
 @app.route('/icerik-sure-kaydet', methods=['POST'])

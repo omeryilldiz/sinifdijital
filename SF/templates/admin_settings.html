@@ -1,27 +1,146 @@
 {% extends "admin_layout.html" %}
 {% block content %}
-<h3>Mail & Google Ayarları</h3>
-<hr>
-<form method="POST" class="row g-3">
-    {{ csrf_token() }}
-    <div class="col-md-6">
-        <label for="mail_sender" class="form-label">Mail Gönderici Adresi</label>
-        <input type="text" name="mail_sender" id="mail_sender" class="form-control" value="{{ mail_sender }}" required>
+<div class="container-fluid py-2">
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0"><i class="fas fa-cogs me-2"></i>Mail & Google Ayarları</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" class="row g-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="col-md-6">
+                    <label for="mail_sender" class="form-label fw-bold">Mail Gönderici Adresi</label>
+                    <input type="text" name="mail_sender" id="mail_sender" class="form-control" value="{{ mail_sender }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="mail_password" class="form-label fw-bold">Mail Şifresi</label>
+                    <input type="password" name="mail_password" id="mail_password" class="form-control" value="{{ mail_password }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="google_client_id" class="form-label fw-bold">Google Client ID</label>
+                    <input type="text" name="google_client_id" id="google_client_id" class="form-control" value="{{ google_client_id }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label for="google_client_secret" class="form-label fw-bold">Google Client Secret</label>
+                    <input type="password" name="google_client_secret" id="google_client_secret" class="form-control" value="{{ google_client_secret }}" required>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Kaydet</button>
+                    <small class="text-muted ms-2">Not: Üretim ortamında hassas ayarlar .env dosyasından yüklenir.</small>
+                </div>
+            </form>
+        </div>
     </div>
-    <div class="col-md-6">
-        <label for="mail_password" class="form-label">Mail Şifresi</label>
-        <input type="password" name="mail_password" id="mail_password" class="form-control" value="{{ mail_password }}" required>
+
+    <!-- IndexNow Protokolü Yönetimi -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0"><i class="fas fa-bolt me-2 text-warning"></i>IndexNow Arama Motoru İndeksleme</h4>
+            {% if indexnow_status and indexnow_status.enabled %}
+                <span class="badge bg-success fs-6"><i class="fas fa-check-circle me-1"></i>Aktif</span>
+            {% else %}
+                <span class="badge bg-secondary fs-6"><i class="fas fa-pause-circle me-1"></i>Devre Dışı</span>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <p class="text-muted">
+                IndexNow; <strong>Bing, Yandex, Seznam ve Naver</strong> gibi arama motorlarına içerik eklendiğinde, güncellendiğinde veya silindiğinde
+                anında bildirim göndererek sayfaların dakikalar içinde indekslenmesini sağlar.
+            </p>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <div class="p-3 border rounded bg-light">
+                        <h6 class="fw-bold text-secondary mb-2"><i class="fas fa-key me-1"></i>API Key</h6>
+                        <div class="input-group">
+                            <input type="text" class="form-control font-monospace" value="{{ indexnow_status.api_key if indexnow_status else '' }}" readonly id="indexnowKeyInput">
+                            <button class="btn btn-outline-secondary" type="button" onclick="navigator.clipboard.writeText(document.getElementById('indexnowKeyInput').value); alert('API Key panoya kopyalandı!');">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="p-3 border rounded bg-light">
+                        <h6 class="fw-bold text-secondary mb-2"><i class="fas fa-link me-1"></i>Key Doğrulama URL'si</h6>
+                        {% if indexnow_status and indexnow_status.key_location %}
+                            <div class="d-flex align-items-center justify-content-between">
+                                <a href="{{ indexnow_status.key_location }}" target="_blank" class="text-truncate me-2 text-decoration-none">
+                                    {{ indexnow_status.key_location }} <i class="fas fa-external-link-alt fa-xs"></i>
+                                </a>
+                                <a href="{{ indexnow_status.key_location }}" target="_blank" class="btn btn-sm btn-outline-primary text-nowrap">
+                                    Kontrol Et
+                                </a>
+                            </div>
+                        {% else %}
+                            <span class="text-muted">Tanımlı değil</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Son Gönderim Durumu -->
+            <div class="alert alert-info d-flex align-items-center mb-4">
+                <i class="fas fa-info-circle fa-2x me-3 text-primary"></i>
+                <div>
+                    <strong>Son Gönderim Durumu:</strong>
+                    {% if indexnow_status and indexnow_status.last_submission %}
+                        <span class="ms-1">
+                            {{ indexnow_status.last_submission.message }}
+                            {% if indexnow_status.last_submission.timestamp %}
+                                <small class="text-muted">({{ indexnow_status.last_submission.timestamp }} - {{ indexnow_status.last_submission.url_count }} URL)</small>
+                            {% endif %}
+                        </span>
+                    {% else %}
+                        <span class="ms-1">Henüz gönderim kaydı yok.</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Manuel URL Gönderimi -->
+            <div class="row g-3">
+                <div class="col-lg-7">
+                    <div class="card h-100 border">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0 fw-bold"><i class="fas fa-paper-plane me-1 text-primary"></i>Tekil URL Bildir</h6>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" action="{{ url_for('indexnow_submit_url') }}">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <div class="mb-3">
+                                    <label class="form-label">Bildirilecek URL veya Path:</label>
+                                    <input type="text" name="url" class="form-control" placeholder="Örn: /8-sinif/matematik veya https://sinifdijital.com/..." required>
+                                    <div class="form-text">Tam URL veya göreli yol girebilirsiniz. Sistem otomatik tamamlayacaktır.</div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-upload me-1"></i>URL'yi IndexNow'a Gönder
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-5">
+                    <div class="card h-100 border">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0 fw-bold"><i class="fas fa-globe me-1 text-success"></i>Tüm Siteyi İndekslet</h6>
+                        </div>
+                        <div class="card-body d-flex flex-column justify-content-between">
+                            <p class="card-text text-muted small">
+                                Veritabanındaki tüm sınıfları, dersleri ve içerik sayfalarını toplu olarak IndexNow motorlarına gönderir. İlk kurulumda veya büyük güncellemelerde kullanılması tavsiye edilir.
+                            </p>
+                            <form method="POST" action="{{ url_for('indexnow_submit_all') }}" onsubmit="return confirm('Tüm public URL\'ler arka planda IndexNow arama motorlarına gönderilecek. Devam etmek istiyor musunuz?');">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="fas fa-sync-alt me-1"></i>Tüm Public URL'leri Gönder
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
     </div>
-    <div class="col-md-6">
-        <label for="google_client_id" class="form-label">Google Client ID</label>
-        <input type="text" name="google_client_id" id="google_client_id" class="form-control" value="{{ google_client_id }}" required>
-    </div>
-    <div class="col-md-6">
-        <label for="google_client_secret" class="form-label">Google Client Secret</label>
-        <input type="text" name="google_client_secret" id="google_client_secret" class="form-control" value="{{ google_client_secret }}" required>
-    </div>
-    <div class="col-12">
-        <button type="submit" class="btn btn-primary">Kaydet</button>
-    </div>
-</form>
+</div>
 {% endblock %}
