@@ -56,12 +56,11 @@
     </script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     
-    <title>{% if title %}{{ title }} - {% endif %}Sınıf Dijital</title>
+    <title>{% block title %}{% if title %}{{ title }} - {% endif %}Sınıf Dijital{% endblock %}</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     
     <!-- SEO Meta Tags -->
-    <meta name="description" content="{% block meta_description %}Sınıf Dijital - Tüm dersler, konular ve içerikler için öğrenci tarafından hazırlanmış çalışma kaynakları.{% endblock %}">
-    <meta name="keywords" content="{% block meta_keywords %}eğitim, dersiçi, matematik, türkçe, fizik, kimya, biyoloji, tarih, coğrafya, İngilizce{% endblock %}">
+    <meta name="description" content="{% block meta_description %}İlkokul, ortaokul, lise, LGS ve YKS (TYT-AYT) öğrencileri için ücretsiz konu anlatımları, ders notları, çözümlü test soruları ve video çözümleri Sınıf Dijital'de.{% endblock %}">
     <meta name="author" content="Sınıf Dijital">
     <meta name="robots" content="{% block robots_meta %}index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1{% endblock %}">
     {% if config.GOOGLE_SITE_VERIFICATION %}

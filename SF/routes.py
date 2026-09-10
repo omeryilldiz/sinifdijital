@@ -1320,8 +1320,9 @@ def icerik(sinif_slug, ders_slug, unite_slug, icerik_slug):
                 db.session.rollback()
                 app.logger.error(f"İçerik görüntüleme kaydı hatası: {str(e)}")
 
-        # SEO Meta Bilgilerini hesapla
+        # SEO Meta Bilgilerini hesapla ve görselleri zenginleştir
         seo_meta = get_content_seo(icerik, unite_obj=unite, ders_obj=ders, sinif_obj=sinif)
+        enriched_icerik_html = enrich_content_html(icerik.icerik, seo_meta.get('clean_title') or icerik.baslik)
 
         return render_template(
             'icerik.html',
@@ -1329,6 +1330,7 @@ def icerik(sinif_slug, ders_slug, unite_slug, icerik_slug):
             ders=ders,
             unite=unite,
             icerik=icerik,
+            icerik_html=enriched_icerik_html,
             uniteler=uniteler_wrapped,
             videolar=videolar,
             ders_notlari=ders_notlari,
@@ -1340,7 +1342,7 @@ def icerik(sinif_slug, ders_slug, unite_slug, icerik_slug):
             next_content_data=next_content_data,
             current_position=current_position,
             total_contents=total_contents,
-            title=icerik.baslik,
+            title=seo_meta['title'],
             seo_meta=seo_meta,
             description_snippet=seo_meta['description']
         )
@@ -1386,6 +1388,55 @@ def format_sinif_label(sinif_val):
     return s
 
 
+def clean_topic_title(title):
+    """
+    Konu başlığındaki '11. ', '1. ', '2) ', 'A) ', '12 - ' gibi müfredat sıra numaralarını temizler.
+    Örn: '11. Ebob-Ekok' -> 'Ebob-Ekok'
+         '1. Doğal Sayılar' -> 'Doğal Sayılar'
+         'A) Hücre Bölünmesi' -> 'Hücre Bölünmesi'
+    """
+    if not title:
+        return ''
+    cleaned = re.sub(r'^\s*(?:\d+[\.\)\-]\s*|[A-Za-zÇĞİÖŞÜçğıöşü][\.\)]\s*)', '', str(title)).strip()
+    return cleaned if cleaned else str(title).strip()
+
+
+def enrich_content_html(html_content, topic_title=None):
+    """
+    İçerikteki <img> etiketlerini SEO ve performans açısından zenginleştirir:
+    - alt etiketi yoksa veya boşsa: alt="{topic_title} Konu Anlatımı Görseli - X"
+    - loading="lazy" ve decoding="async" ekler (Core Web Vitals hız optimizasyonu)
+    """
+    if not html_content or '<img' not in html_content:
+        return html_content
+    
+    try:
+        from bs4 import BeautifulSoup
+        soup = BeautifulSoup(html_content, 'html.parser')
+        images = soup.find_all('img')
+        
+        if not images:
+            return html_content
+            
+        base_alt = f"{topic_title} Konu Anlatımı Görseli" if topic_title else "Konu Anlatımı Görseli"
+        
+        for idx, img in enumerate(images, 1):
+            current_alt = img.get('alt', '').strip()
+            if not current_alt:
+                suffix = f" - {idx}" if len(images) > 1 else ""
+                img['alt'] = f"{base_alt}{suffix}"
+                
+            if not img.get('loading'):
+                img['loading'] = 'lazy'
+            if not img.get('decoding'):
+                img['decoding'] = 'async'
+                
+        return str(soup)
+    except Exception as e:
+        app.logger.warning(f"Görsel SEO zenginleştirme hatası: {str(e)}")
+        return html_content
+
+
 def get_content_seo(icerik_obj, unite_obj=None, ders_obj=None, sinif_obj=None):
     """
     İçerik için optimize edilmiş SEO meta verilerini (Title, Description, Keywords) döner.
@@ -1395,11 +1446,13 @@ def get_content_seo(icerik_obj, unite_obj=None, ders_obj=None, sinif_obj=None):
     ders = ders_obj or (unite.ders if unite and hasattr(unite, 'ders') else None)
     sinif = sinif_obj or (ders.sinif if ders and hasattr(ders, 'sinif') else None)
 
-    baslik = getattr(icerik_obj, 'baslik', '') or ''
+    raw_baslik = getattr(icerik_obj, 'baslik', '') or ''
+    clean_baslik = clean_topic_title(raw_baslik)
     unite_adi = getattr(unite, 'unite', '') or ''
     ders_adi = getattr(ders, 'ders_adi', '') or ''
     sinif_raw = getattr(sinif, 'sinif', '') if sinif else ''
     sinif_label = format_sinif_label(sinif_raw)
+    sinif_ders = " ".join([p for p in [sinif_label, ders_adi] if p]).strip()
 
     # 1. Title Üretimi
     custom_title = getattr(icerik_obj, 'meta_title', None)
@@ -1407,38 +1460,32 @@ def get_content_seo(icerik_obj, unite_obj=None, ders_obj=None, sinif_obj=None):
         meta_title = str(custom_title).strip()
     else:
         parts = []
-        if baslik:
-            parts.append(f"{baslik} Konu Anlatımı")
-        sinif_ders = " ".join([p for p in [sinif_label, ders_adi] if p]).strip()
+        if clean_baslik:
+            parts.append(f"{clean_baslik} Konu Anlatımı")
         if sinif_ders:
             parts.append(sinif_ders)
         meta_title = " | ".join(parts) if parts else "Konu Anlatımı"
-        meta_title = f"{meta_title} - Sınıf Dijital"
+        meta_title = f"{meta_title} | Sınıf Dijital"
 
-    # 2. Description Üretimi
+    # 2. Description Üretimi (Doğal, akıcı, CTR odaklı 140-150 karakter)
     custom_desc = getattr(icerik_obj, 'meta_description', None)
     if custom_desc and str(custom_desc).strip():
         meta_description = str(custom_desc).strip()
     else:
-        # Şablonik ve yüksek kaliteli açıklama
-        sinif_ders = " ".join([p for p in [sinif_label, ders_adi] if p]).strip()
-        desc_parts = []
-        if sinif_ders:
-            desc_parts.append(sinif_ders)
-        if unite_adi:
-            desc_parts.append(f"{unite_adi} ünitesi")
-        if baslik:
-            desc_parts.append(f"{baslik} konusu detaylı konu anlatımı")
-        desc_main = " ".join(desc_parts) if desc_parts else (baslik or "Konu anlatımı")
-        meta_description = f"{desc_main}, ders notları, örnek soru ve video çözümleri Sınıf Dijital'de."
+        if sinif_ders and clean_baslik:
+            meta_description = f"{sinif_ders} {clean_baslik} konu anlatımı, ders notları, çözümlü örnek sorular ve video çözümleri. {clean_baslik} konusunu Sınıf Dijital ile öğrenin."
+        elif clean_baslik:
+            meta_description = f"{clean_baslik} konu anlatımı, ders notları, çözümlü test soruları ve video çözümleri. {clean_baslik} konusunu Sınıf Dijital ile öğrenin."
+        else:
+            meta_description = "Detaylı konu anlatımları, ders notları, örnek sorular ve video çözümleri Sınıf Dijital'de."
 
-    # 3. Keywords Üretimi
+    # 3. Keywords Üretimi (Geriye dönük uyumluluk)
     custom_kw = getattr(icerik_obj, 'meta_keywords', None)
     if custom_kw and str(custom_kw).strip():
         meta_keywords = str(custom_kw).strip()
     else:
         kw_list = []
-        for val in [baslik, ders_adi, sinif_label, unite_adi, 'konu anlatımı', 'ders notları', 'çözümlü sorular']:
+        for val in [clean_baslik, ders_adi, sinif_label, unite_adi, 'konu anlatımı', 'ders notları', 'çözümlü sorular']:
             if val and val.strip() and val.strip() not in kw_list:
                 kw_list.append(val.strip())
         meta_keywords = ", ".join(kw_list)
@@ -1450,7 +1497,8 @@ def get_content_seo(icerik_obj, unite_obj=None, ders_obj=None, sinif_obj=None):
         'sinif_label': sinif_label,
         'ders_adi': ders_adi,
         'unite_adi': unite_adi,
-        'baslik': baslik
+        'baslik': raw_baslik,
+        'clean_title': clean_baslik
     }
 
 

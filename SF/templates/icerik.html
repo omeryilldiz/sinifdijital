@@ -1,13 +1,12 @@
 {% extends "layout.html" %}
 {% from 'includes/ads_macros.html' import render_ad %}
 
-{% block title %}{{ seo_meta.title if seo_meta else (title ~ ' - Sınıf Dijital') }}{% endblock %}
+{% block title %}{{ seo_meta.title if seo_meta else (title ~ ' | Sınıf Dijital') }}{% endblock %}
 {% block meta_description %}{{ (seo_meta.description if seo_meta else description_snippet) or (icerik.baslik ~ ' — ' ~ ders.ders_adi ~ ' konu anlatımı.') }}{% endblock %}
-{% block meta_keywords %}{{ (seo_meta.keywords if seo_meta else (icerik.baslik ~ ', ' ~ ders.ders_adi ~ ', ' ~ unite.unite)) }}{% endblock %}
 {% block og_type %}article{% endblock %}
-{% block og_title %}{{ seo_meta.title if seo_meta else (icerik.baslik ~ ' - Sınıf Dijital') }}{% endblock %}
+{% block og_title %}{{ seo_meta.title if seo_meta else (icerik.baslik ~ ' | Sınıf Dijital') }}{% endblock %}
 {% block og_description %}{{ (seo_meta.description if seo_meta else description_snippet) or (icerik.baslik ~ ' — ' ~ ders.ders_adi ~ ' konu anlatımı.') }}{% endblock %}
-{% block twitter_title %}{{ seo_meta.title if seo_meta else (icerik.baslik ~ ' - Sınıf Dijital') }}{% endblock %}
+{% block twitter_title %}{{ seo_meta.title if seo_meta else (icerik.baslik ~ ' | Sınıf Dijital') }}{% endblock %}
 {% block twitter_description %}{{ (seo_meta.description if seo_meta else description_snippet) or (icerik.baslik ~ ' — ' ~ ders.ders_adi ~ ' konu anlatımı.') }}{% endblock %}
 
 {% block head %}
@@ -28,7 +27,7 @@
     },
     {
       "@type": "Article",
-      "headline": "{{ icerik.baslik }}",
+      "headline": "{{ seo_meta.clean_title if seo_meta and seo_meta.clean_title else icerik.baslik }}",
       "description": "{{ (seo_meta.description if seo_meta else description_snippet) or (icerik.baslik ~ ' — ' ~ ders.ders_adi ~ ' konu anlatımı.') }}",
       "url": "{{ request.base_url }}",
       "datePublished": "{{ icerik.created_at.strftime('%Y-%m-%dT%H:%M:%S') if icerik.created_at else '' }}",
@@ -51,7 +50,7 @@
   <!-- Ana İçerik Alanı -->
   <div class="main-content-area">
     <div class="content-section" data-icerik-id="{{ icerik.id }}">
-      <h1 class="content-title">{{ icerik.baslik }}</h1>
+      <h1 class="content-title">{{ seo_meta.clean_title if seo_meta and seo_meta.clean_title else icerik.baslik }}</h1>
 
       <!-- Breadcrumb Bilgisi -->
       <nav class="content-breadcrumb mb-3" aria-label="Konu Konumu">
@@ -103,7 +102,7 @@
 
       <!-- İçerik Gövdesi -->
       <div class="content-body mt-4" id="content-body">
-        {{ icerik.icerik | safe }}
+        {{ (icerik_html or icerik.icerik) | safe }}
       </div>
 
       <!-- VİDEO BÖLÜMÜ (İçerik gövdesinin ALTINDA) -->
