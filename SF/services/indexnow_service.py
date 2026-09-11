@@ -29,15 +29,19 @@ class IndexNowService:
         'message': 'Henüz gönderim yapılmadı'
     }
 
+    DEFAULT_API_KEY = 'be8b0e0a9c5b9afed0d072c643ed9120'
+
     @classmethod
     def get_api_key(cls) -> str:
         """API Key'i config veya env'den al"""
         try:
             if current_app:
-                return current_app.config.get('INDEXNOW_API_KEY') or os.environ.get('INDEXNOW_API_KEY', '')
+                val = current_app.config.get('INDEXNOW_API_KEY')
+                if val:
+                    return val
         except RuntimeError:
             pass
-        return os.environ.get('INDEXNOW_API_KEY', '')
+        return os.environ.get('INDEXNOW_API_KEY') or cls.DEFAULT_API_KEY
 
     @classmethod
     def is_enabled(cls) -> bool:
@@ -149,25 +153,40 @@ class IndexNowService:
         if not clean_urls:
             return False, "Gönderilecek geçerli URL bulunamadı."
 
+        host = cls.get_host()
+        key_location = cls.get_key_location()
+        app_obj = None
+        try:
+            if current_app:
+                app_obj = current_app._get_current_object()
+        except RuntimeError:
+            pass
+
         if background:
+            def _runner():
+                if app_obj:
+                    with app_obj.app_context():
+                        cls._execute_batch_submissions(clean_urls, host=host, api_key=api_key, key_location=key_location)
+                else:
+                    cls._execute_batch_submissions(clean_urls, host=host, api_key=api_key, key_location=key_location)
+
             thread = threading.Thread(
-                target=cls._execute_batch_submissions,
-                args=(clean_urls,),
+                target=_runner,
                 daemon=True,
                 name="indexnow-submission"
             )
             thread.start()
             return True, f"{len(clean_urls)} URL arka planda IndexNow'a gönderiliyor."
         else:
-            return cls._execute_batch_submissions(clean_urls)
+            return cls._execute_batch_submissions(clean_urls, host=host, api_key=api_key, key_location=key_location)
 
     @classmethod
-    def _execute_batch_submissions(cls, urls: list[str]) -> tuple[bool, str]:
+    def _execute_batch_submissions(cls, urls: list[str], host: str = None, api_key: str = None, key_location: str = None) -> tuple[bool, str]:
         """URL'leri batch'lere böl ve IndexNow API'sine gönder"""
         total_urls = len(urls)
-        host = cls.get_host()
-        api_key = cls.get_api_key()
-        key_location = cls.get_key_location()
+        host = host or cls.get_host()
+        api_key = api_key or cls.get_api_key()
+        key_location = key_location or cls.get_key_location()
 
         all_success = True
         last_message = ""
@@ -204,6 +223,19 @@ class IndexNowService:
 
         return all_success, last_message
 
+    @staticmethod
+    def _parse_error_detail(response) -> str:
+        """API hata detayını çıkar"""
+        try:
+            data = response.json()
+            if isinstance(data, dict) and 'message' in data:
+                return f": {data['message']}"
+        except Exception:
+            pass
+        if response.text and len(response.text.strip()) > 0:
+            return f": {response.text.strip()[:120]}"
+        return ""
+
     @classmethod
     def _send_payload_with_retry(cls, payload: dict) -> tuple[bool, int | None, str]:
         """Payload'ı retry mekanizması ile POST et"""
@@ -227,11 +259,13 @@ class IndexNowService:
                     msg = "URL'ler IndexNow tarafından kabul edildi." if status_code == 200 else "URL'ler alındı, key doğrulaması bekleniyor."
                     return True, status_code, msg
                 elif status_code == 400:
-                    return False, status_code, "Geçersiz istek (Bad Request). Format hatalı."
+                    detail = cls._parse_error_detail(response)
+                    return False, status_code, f"Geçersiz istek (Bad Request){detail}"
                 elif status_code == 403:
                     return False, status_code, "Yasaklı (Forbidden). API key geçersiz veya key dosyası bulunamadı."
                 elif status_code == 422:
-                    return False, status_code, "İşlenemeyen Varlık (Unprocessable Entity). URL'ler domain ile eşleşmiyor."
+                    detail = cls._parse_error_detail(response)
+                    return False, status_code, f"İşlenemeyen Varlık (Unprocessable Entity){detail}"
                 elif status_code == 429:
                     logger.warning(f"IndexNow Rate limit (429). Deneme {attempt}/{cls.MAX_RETRIES}...")
                     if attempt < cls.MAX_RETRIES:
@@ -239,11 +273,12 @@ class IndexNowService:
                         continue
                     return False, status_code, "Çok fazla istek (Rate Limit aşıldı)."
                 else:
+                    detail = cls._parse_error_detail(response)
                     logger.warning(f"IndexNow beklenmeyen yanıt ({status_code}). Deneme {attempt}/{cls.MAX_RETRIES}")
                     if attempt < cls.MAX_RETRIES:
                         time.sleep(1 * (2 ** attempt))
                         continue
-                    return False, status_code, f"API hatası: HTTP {status_code}"
+                    return False, status_code, f"API hatası: HTTP {status_code}{detail}"
 
             except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
                 logger.warning(f"IndexNow bağlantı hatası (Deneme {attempt}/{cls.MAX_RETRIES}): {str(e)}")
@@ -317,7 +352,10 @@ class IndexNowService:
                     unite = ic.unite
                     ders = unite.ders if unite else None
                     sinif = ders.sinif if ders else None
-                    if sinif and ders and unite and ic.slug:
+                    if (sinif and sinif.slug and 
+                        ders and ders.slug and 
+                        unite and unite.slug and 
+                        ic.slug):
                         urls.append(f"{base_url}/{sinif.slug}/{ders.slug}/{unite.slug}/{ic.slug}")
                 except Exception:
                     continue

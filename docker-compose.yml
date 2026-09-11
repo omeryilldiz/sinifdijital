@@ -22,6 +22,8 @@ services:
       # Flask environment
       FLASK_ENV: production
       SESSION_COOKIE_SECURE: 'True'
+      INDEXNOW_API_KEY: be8b0e0a9c5b9afed0d072c643ed9120
+      BASE_URL: https://sinifdijital.com
     # Secrets (e.g. SECRET_KEY) should be provided via Docker Secrets in production.
     # Web will load secrets from /run/secrets/ via the image entrypoint.
     secrets:
