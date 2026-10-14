@@ -4345,6 +4345,7 @@ def upload_file():
         
         # ✅ MIME type kontrolü (ek güvenlik)
         import mimetypes
+        mimetypes.add_type('image/webp', '.webp')
         mime_type, _ = mimetypes.guess_type(filename)
         allowed_mimes = ['image/jpeg', 'image/png', 'image/gif', 'image/jpg', 'image/webp']
         
