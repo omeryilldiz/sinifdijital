@@ -4346,7 +4346,7 @@ def upload_file():
         # ✅ MIME type kontrolü (ek güvenlik)
         import mimetypes
         mime_type, _ = mimetypes.guess_type(filename)
-        allowed_mimes = ['image/jpeg', 'image/png', 'image/gif', 'image/jpg']
+        allowed_mimes = ['image/jpeg', 'image/png', 'image/gif', 'image/jpg', 'image/webp']
         
         if mime_type not in allowed_mimes:
             return jsonify({'error': 'Geçersiz dosya türü'}), 400
